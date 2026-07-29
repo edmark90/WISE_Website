@@ -1,0 +1,27 @@
+@echo off
+title WISE Backend Server
+echo ========================================
+echo   WISE SYSTEM - Backend Server Launcher
+echo ========================================
+echo.
+
+:: Kill any process on port 8080
+echo [1/3] Checking port 8080...
+for /f "tokens=5" %%a in ('netstat -ano ^| findstr :8080') do (
+    echo Killing process PID: %%a
+    taskkill /F /PID %%a >nul 2>&1
+)
+timeout /t 1 /nobreak >nul
+
+:: Activate virtual environment
+echo [2/3] Activating virtual environment...
+call venv\Scripts\activate.bat
+
+:: Start uvicorn
+echo [3/3] Starting server on http://127.0.0.1:8080
+echo.
+echo Press Ctrl+C to stop the server
+echo.
+uvicorn apps.main:app --host 127.0.0.1 --port 8080 --reload
+
+pause
