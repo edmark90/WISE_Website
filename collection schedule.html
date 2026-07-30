@@ -102,13 +102,31 @@
         <!-- Legend -->
         <div class="calendar-legend">
           <span class="legend-item">
-            <span class="legend-dot north"></span> North Zone
+            <span class="legend-dot" style="background:#16A34A"></span> Alabang
           </span>
           <span class="legend-item">
-            <span class="legend-dot south"></span> South Zone
+            <span class="legend-dot" style="background:#F59E0B"></span> Bayanan
           </span>
           <span class="legend-item">
-            <span class="legend-dot industrial"></span> Industrial Zone
+            <span class="legend-dot" style="background:#8B5CF6"></span> Buli
+          </span>
+          <span class="legend-item">
+            <span class="legend-dot" style="background:#EC4899"></span> Cupang
+          </span>
+          <span class="legend-item">
+            <span class="legend-dot" style="background:#0EA5E9"></span> New Alabang
+          </span>
+          <span class="legend-item">
+            <span class="legend-dot" style="background:#3B82F6"></span> Poblacion
+          </span>
+          <span class="legend-item">
+            <span class="legend-dot" style="background:#6366F1"></span> Putatan
+          </span>
+          <span class="legend-item">
+            <span class="legend-dot" style="background:#EF4444"></span> Sucat
+          </span>
+          <span class="legend-item">
+            <span class="legend-dot" style="background:#14B8A6"></span> Tunasan
           </span>
         </div>
 
@@ -144,9 +162,15 @@
             <h3>Route Preview</h3>
           </div>
           <div class="route-preview-map" id="route-preview-map">
-            <div style="height:160px;display:flex;align-items:center;justify-content:center;background:#F9FAFB">
-              <p style="color:var(--sc-text-secondary);font-size:13px">No route selected</p>
+            <div class="route-preview-bg" id="route-preview-bg"></div>
+            <div class="route-diagram-empty" id="route-diagram-empty">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:36px;height:36px;color:#D1D5DB;margin-bottom:8px">
+                <circle cx="12" cy="12" r="10"/>
+                <path d="M12 8v8M8 12h8"/>
+              </svg>
+              <p>No route selected</p>
             </div>
+            <div class="route-diagram-content" id="route-diagram-content"></div>
           </div>
           <div class="route-preview-info" id="route-preview-info"></div>
         </div>
