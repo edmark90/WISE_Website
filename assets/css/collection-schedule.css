@@ -474,6 +474,40 @@
   min-height: 44px;
 }
 
+/* Single-route preview: center the lone stop */
+.route-journey.single .route-stop {
+  justify-content: center;
+  min-height: 60px;
+}
+
+.route-journey.single .rs-side.left {
+  width: 100%;
+  justify-content: center;
+  padding: 14px 8px 6px;
+}
+
+.route-journey.single .rs-side.right {
+  display: none;
+}
+
+.route-journey.single .rs-block {
+  flex-direction: row;
+  gap: 8px;
+}
+
+.route-journey.single .rs-pin svg {
+  width: 26px;
+  height: 33px;
+}
+
+.route-journey.single .rs-card-name {
+  font-size: 12px;
+}
+
+.route-journey.single .rs-card-meta {
+  font-size: 10px;
+}
+
 .route-stop:hover {
   background: rgba(255,255,255,0.5);
 }

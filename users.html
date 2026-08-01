@@ -14,18 +14,7 @@
       <h1>WISE<br>SYSTEM</h1>
       <p class="tag">ENTERPRISE ADMIN</p>
     </div>
-    <div class="user-info" id="user-info">
-      <div class="user-avatar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-          <circle cx="12" cy="7" r="4"></circle>
-        </svg>
-      </div>
-      <div class="user-details">
-        <p class="user-name" id="user-name">Loading...</p>
-        <p class="user-role" id="user-role">Loading...</p>
-      </div>
-    </div>
+   
     <nav class="sidebar-nav">
       <a href="dashboard.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect></svg><span>Dashboard</span></a>
       <a href="users.html" class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg><span>User Management</span></a>
@@ -42,7 +31,7 @@
   <main class="main">
     <div class="page-header">
       <h2>User Management</h2>
-      <p>Manage admin, staff, and citizen accounts across the system.</p>
+      <p>Manage All accounts across the system.</p>
     </div>
 
     <!-- Stats Cards -->
@@ -118,6 +107,7 @@
                 <th>Email</th>
                 <th>Phone</th>
                 <th>Role</th>
+                <th>Status</th>
                 <th>Created</th>
                 <th style="width:100px;">Actions</th>
               </tr>
@@ -183,11 +173,23 @@
         <div class="form-row" id="password-fields">
           <div class="form-group">
             <label class="form-label" for="form-password">Password <span style="color:var(--danger);" id="password-required">*</span></label>
-            <input class="form-input" id="form-password" type="password" placeholder="Leave blank to keep current" />
+            <input class="form-input" id="form-password" type="password" placeholder="Enter a password" />
           </div>
           <div class="form-group">
             <label class="form-label" for="form-confirm">Confirm Password</label>
             <input class="form-input" id="form-confirm" type="password" placeholder="Re-enter password" />
+          </div>
+        </div>
+
+        <div class="form-row" id="account-status-fields" style="display:none;">
+          <div class="form-group" style="grid-column:1 / -1;">
+            <label class="form-label" for="form-active">Account Status</label>
+            <label class="status-toggle">
+              <input type="checkbox" id="form-active" />
+              <span class="status-toggle-track"></span>
+              <span class="status-toggle-label" id="status-toggle-label">Active</span>
+            </label>
+            <p class="form-hint">Uncheck to disable this account. The user will not be able to log in.</p>
           </div>
         </div>
       </form>
@@ -235,6 +237,17 @@
 <!-- Toast Container -->
 <div class="toast-container" id="toast-container"></div>
 
-<script src="assets/js/users.js"></script>
+<!-- Shared core modules -->
+<script src="assets/js/core/config.js"></script>
+<script src="assets/js/core/dom.js"></script>
+<script src="assets/js/core/utils.js"></script>
+<script src="assets/js/core/toast.js"></script>
+<script src="assets/js/core/auth.js"></script>
+<script src="assets/js/core/api.js"></script>
+<!-- Components -->
+<script src="assets/js/components/user-table.js"></script>
+<script src="assets/js/components/user-modal.js"></script>
+<!-- Page entry point -->
+<script src="assets/js/pages/users.js"></script>
 </body>
 </html>

@@ -13,18 +13,7 @@
       <h1>WISE<br>SYSTEM</h1>
       <p class="tag">ENTERPRISE ADMIN</p>
     </div>
-    <div class="user-info" id="user-info">
-      <div class="user-avatar">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-          <circle cx="12" cy="7" r="4"></circle>
-        </svg>
-      </div>
-      <div class="user-details">
-        <p class="user-name" id="user-name">Loading...</p>
-        <p class="user-role" id="user-role">Loading...</p>
-      </div>
-    </div>
+ 
     <nav class="sidebar-nav">
       <a href="dashboard.html" class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect></svg><span>Dashboard</span></a>
       <a href="users.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg><span>User Management</span></a>
@@ -47,31 +36,12 @@
   </main>
 </div>
 
-<script>
-  // Authentication check
-  function checkAuth() {
-    const token = localStorage.getItem('access_token');
-    if (!token) {
-      window.location.href = 'index.html';
-    }
-  }
-  
-  // Run authentication check on page load
-  checkAuth();
-  
-  // Logout functionality
-  document.getElementById('logout-btn').addEventListener('click', function(e) {
-    e.preventDefault();
-    
-    // Remove JWT token from localStorage
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('token_type');
-    localStorage.removeItem('user_role');
-    
-    // Redirect to login page
-    window.location.href = 'index.html';
-  });
-</script>
+<!-- Shared core modules -->
+<script src="assets/js/core/config.js"></script>
+<script src="assets/js/core/dom.js"></script>
+<script src="assets/js/core/auth.js"></script>
+<!-- Page entry point -->
+<script src="assets/js/pages/dashboard.js"></script>
 
 </body>
 </html>

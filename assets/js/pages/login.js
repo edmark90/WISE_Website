@@ -1,17 +1,22 @@
+/**
+ * WISE System - Login Page
+ * Entry point for index.html. Uses shared helpers from core/.
+ */
+
 // Login handler for WISE System Admin
-document.getElementById('login-form').addEventListener('submit', async function(e) {
+$id('login-form').addEventListener('submit', async function(e) {
   e.preventDefault();
-  
-  const email = document.getElementById('admin-id').value;
-  const password = document.getElementById('password').value;
+
+  const email = $id('admin-id').value;
+  const password = $id('password').value;
   const submitBtn = document.querySelector('.submit');
-  
+
   // Disable button during request
   submitBtn.disabled = true;
   submitBtn.innerHTML = 'Logging in...';
-  
+
   try {
-    const response = await fetch('http://127.0.0.1:8000/api/auth/login', {
+    const response = await fetch(API_BASE + '/api/auth/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -21,15 +26,15 @@ document.getElementById('login-form').addEventListener('submit', async function(
         password: password
       })
     });
-    
+
     const data = await response.json();
-    
+
     if (response.ok) {
       // Save JWT token to localStorage
       localStorage.setItem('access_token', data.access_token);
       localStorage.setItem('token_type', data.token_type);
       localStorage.setItem('user_role', data.user.role);
-      
+
       // Check if user is admin
       if (data.user.role === 'admin') {
         window.location.href = 'dashboard.html';
@@ -61,7 +66,7 @@ function showError(message) {
   if (existingError) {
     existingError.remove();
   }
-  
+
   // Create and show error message
   const errorDiv = document.createElement('div');
   errorDiv.className = 'error-message';
@@ -75,9 +80,9 @@ function showError(message) {
     font-size: 14px;
     border: 1px solid #fecaca;
   `;
-  
+
   document.querySelector('.card').appendChild(errorDiv);
-  
+
   // Auto-remove after 3 seconds
   setTimeout(() => {
     errorDiv.remove();
@@ -88,7 +93,7 @@ function showError(message) {
 function togglePassword() {
   const passwordInput = document.getElementById('password');
   const eyeIcon = document.getElementById('eye-icon');
-  
+
   if (passwordInput.type === 'password') {
     passwordInput.type = 'text';
     eyeIcon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
