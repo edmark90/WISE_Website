@@ -34,7 +34,7 @@ function populateSidebarUserFromStorage() {
 /** Fill the sidebar user name/role from the API (/api/auth/me). */
 async function loadSidebarUserFromApi() {
   try {
-    const res = await fetch(API_BASE + '/api/auth/me', { headers: getHeaders() });
+    const res = await fetch(CONFIG.API_BASE_URL + '/api/auth/me', { headers: getHeaders() });
     if (!res.ok) throw new Error('Auth failed');
     const user = await res.json();
     const nameEl = document.getElementById('user-name');

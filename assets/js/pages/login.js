@@ -16,7 +16,7 @@ $id('login-form').addEventListener('submit', async function(e) {
   submitBtn.innerHTML = 'Logging in...';
 
   try {
-    const response = await fetch(API_BASE + '/api/auth/login', {
+    const response = await fetch(CONFIG.API_BASE_URL + '/api/auth/login', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'

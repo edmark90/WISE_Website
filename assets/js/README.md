@@ -8,7 +8,7 @@ so inline `onclick` handlers keep working and pages work from `file://` too.
 ```
 assets/js/
 ├── core/        # Shared, page-agnostic modules (load first)
-│   ├── config.js   # API_BASE and app-wide constants
+│   ├── config.js   # CONFIG.API_BASE_URL and app-wide constants
 │   ├── dom.js      # $id / $all DOM shortcuts
 │   ├── utils.js    # pad, formatDate, formatTime12, escapeHtml, etc.
 │   ├── toast.js    # showToast() shared across pages

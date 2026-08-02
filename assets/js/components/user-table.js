@@ -24,7 +24,7 @@ function renderTable() {
     var safeEmail = escapeHtml(u.email);
     var avatarHtml = '<div class="user-avatar-sm ' + avatarClass + '">' + initials + '</div>';
     if (u.profile_image) {
-      avatarHtml = '<div class="user-avatar-sm ' + avatarClass + '"><img class="user-avatar-img" src="' + escapeHtml(API_BASE + '/' + u.profile_image) + '" alt="' + safeName + '" onerror="this.style.display=\'none\'"></div>';
+      avatarHtml = '<div class="user-avatar-sm ' + avatarClass + '"><img class="user-avatar-img" src="' + escapeHtml(CONFIG.API_BASE_URL + '/' + u.profile_image) + '" alt="' + safeName + '" onerror="this.style.display=\'none\'"></div>';
     }
     html += '<tr>';
     html += '<td style="font-weight:600;color:var(--text-muted);font-size:13px;">#' + u.id + '</td>';
