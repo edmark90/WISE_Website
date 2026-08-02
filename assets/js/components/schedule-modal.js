@@ -32,7 +32,7 @@ function openEditModal(id) {
   modalOverlay.classList.add('active');
 }
 function createEmptyRoute(dateStr) {
-  return { time: '07:00', barangay: '', zone: '', personnel: '', status: getAutoStatus(dateStr||formatDate(new Date())) };
+  return { time: '07:00', barangay: '', zone: '', personnel: '', status: 'Upcoming' };
 }
 function closeModal() { modalOverlay.classList.remove('active'); }
 
@@ -166,15 +166,18 @@ async function handleSaveSchedule() {
   let ok = true;
   if (state.editingId) {
     const e = entries[0];
-    ok = !!(await updateSchedule(state.editingId, { barangay: e.barangay, zone: e.zone||'', collection_date: date, collection_time: e.time+':00', assigned_personnel: e.personnel||'', status: e.status||'Upcoming' }));
+    ok = !!(await updateSchedule(state.editingId, { barangay: e.barangay, zone: e.zone||'', collection_date: date, collection_time: e.time+':00', assigned_personnel: e.personnel||'' }));
   } else {
-    var created = 0;
-    for (var i = 0; i < entries.length; i++) {
-      var e = entries[i];
-      var r = await createSchedule({ barangay: e.barangay, zone: e.zone||'', collection_date: date, collection_time: e.time+':00', assigned_personnel: e.personnel||'', status: e.status||'Upcoming' });
-      if (r) created++; else { ok = false; break; }
+    const payload = entries.map(function(e) {
+      return { barangay: e.barangay, zone: e.zone||'', collection_date: date, collection_time: e.time+':00', assigned_personnel: e.personnel||'' };
+    });
+    const created = await createBatchSchedules(payload);
+    if (created && created.length > 0) {
+      ok = true;
+      showToast(created.length + ' route' + (created.length>1?'s':'') + ' created!', 'success');
+    } else {
+      ok = false;
     }
-    if (created > 0) showToast(created + ' route' + (created>1?'s':'') + ' created!', 'success');
   }
   modalSaveBtn.disabled = false;
   modalSaveText.textContent = state.editingId ? 'Update Route' : 'Save All Routes';

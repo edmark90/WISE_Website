@@ -2,8 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>WISE SYSTEM — Notifications</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>WISE SYSTEM — Notification Center</title>
 <link rel="stylesheet" href="assets/css/global.css">
+<link rel="stylesheet" href="assets/css/notification.css">
 </head>
 <body>
 <div class="app">
@@ -13,7 +15,7 @@
       <h1>WISE<br>SYSTEM</h1>
       <p class="tag">ENTERPRISE ADMIN</p>
     </div>
- 
+
     <nav class="sidebar-nav">
       <a href="dashboard.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect></svg><span>Dashboard</span></a>
       <a href="users.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg><span>User Management</span></a>
@@ -27,13 +29,177 @@
       <a href="#" class="nav-item logout" id="logout-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg><span>Logout</span></a>
     </div>
   </aside>
+
   <main class="main">
-    <div class="page-header">
-      <h2>Notifications</h2>
-      <p>System alerts and messages.</p>
+    <!-- Page Header -->
+    <div class="nt-header">
+      <div class="nt-header-left">
+        <h2>Notification Center</h2>
+        <p>Track automatic route alerts and compose manual announcements to the citizen network.</p>
+      </div>
+      <button class="nt-btn-primary" id="new-announcement-btn">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+        New Announcement
+      </button>
     </div>
-    <div class="card">Notifications content goes here.</div>
+
+    <!-- Summary Cards -->
+    <div class="nt-summary-grid">
+      <div class="nt-summary-card nt-summary-blue">
+        <div class="nt-summary-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+        <div class="nt-summary-info"><span class="nt-summary-value" id="summary-today">0</span><span class="nt-summary-label">Notifications Today</span></div>
+      </div>
+      <div class="nt-summary-card nt-summary-amber">
+        <div class="nt-summary-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div>
+        <div class="nt-summary-info"><span class="nt-summary-value" id="summary-delayed">0</span><span class="nt-summary-label">Delayed Routes</span></div>
+      </div>
+      <div class="nt-summary-card nt-summary-red">
+        <div class="nt-summary-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg></div>
+        <div class="nt-summary-info"><span class="nt-summary-value" id="summary-cancelled">0</span><span class="nt-summary-label">Cancelled Routes</span></div>
+      </div>
+      <div class="nt-summary-card nt-summary-purple">
+        <div class="nt-summary-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg></div>
+        <div class="nt-summary-info"><span class="nt-summary-value" id="summary-manual">0</span><span class="nt-summary-label">Manual Announcements</span></div>
+      </div>
+    </div>
+
+    <!-- Toolbar: Search + Filters -->
+    <div class="nt-toolbar">
+      <div class="nt-search">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input type="text" id="nt-search" placeholder="Search by title, route, barangay, reason, date, type...">
+      </div>
+      <select class="nt-select nt-filter" id="filter-type">
+        <option value="All">All Types</option>
+        <option value="Automatic">Automatic</option>
+        <option value="Manual">Manual</option>
+        <option value="General Announcement">General Announcement</option>
+        <option value="Delayed Collection">Delayed Collection</option>
+        <option value="Cancelled Collection">Cancelled Collection</option>
+        <option value="Upcoming Collection">Upcoming Collection</option>
+        <option value="Garbage Truck Arriving">Garbage Truck Arriving</option>
+        <option value="Garbage Truck Arrived">Garbage Truck Arrived</option>
+        <option value="Collection Completed">Collection Completed</option>
+        <option value="Collection Rescheduled">Collection Rescheduled</option>
+      </select>
+      <select class="nt-select nt-filter" id="filter-barangay">
+        <option value="All">All Barangays</option>
+      </select>
+      <select class="nt-select nt-filter" id="filter-route">
+        <option value="All">All Routes</option>
+      </select>
+      <input type="date" class="nt-input nt-filter nt-date-filter" id="filter-date">
+      <button class="nt-btn-ghost" id="filter-reset">Reset</button>
+    </div>
+
+    <!-- Two-Column Layout -->
+    <div class="nt-container">
+      <!-- ===== LEFT: NOTIFICATION HISTORY ===== -->
+      <div class="nt-history-card">
+        <div class="nt-card-header">
+          <h3>Notification History</h3>
+          <span class="nt-history-count" id="history-count">0 notifications</span>
+        </div>
+        <div class="nt-table-wrap">
+          <table class="nt-table">
+            <thead>
+              <tr>
+                <th>Notification Type</th>
+                <th>Route</th>
+                <th>Barangays</th>
+                <th>Reason</th>
+                <th>Status</th>
+                <th>Collection Date</th>
+                <th>Created By</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="history-body">
+              <!-- Rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+        <div class="nt-pagination" id="history-pagination"></div>
+      </div>
+
+      <!-- ===== RIGHT: NOTIFICATION DETAILS ===== -->
+      <div class="nt-detail-col">
+        <div class="nt-detail-card">
+          <div class="nt-card-header">
+            <h3>Notification Details</h3>
+          </div>
+          <div class="nt-detail-empty" id="detail-empty">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:44px;height:44px;color:#D1D5DB"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+            <p>Select a notification to view its full details.</p>
+          </div>
+          <div id="detail-content" style="display:none"></div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Manual Notification Modal -->
+    <div class="modal-overlay" id="announcement-modal-overlay">
+      <div class="nt-modal nt-modal-wide">
+        <div class="nt-modal-header">
+          <h3>New Announcement</h3>
+          <button class="modal-close-btn" id="announcement-close-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+          </button>
+        </div>
+        <div class="nt-modal-body">
+          <div class="nt-field">
+            <label class="nt-label" for="a-title">Announcement Title <span class="nt-req">*</span></label>
+            <input class="nt-input" type="text" id="a-title" placeholder="e.g., Holiday Advisory — No Collection on Dec 25" autocomplete="off">
+          </div>
+          <div class="nt-field-row nt-field-row-2">
+            <div class="nt-field">
+              <label class="nt-label" for="a-category">Category</label>
+              <select class="nt-select" id="a-category">
+                <option value="General Announcement">General Announcement</option>
+                <option value="Waste Segregation Reminder">Waste Segregation Reminder</option>
+                <option value="Holiday Advisory">Holiday Advisory</option>
+                <option value="Weather Advisory">Weather Advisory</option>
+                <option value="Emergency">Emergency</option>
+                <option value="Others">Others</option>
+              </select>
+            </div>
+            <div class="nt-field">
+              <label class="nt-label" for="a-priority">Priority</label>
+              <select class="nt-select" id="a-priority">
+                <option value="Normal">Normal</option>
+                <option value="Important">Important</option>
+                <option value="Emergency">Emergency</option>
+              </select>
+            </div>
+          </div>
+          <div class="nt-field">
+            <label class="nt-label" for="a-message">Message <span class="nt-req">*</span></label>
+            <textarea class="nt-input nt-textarea" id="a-message" rows="6" placeholder="e.g., No garbage collection tomorrow due to a city-wide holiday."></textarea>
+          </div>
+          <p class="nt-help">Recipients are determined automatically from citizens' preferred barangays and notification settings.</p>
+        </div>
+        <div class="nt-modal-footer">
+          <button class="nt-btn-ghost" id="a-cancel-btn">Cancel</button>
+          <button class="nt-btn-primary" id="a-send-btn">Send Notification</button>
+        </div>
+      </div>
+    </div>
   </main>
 </div>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toast-container"></div>
+
+<!-- Shared core modules -->
+<script src="assets/js/core/config.js"></script>
+<script src="assets/js/core/dom.js"></script>
+<script src="assets/js/core/utils.js"></script>
+<script src="assets/js/core/toast.js"></script>
+<script src="assets/js/core/auth.js"></script>
+<script src="assets/js/core/api.js"></script>
+<script src="assets/js/data/barangays.js"></script>
+<!-- Page entry point -->
+<script src="assets/js/pages/notification.js"></script>
 </body>
 </html>

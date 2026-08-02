@@ -42,10 +42,7 @@ function showDayRouteMap(schedules, dateFormatted) {
     '<label class="bulk-status-label">Set all routes:</label>' +
     '<select class="bulk-status-select" id="bulk-status-select">' +
       '<option value="">Select status...</option>' +
-      '<option value="Arriving">Arriving</option>' +
-      '<option value="Arrived">Arrived</option>' +
       '<option value="Delayed">Delayed</option>' +
-      '<option value="Completed">Completed</option>' +
       '<option value="Cancelled">Cancelled</option>' +
     '</select>' +
     '<button class="bulk-status-btn" onclick="bulkUpdateDayStatus()">Update All</button>' +

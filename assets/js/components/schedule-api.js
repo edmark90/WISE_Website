@@ -25,12 +25,36 @@ async function createSchedule(data) {
   } catch (err) { showToast('Connection error.', 'error'); return null; }
 }
 
+/** Create multiple routes for the same day in one call → one "Upcoming Collection" notification. */
+async function createBatchSchedules(schedules) {
+  try {
+    const res = await apiRequest('/api/collection-schedules/batch', { method: 'POST', body: JSON.stringify({ schedules: schedules }) });
+    if (!res) return null;
+    if (!res.ok) { const e = await res.json(); showToast(e.detail || 'Failed to create routes', 'error'); return null; }
+    return await res.json();
+  } catch (err) { showToast('Connection error.', 'error'); return null; }
+}
+
 async function updateSchedule(id, data, silent) {
   try {
     const res = await apiRequest('/api/collection-schedules/' + id, { method: 'PUT', body: JSON.stringify(data) });
     if (!res) return null;
     if (!res.ok) { const e = await res.json(); showToast(e.detail || 'Failed to update schedule', 'error'); return null; }
     if (!silent) showToast('Schedule updated!', 'success');
+    return await res.json();
+  } catch (err) { showToast('Connection error.', 'error'); return null; }
+}
+
+/** Set a route's status (Delayed/Cancelled) and auto-generate the notification. */
+async function updateScheduleStatus(id, status, reason, reasonOther, additionalMessage) {
+  try {
+    const payload = { status: status };
+    if (reason) payload.reason = reason;
+    if (reasonOther) payload.reason_other = reasonOther;
+    if (additionalMessage) payload.additional_message = additionalMessage;
+    const res = await apiRequest('/api/collection-schedules/' + id + '/status', { method: 'POST', body: JSON.stringify(payload) });
+    if (!res) return null;
+    if (!res.ok) { const e = await res.json(); showToast(e.detail || 'Failed to update status', 'error'); return null; }
     return await res.json();
   } catch (err) { showToast('Connection error.', 'error'); return null; }
 }

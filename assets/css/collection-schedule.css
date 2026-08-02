@@ -1818,3 +1818,138 @@
 
   .legend-item { font-size: 10px; }
 }
+
+/* =======================================================================
+   Status Change Modal (Delayed / Cancelled + notification)
+   ======================================================================= */
+
+.sc-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #f9fafb;
+  border: 1px solid var(--sc-border);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.sc-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.sc-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #9ca3af;
+  flex-shrink: 0;
+}
+
+.sc-value {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sc-text-main, #111827);
+  text-align: right;
+  word-break: break-word;
+}
+
+.sc-value small { font-size: 11px; color: #9ca3af; font-weight: 500; }
+
+.sc-scope-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  background: #f8fafc;
+  border: 1px solid var(--sc-border);
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.sc-scope-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.sc-scope-option input[type="radio"] {
+  accent-color: #2563eb;
+  width: 15px;
+  height: 15px;
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.sc-message-preview {
+  margin-top: 16px;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.sc-message-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: #1d4ed8;
+  margin-bottom: 6px;
+}
+
+.sc-message {
+  font-size: 13px;
+  line-height: 1.55;
+  color: #1e293b;
+  white-space: pre-line;
+}
+
+.nt-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+
+.nt-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.nt-input,
+.nt-select {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 14px;
+  color: #111827;
+  background: #fff;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.nt-input:focus,
+.nt-select:focus {
+  border-color: var(--sc-primary, #16a34a);
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.12);
+}
+
+.nt-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='%236B7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 16px;
+  cursor: pointer;
+}

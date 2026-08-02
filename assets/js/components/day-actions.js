@@ -38,15 +38,13 @@ function rescheduleAllRoutes() {
 
 function bulkUpdateDayStatus() {
   const sel = $id('bulk-status-select');
-  const btn = document.querySelector('.bulk-status-btn');
   const newStatus = sel.value;
   if (!newStatus) { showToast('Select a status first.', 'info'); return; }
+  if (newStatus !== 'Delayed' && newStatus !== 'Cancelled') {
+    showToast('Automatic statuses are managed by the system.', 'info');
+    return;
+  }
   const scheds = state.selectedDateSchedules;
   if (!scheds || scheds.length === 0) { showToast('No routes to update.', 'info'); return; }
-  if (!confirm('Set all ' + scheds.length + ' route' + (scheds.length > 1 ? 's' : '') + ' to "' + newStatus + '"?')) return;
-  btn.disabled = true; btn.textContent = 'Updating...';
-  var updated = 0;
-  Promise.all(scheds.map(s => updateSchedule(s.id, { status: newStatus }, true).then(r => { if (r) updated++; })))
-    .then(() => { btn.disabled = false; btn.textContent = 'Update All'; sel.value = ''; if (updated > 0) showToast(updated + ' route' + (updated > 1 ? 's' : '') + ' updated!', 'success'); renderCalendar(); })
-    .catch(() => { btn.disabled = false; btn.textContent = 'Update All'; });
+  openStatusChangeModal(scheds, newStatus);
 }

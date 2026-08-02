@@ -10,12 +10,7 @@ async function renderCalendar() {
   const today = state.today;
   calendarTitle.textContent = new Date(year, month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
   var fetched = await fetchSchedulesByMonth(year, month);
-  state.schedules = fetched.map(function(s) {
-    var autoStatus = getAutoStatus(s.collection_date, s.status);
-    if (autoStatus !== s.status) updateSchedule(s.id, { status: autoStatus }, true);
-    s.status = autoStatus;
-    return s;
-  });
+  state.schedules = fetched;
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const daysInPrevMonth = new Date(year, month, 0).getDate();

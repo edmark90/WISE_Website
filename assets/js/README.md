@@ -16,7 +16,7 @@ assets/js/
 │   └── api.js      # apiRequest() — fetch wrapper + 401 handling
 ├── data/         # Static reference data
 │   ├── barangays.js  # BARANGAYS, BARANGAY_STREETS, BARANGAY_COLORS
-│   └── statuses.js   # STATUSES, STATUS_COLORS, getAutoStatus
+│   └── statuses.js   # STATUSES, STATUS_COLORS
 ├── components/   # Reusable UI pieces, one concern per file
 │   ├── schedule-api.js   # collection-schedule CRUD calls
 │   ├── calendar.js       # month grid + day/event click handling
