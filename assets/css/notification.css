@@ -824,6 +824,13 @@
   .nt-header { flex-direction: column; align-items: flex-start; }
 }
 
+@media (max-width: 640px) {
+  .nt-detail-grid { grid-template-columns: 1fr; }
+  .nt-pagination { flex-direction: column; gap: 10px; align-items: flex-start; }
+  .nt-toolbar { padding: 12px; }
+  .nt-detail-head-row { flex-direction: column; align-items: flex-start; }
+}
+
 /* =======================================================================
    New Notification modal � type selector + route-based (Delayed/Cancelled)
    ======================================================================= */
@@ -860,8 +867,8 @@
 }
 
 /* =======================================================================
-   Toast notifications
-   ======================================================================= */
+    Toast notifications
+    ======================================================================= */
 
 .toast-container {
   position: fixed;
@@ -904,8 +911,95 @@
 }
 
 /* =======================================================================
-   Announcement modal - target audience radio group
-   ======================================================================= */
+    Mobile Update Modal & Switch Styles
+    ======================================================================= */
+
+.nt-btn-secondary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background-color: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.nt-btn-secondary:hover {
+  background-color: #e5e7eb;
+  color: #111827;
+}
+
+.nt-modal-wide {
+  max-width: 640px !important;
+  width: 90% !important;
+}
+
+.nt-section-divider {
+  display: flex;
+  align-items: center;
+  margin: 16px 0;
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: #2563eb;
+  border-bottom: 2px solid #eff6ff;
+  padding-bottom: 6px;
+}
+
+.nt-switch {
+  position: relative;
+  display: inline-block;
+  width: 46px;
+  height: 24px;
+}
+
+.nt-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.nt-switch-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #cbd5e1;
+  transition: .3s;
+  border-radius: 24px;
+}
+
+.nt-switch-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .3s;
+  border-radius: 50%;
+}
+
+input:checked + .nt-switch-slider {
+  background-color: #2563eb;
+}
+
+input:checked + .nt-switch-slider:before {
+  transform: translateX(22px);
+}
+
+/* =======================================================================
+    Announcement modal - target audience radio group
+    ======================================================================= */
 
 .nt-radio-group {
   display: flex;

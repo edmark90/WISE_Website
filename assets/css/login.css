@@ -20,7 +20,8 @@
   }
  
   .card{
-    width:380px;
+    width:100%;
+    max-width:380px;
     background:#fff;
     border-radius:16px;
     padding:36px 32px 32px;
@@ -176,4 +177,13 @@
   button.submit svg{
     width:16px;
     height:16px;
+  }
+
+  @media (max-width:480px){
+    .card{
+      padding:28px 22px 24px;
+    }
+    h1{
+      font-size:20px;
+    }
   }
