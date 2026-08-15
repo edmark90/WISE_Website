@@ -17,5 +17,5 @@ const STATUS_COLORS = {
   'Arrived':    { bg: '#F0FDF4', color: '#166534' },
   'Delayed':    { bg: '#FEF2F2', color: '#991B1B' },
   'Completed':  { bg: '#F0FDF4', color: '#15803D' },
-  'Cancelled':  { bg: '#F3F4F6', color: '#4B5563' }
+  'Cancelled':  { bg: '#F3F4F6', color: '#030405c9' }
 };
