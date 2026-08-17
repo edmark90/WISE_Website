@@ -47,6 +47,17 @@ const dayActions = $id('day-actions');
 // ---------- Init ----------
 document.addEventListener('DOMContentLoaded', function() {
   if (!initBasePage()) return;
+
+  // Check for ?date=YYYY-MM-DD URL parameter
+  var params = new URLSearchParams(window.location.search);
+  var targetDate = params.get('date');
+  if (targetDate && /^\d{4}-\d{2}-\d{2}$/.test(targetDate)) {
+    var p = targetDate.split('-');
+    state.currentYear = parseInt(p[0], 10);
+    state.currentMonth = parseInt(p[1], 10) - 1;
+    state.selectedDate = new Date(targetDate + 'T00:00:00');
+  }
+
   $id('prev-month').addEventListener('click', function() { state.currentMonth--; if (state.currentMonth<0) { state.currentMonth=11; state.currentYear--; } renderCalendar(); });
   $id('next-month').addEventListener('click', function() { state.currentMonth++; if (state.currentMonth>11) { state.currentMonth=0; state.currentYear++; } renderCalendar(); });
   $id('today-btn').addEventListener('click', function() { state.currentMonth = new Date().getMonth(); state.currentYear = new Date().getFullYear(); state.selectedDate = new Date(); renderCalendar(); });

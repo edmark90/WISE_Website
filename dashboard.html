@@ -3,8 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WISE SYSTEM — Dashboard</title>
+<title>WISE SYSTEM — Operations & Analytics Dashboard</title>
+<!-- Google Fonts: Inter & Outfit for modern civic-tech aesthetics -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/global.css">
+<link rel="stylesheet" href="assets/css/dashboard.css">
 </head>
 <body>
 <div class="app">
@@ -14,7 +19,7 @@
       <h1>WISE<br>SYSTEM</h1>
       <p class="tag">ENTERPRISE ADMIN</p>
     </div>
- 
+
     <nav class="sidebar-nav">
       <a href="dashboard.html" class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect></svg><span>Dashboard</span></a>
       <a href="users.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg><span>User Management</span></a>
@@ -28,19 +33,292 @@
       <a href="#" class="nav-item logout" id="logout-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg><span>Logout</span></a>
     </div>
   </aside>
+
   <main class="main">
-    <div class="page-header">
-      <h2>Dashboard</h2>
-      <p>Overview of system activity.</p>
+    <div class="db-page">
+
+      <!-- Page header with dynamic greeting & live telemetry indicator -->
+      <div class="db-head db-reveal" style="--db-step:0">
+        <div class="db-head-info">
+          <div class="db-eyebrow-wrap">
+            <span class="db-eyebrow" id="db-eyebrow">Operations &middot; Today</span>
+          </div>
+          <h2 class="db-title">Executive Dashboard</h2>
+          <p class="db-subtitle" id="db-subtitle">Live collection intelligence, citizen telemetry, and month-scoped analytics.</p>
+        </div>
+        <div class="db-head-right">
+          <div class="db-live-badge">
+            <span class="dot"></span>
+            <span class="db-live-text">SYSTEM LIVE</span>
+          </div>
+          <button class="db-refresh-btn" id="db-refresh-btn" type="button" title="Refresh live telemetry">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.19"/></svg>
+            <span class="db-updated" id="db-updated">Syncing...</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Enhanced Month & Period Control Bar -->
+      <div class="db-period db-reveal" style="--db-step:1">
+        <div class="db-period-left">
+          <div class="db-period-label">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+            <span>Time Range</span>
+          </div>
+          <div class="db-month-stepper">
+            <button class="db-month-btn" type="button" id="db-month-prev" aria-label="Previous month" title="Previous Month">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"></polyline></svg>
+            </button>
+            <button class="db-month-current" type="button" id="db-month-current" aria-label="Select month" title="Click to choose a specific month">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
+              <span id="db-month-label">August 2026</span>
+            </button>
+            <button class="db-month-btn" type="button" id="db-month-next" aria-label="Next month" title="Next Month">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+          </div>
+          <button class="db-period-jump-btn" type="button" id="db-jump-current-btn" title="Jump to current month">This Month</button>
+        </div>
+        <div class="db-period-right">
+          <span class="db-period-hint" id="db-period-hint">Aggregating records for the active period</span>
+        </div>
+      </div>
+
+      <!-- Hero: 7-Day Operations Rail Card -->
+      <section class="db-rail-card db-reveal" style="--db-step:2" aria-label="Collection over the last 7 days">
+        <div class="db-rail-head">
+          <div class="db-rail-title-wrap">
+            <div class="db-rail-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="1" y="3" width="15" height="13"></rect><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon><circle cx="5.5" cy="18.5" r="2.5"></circle><circle cx="18.5" cy="18.5" r="2.5"></circle></svg>
+            </div>
+            <div>
+              <h3 class="db-rail-title">Live Collection Run — Last 7 Days</h3>
+              <p class="db-rail-sub">Daily route completion status & dispatch telemetry</p>
+            </div>
+          </div>
+          <div class="db-rail-badge" id="db-rail-date">Loading...</div>
+        </div>
+        <div id="db-rail-body">
+          <div class="db-skel-line db-skel w45" style="margin:14px 0 18px"></div>
+          <div class="db-skel-week">
+            <div class="db-skel db-skel-day"></div>
+            <div class="db-skel db-skel-day"></div>
+            <div class="db-skel db-skel-day"></div>
+            <div class="db-skel db-skel-day"></div>
+            <div class="db-skel db-skel-day"></div>
+            <div class="db-skel db-skel-day"></div>
+            <div class="db-skel db-skel-day"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Telemetry stat cards with glow accents and count-up roll -->
+      <section class="db-stats" aria-label="Month statistics">
+        <!-- Stat 1: Registered Citizens -->
+        <div class="db-stat blue" style="--db-step:3">
+          <div class="db-stat-glow"></div>
+          <div class="db-stat-head">
+            <div>
+              <span class="db-stat-tag">Citizens</span>
+              <p class="db-stat-label">Registered Citizens</p>
+            </div>
+            <span class="db-stat-icon blue">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+            </span>
+          </div>
+          <div class="db-stat-value-wrap">
+            <p class="db-stat-value" id="stat-users">—</p>
+          </div>
+          <div class="db-stat-footer-line">
+            <p class="db-stat-foot" id="stat-users-foot">All registered citizens</p>
+          </div>
+        </div>
+
+        <!-- Stat 2: Total Waste Records -->
+        <div class="db-stat green" style="--db-step:4">
+          <div class="db-stat-glow"></div>
+          <div class="db-stat-head">
+            <div>
+              <span class="db-stat-tag">Volume</span>
+              <p class="db-stat-label">Waste Records</p>
+            </div>
+            <span class="db-stat-icon green">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"></path><polyline points="21 3 21 9 15 9"></polyline></svg>
+            </span>
+          </div>
+          <div class="db-stat-value-wrap">
+            <p class="db-stat-value" id="stat-records">—</p>
+          </div>
+          <div class="db-stat-footer-line">
+            <p class="db-stat-foot" id="stat-records-foot">Tracked this month</p>
+          </div>
+        </div>
+
+        <!-- Stat 3: AI Classifications -->
+        <div class="db-stat purple" style="--db-step:5">
+          <div class="db-stat-glow"></div>
+          <div class="db-stat-head">
+            <div>
+              <span class="db-stat-tag">AI Intelligence</span>
+              <p class="db-stat-label">AI Classifications</p>
+            </div>
+            <span class="db-stat-icon purple">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="2"></rect><rect x="9" y="9" width="6" height="6"></rect><line x1="9" y1="1" x2="9" y2="4"></line><line x1="15" y1="1" x2="15" y2="4"></line><line x1="9" y1="20" x2="9" y2="23"></line><line x1="15" y1="20" x2="15" y2="23"></line><line x1="20" y1="9" x2="23" y2="9"></line><line x1="20" y1="14" x2="23" y2="14"></line><line x1="1" y1="9" x2="4" y2="9"></line><line x1="1" y1="14" x2="4" y2="14"></line></svg>
+            </span>
+          </div>
+          <div class="db-stat-value-wrap">
+            <p class="db-stat-value" id="stat-today-class">—</p>
+          </div>
+          <div class="db-stat-footer-line">
+            <p class="db-stat-foot" id="stat-today-class-foot">Avg confidence --%</p>
+          </div>
+        </div>
+
+        <!-- Stat 4: Notification Broadcasts -->
+        <div class="db-stat amber" style="--db-step:6">
+          <div class="db-stat-glow"></div>
+          <div class="db-stat-head">
+            <div>
+              <span class="db-stat-tag">Engagement</span>
+              <p class="db-stat-label">Broadcast Alerts</p>
+            </div>
+            <span class="db-stat-icon amber">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+            </span>
+          </div>
+          <div class="db-stat-value-wrap">
+            <p class="db-stat-value" id="stat-notif">—</p>
+          </div>
+          <div class="db-stat-footer-line">
+            <p class="db-stat-foot" id="stat-notif-foot">Messages sent to citizens</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Charts: Interactive Spline Line Trend + Interactive Donut/Pie Waste Mix -->
+      <div class="db-charts">
+        <!-- 1. Interactive Classification Trend Line Graph -->
+        <section class="db-card db-chart-card db-reveal" style="--db-step:7" aria-label="Classification trend">
+          <div class="db-chart-head">
+            <div class="db-chart-titles">
+              <div class="db-chart-icon blue">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+              </div>
+              <div>
+                <h3 class="db-card-title">Classification Trend</h3>
+                <p class="db-card-sub" id="db-line-sub">Daily records by waste classification</p>
+              </div>
+            </div>
+            <div class="db-chart-controls">
+              <div class="db-view-switch" id="db-line-view-mode">
+                <button type="button" class="db-view-btn active" data-mode="category">By Category</button>
+                <button type="button" class="db-view-btn" data-mode="total">Total Volume</button>
+              </div>
+              <span class="db-chart-badge" id="db-line-badge">0 records</span>
+            </div>
+          </div>
+
+          <div class="db-chart-container">
+            <div class="db-chart" id="db-line"></div>
+            <!-- Floating interactive Glassmorphic Tooltip -->
+            <div class="db-tip" id="db-chart-tip"></div>
+          </div>
+
+          <div class="db-line-footer">
+            <div class="db-line-legend" id="db-line-legend"></div>
+            <div class="db-chart-tip-hint">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+              <span>Hover anywhere to inspect daily metrics. Click legend pills to isolate.</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2. Interactive Waste Mix Donut / Pie Graph -->
+        <section class="db-card db-chart-card db-reveal" style="--db-step:8" aria-label="Waste mix by classification">
+          <div class="db-chart-head">
+            <div class="db-chart-titles">
+              <div class="db-chart-icon green">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.21 15.89A10 10 0 1 1 8 2.83"></path><path d="M22 12A10 10 0 0 0 12 2v10z"></path></svg>
+              </div>
+              <div>
+                <h3 class="db-card-title">Waste Mix Breakdown</h3>
+                <p class="db-card-sub" id="db-donut-sub">Classification share for the active period</p>
+              </div>
+            </div>
+            <span class="db-chart-badge slate" id="db-donut-badge">5 Classes</span>
+          </div>
+
+          <div class="db-donut-wrap" id="db-donut"></div>
+        </section>
+      </div>
+
+      <!-- Lower Grid: Timeline Recent Activity + Citizen Notifications -->
+      <div class="db-grid">
+        <!-- Recent Activity Timeline Card -->
+        <section class="db-card db-reveal" style="--db-step:9" aria-label="Recent activity">
+          <div class="db-card-header-row">
+            <div class="db-card-header-left">
+              <div class="db-chart-icon purple">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+              </div>
+              <div>
+                <h3 class="db-card-title">Recent Activity Feed</h3>
+                <p class="db-card-sub">Real-time collections and AI sorting operations</p>
+              </div>
+            </div>
+            <div class="db-activity-filter" id="db-activity-filter">
+              <button class="db-filter-pill active" data-filter="all">All</button>
+              <button class="db-filter-pill" data-filter="complete">Routes</button>
+              <button class="db-filter-pill" data-filter="classify">AI Scans</button>
+            </div>
+          </div>
+          <div id="db-activity-body">
+            <div class="db-skel-rows">
+              <div class="db-skel-row"><div class="db-skel db-skel-avatar"></div><div class="db-skel-stack"><div class="db-skel db-skel-line w45"></div><div class="db-skel db-skel-line w70"></div></div></div>
+              <div class="db-skel-row"><div class="db-skel db-skel-avatar"></div><div class="db-skel-stack"><div class="db-skel db-skel-line w30"></div><div class="db-skel db-skel-line w45"></div></div></div>
+              <div class="db-skel-row"><div class="db-skel db-skel-avatar"></div><div class="db-skel-stack"><div class="db-skel db-skel-line w70"></div><div class="db-skel db-skel-line w30"></div></div></div>
+              <div class="db-skel-row"><div class="db-skel db-skel-avatar"></div><div class="db-skel-stack"><div class="db-skel db-skel-line w45"></div><div class="db-skel db-skel-line w70"></div></div></div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Citizen Notification Center Card -->
+        <section class="db-card db-reveal" style="--db-step:10" aria-label="Notifications summary">
+          <div class="db-card-header-row">
+            <div class="db-card-header-left">
+              <div class="db-chart-icon amber">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
+              </div>
+              <div>
+                <h3 class="db-card-title">Broadcast Alerts</h3>
+                <p class="db-card-sub">Notifications & schedule announcements dispatched</p>
+              </div>
+            </div>
+            <a href="notification.html" class="db-card-link-btn" title="Open Notification Center">
+              <span>Manage</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </a>
+          </div>
+          <div id="db-notif-body">
+            <div class="db-skel-rows">
+              <div class="db-skel-row"><div class="db-skel db-skel-avatar"></div><div class="db-skel-stack"><div class="db-skel db-skel-line w45"></div><div class="db-skel db-skel-line w70"></div></div></div>
+              <div class="db-skel-row"><div class="db-skel db-skel-avatar"></div><div class="db-skel-stack"><div class="db-skel db-skel-line w30"></div><div class="db-skel db-skel-line w45"></div></div></div>
+              <div class="db-skel-row"><div class="db-skel db-skel-avatar"></div><div class="db-skel-stack"><div class="db-skel db-skel-line w70"></div><div class="db-skel db-skel-line w30"></div></div></div>
+            </div>
+          </div>
+        </section>
+      </div>
+
     </div>
-    <div class="card">Dashboard content goes here.</div>
   </main>
 </div>
 
 <!-- Shared core modules -->
 <script src="assets/js/core/config.js"></script>
 <script src="assets/js/core/dom.js"></script>
+<script src="assets/js/core/utils.js"></script>
 <script src="assets/js/core/auth.js"></script>
+<script src="assets/js/core/api.js"></script>
 <!-- Page entry point -->
 <script src="assets/js/pages/dashboard.js"></script>
 

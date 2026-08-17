@@ -19,9 +19,9 @@
   --sc-error: #EF4444;
   --sc-radius: 16px;
   --sc-radius-sm: 10px;
-  --sc-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-  --sc-shadow-lg: 0 4px 16px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
-  --sc-shadow-xl: 0 8px 30px rgba(0,0,0,0.12);
+  --sc-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --sc-shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
+  --sc-shadow-xl: 0 8px 30px rgba(0, 0, 0, 0.12);
   --sc-transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
@@ -88,14 +88,19 @@
   transition: var(--sc-transition);
 }
 
-.view-btn svg { width: 16px; height: 16px; }
+.view-btn svg {
+  width: 16px;
+  height: 16px;
+}
 
-.view-btn:hover { color: var(--sc-text); }
+.view-btn:hover {
+  color: var(--sc-text);
+}
 
 .view-btn.active {
   background: var(--sc-surface);
   color: var(--sc-primary);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 /* =======================================================================
@@ -143,7 +148,10 @@
   background: var(--sc-primary-light);
 }
 
-.calendar-nav-btn svg { width: 20px; height: 20px; }
+.calendar-nav-btn svg {
+  width: 20px;
+  height: 20px;
+}
 
 .calendar-title {
   font-size: 18px;
@@ -198,7 +206,9 @@
 }
 
 /* Calendar Grid */
-.calendar-grid-wrapper { padding: 16px 24px 24px; }
+.calendar-grid-wrapper {
+  padding: 16px 24px 24px;
+}
 
 .calendar-grid {
   display: grid;
@@ -226,15 +236,25 @@
   position: relative;
 }
 
-.calendar-day:nth-child(7n) { border-right: none; }
+.calendar-day:nth-child(7n) {
+  border-right: none;
+}
 
-.calendar-day:hover { background: #F9FAFB; }
+.calendar-day:hover {
+  background: #F9FAFB;
+}
 
-.calendar-day.other-month { background: #F9FAFB; }
+.calendar-day.other-month {
+  background: #F9FAFB;
+}
 
-.calendar-day.other-month .day-number { color: #D1D5DB; }
+.calendar-day.other-month .day-number {
+  color: #D1D5DB;
+}
 
-.calendar-day.today { background: #F0FDF4; }
+.calendar-day.today {
+  background: #F0FDF4;
+}
 
 .calendar-day.today .day-number {
   background: var(--sc-primary);
@@ -258,7 +278,9 @@
   cursor: not-allowed;
 }
 
-.calendar-day.past:hover { background: transparent; }
+.calendar-day.past:hover {
+  background: transparent;
+}
 
 .day-number {
   font-size: 14px;
@@ -300,7 +322,7 @@
 
 .calendar-event:hover {
   transform: translateX(2px);
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.15);
 }
 
 .calendar-event .event-time {
@@ -312,7 +334,7 @@
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: rgba(255,255,255,0.6);
+  background: rgba(255, 255, 255, 0.6);
   flex-shrink: 0;
 }
 
@@ -372,13 +394,49 @@
 
 /* =======================================================================
    ROUTE PREVIEW - Road Map Journey Design
+   ROUTE PREVIEW - Road Map Journey Design (Premium)
    ======================================================================= */
 
+/* ---- Route Preview Card Overrides ---- */
+#sidebar-route-card {
+  border: 1px solid rgba(22, 163, 74, 0.12);
+  background: var(--sc-surface);
+  box-shadow: 0 2px 12px rgba(22, 163, 74, 0.06), var(--sc-shadow);
+}
+
+#sidebar-route-card .sidebar-card-header {
+  padding: 14px 18px 10px;
+  border-bottom: 1px solid rgba(22, 163, 74, 0.08);
+  background: linear-gradient(135deg, rgba(22, 163, 74, 0.03) 0%, rgba(59, 130, 246, 0.03) 100%);
+}
+
+#sidebar-route-card .sidebar-card-header h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--sc-text);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+#sidebar-route-card .sidebar-card-header h3::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 14px;
+  border-radius: 2px;
+  background: linear-gradient(180deg, var(--sc-primary) 0%, #3B82F6 100%);
+  flex-shrink: 0;
+}
+
+/* ---- Route Preview Map Area ---- */
 .route-preview-map {
   position: relative;
-  border-radius: var(--sc-radius-sm);
+  border-radius: 0;
   overflow: visible;
-  background: #FAFBFC;
+  background: linear-gradient(180deg, #f6f6f7 0%, #d1d5d8 100%);
   min-height: 100px;
 }
 
@@ -386,30 +444,38 @@
   position: absolute;
   inset: 0;
   pointer-events: none;
-  opacity: 0.35;
+  opacity: 0.30;
   background:
-    linear-gradient(90deg, #E5E7EB 1px, transparent 1px),
-    linear-gradient(0deg, #E5E7EB 1px, transparent 1px);
-  background-size: 24px 24px;
+    linear-gradient(90deg, #CBD5E1 1px, transparent 1px),
+    linear-gradient(0deg, #CBD5E1 1px, transparent 1px),
+    radial-gradient(circle at 1px 1px, #94A3B8 1.2px, transparent 1.2px);
+  background-size: 22px 22px, 22px 22px, 22px 22px;
 }
 
-/* Empty state */
+/* ---- Empty State ---- */
 .route-diagram-empty {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 40px 20px;
+  padding: 44px 20px;
   text-align: center;
   color: var(--sc-text-secondary);
-  font-size: 13px;
+  font-size: 12px;
 }
 
-.route-diagram-empty svg { margin-bottom: 10px; }
+.route-diagram-empty svg {
+  margin-bottom: 10px;
+  opacity: 0.35;
+}
 
-.route-diagram-empty p { margin: 0; }
+.route-diagram-empty p {
+  margin: 0;
+  font-weight: 500;
+  letter-spacing: 0.1px;
+}
 
-/* Route Diagram Content (populated by JS) */
+/* ---- Route Diagram Content (populated by JS) ---- */
 .route-diagram-content {
   position: relative;
   padding: 0;
@@ -417,12 +483,12 @@
 }
 
 /* =======================================================================
-   ROAD MAP JOURNEY - S-Curve Road Layout
+   ROAD MAP JOURNEY - S-Curve Road Layout (Premium)
    ======================================================================= */
 
 .route-journey {
   position: relative;
-  padding: 16px 0 8px;
+  padding: 18px 0 10px;
   min-height: 120px;
 }
 
@@ -440,30 +506,47 @@
 
 .route-road-bg {
   fill: none;
-  stroke: #9CA3AF;
-  stroke-width: 12;
+  stroke: #CBD5E1;
+  stroke-width: 14;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .route-road-fill {
   fill: none;
-  stroke: #4B5563;
-  stroke-width: 10;
+  stroke: #475569;
+  stroke-width: 11;
   stroke-linecap: round;
   stroke-linejoin: round;
 }
 
 .route-road-center {
   fill: none;
-  stroke: #F59E0B;
+  stroke: #FBBF24;
   stroke-width: 1.5;
-  stroke-dasharray: 4 6;
+  stroke-dasharray: 5 7;
   stroke-linecap: round;
   stroke-linejoin: round;
+  animation: road-dash 8s linear infinite;
 }
 
-/* Each Stop Row */
+@keyframes road-dash {
+  to {
+    stroke-dashoffset: -48;
+  }
+}
+
+/* ---- Road Edge Glow ---- */
+.route-road-glow {
+  fill: none;
+  stroke: rgba(22, 163, 74, 0.12);
+  stroke-width: 20;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  filter: blur(2px);
+}
+
+/* ---- Each Stop Row ---- */
 .route-stop {
   position: relative;
   z-index: 1;
@@ -472,6 +555,8 @@
   margin-bottom: 2px;
   cursor: pointer;
   min-height: 44px;
+  border-radius: 6px;
+  transition: background 0.2s ease;
 }
 
 /* Single-route preview: center the lone stop */
@@ -509,10 +594,10 @@
 }
 
 .route-stop:hover {
-  background: rgba(255,255,255,0.5);
+  background: rgba(22, 163, 74, 0.04);
 }
 
-/* Stop Sides */
+/* ---- Stop Sides ---- */
 .rs-side {
   width: 50%;
   display: flex;
@@ -520,30 +605,43 @@
   box-sizing: border-box;
 }
 
-.rs-side.left { justify-content: flex-end; padding: 6px 14px 6px 8px; }
-.rs-side.right { justify-content: flex-start; padding: 6px 8px 6px 14px; }
+.rs-side.left {
+  justify-content: flex-end;
+  padding: 6px 14px 6px 8px;
+}
+
+.rs-side.right {
+  justify-content: flex-start;
+  padding: 6px 8px 6px 14px;
+}
 
 .rs-block {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
 }
 
-.rs-side.left .rs-block { flex-direction: row-reverse; }
-.rs-side.right .rs-block { flex-direction: row; }
+.rs-side.left .rs-block {
+  flex-direction: row-reverse;
+}
 
-/* Pin */
+.rs-side.right .rs-block {
+  flex-direction: row;
+}
+
+/* ---- Pin (Premium) ---- */
 .rs-pin {
   width: 22px;
   height: 28px;
   flex-shrink: 0;
   position: relative;
-  filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
-  transition: transform 0.2s ease;
+  filter: drop-shadow(0 2px 6px rgba(0, 0, 0, 0.3));
+  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.25s ease;
 }
 
 .route-stop:hover .rs-pin {
-  transform: translateY(-2px) scale(1.05);
+  transform: translateY(-3px) scale(1.1);
+  filter: drop-shadow(0 4px 10px rgba(0, 0, 0, 0.35));
 }
 
 .rs-pin-label {
@@ -558,13 +656,34 @@
   width: 12px;
   line-height: 1;
   z-index: 1;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.2);
 }
 
-/* Card */
+/* Pin pulse ring on hover */
+.rs-pin::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 8px;
+  height: 4px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.15);
+  transition: all 0.25s ease;
+}
+
+.route-stop:hover .rs-pin::after {
+  width: 10px;
+  height: 5px;
+  background: rgba(0, 0, 0, 0.1);
+}
+
+/* ---- Card ---- */
 .rs-card {
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
 }
 
 .rs-card-name {
@@ -573,47 +692,92 @@
   color: var(--sc-text);
   line-height: 1.2;
   white-space: nowrap;
+  transition: color 0.2s ease;
+}
+
+.route-stop:hover .rs-card-name {
+  color: var(--sc-primary-dark);
 }
 
 .rs-card-meta {
   font-size: 9px;
-  color: var(--sc-text);
+  color: var(--sc-text-secondary);
   font-weight: 600;
   line-height: 1.2;
+  display: flex;
+  align-items: center;
+  gap: 3px;
 }
 
-.rs-badge {
+.rs-card-meta::before {
+  content: '';
   display: inline-block;
-  padding: 1px 5px;
-  border-radius: 3px;
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--sc-primary);
+  opacity: 0.5;
+  flex-shrink: 0;
+}
+
+/* ---- Badges ---- */
+.rs-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 1px 6px;
+  border-radius: 4px;
   font-size: 7px;
   font-weight: 800;
-  letter-spacing: 0.2px;
+  letter-spacing: 0.4px;
   text-transform: uppercase;
-  line-height: 1.3;
-  margin-left: 3px;
+  line-height: 1.4;
+  margin-left: 4px;
   vertical-align: middle;
 }
 
-.start-badge { background: #DCFCE7; color: #15803D; }
-.end-badge { background: #FEE2E2; color: #DC2626; }
+.start-badge {
+  background: linear-gradient(135deg, #DCFCE7, #BBF7D0);
+  color: #15803D;
+  box-shadow: 0 1px 3px rgba(21, 128, 61, 0.15);
+}
 
-/* Hover Tooltip */
+.end-badge {
+  background: linear-gradient(135deg, #FEE2E2, #FECACA);
+  color: #DC2626;
+  box-shadow: 0 1px 3px rgba(220, 38, 38, 0.15);
+}
+
+/* ---- Hover Tooltip (Premium) ---- */
 .route-stop .rs-tooltip {
   display: none;
   position: absolute;
   bottom: 100%;
-  margin-bottom: 6px;
-  background: #374151;
-  color: #F3F4F6;
+  margin-bottom: 8px;
+  background: rgba(30, 41, 59, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  color: #F1F5F9;
   font-size: 10px;
-  padding: 8px 12px;
-  border-radius: 8px;
-  min-width: 150px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+  padding: 10px 14px;
+  border-radius: 10px;
+  min-width: 160px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(255, 255, 255, 0.06) inset;
   z-index: 100;
   pointer-events: none;
   line-height: 1.4;
+  animation: tooltip-pop 0.15s ease-out;
+}
+
+@keyframes tooltip-pop {
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.96);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .route-stop[data-side="left"] .rs-tooltip {
@@ -630,31 +794,52 @@
 
 .rs-tooltip-title {
   font-weight: 700;
-  margin-bottom: 4px;
+  margin-bottom: 5px;
   font-size: 11px;
+  color: #fff;
 }
 
 .rs-tooltip-status {
   display: inline-block;
-  margin-bottom: 4px;
+  margin-bottom: 5px;
 }
 
 .rs-tooltip-row {
   display: flex;
   align-items: center;
-  gap: 4px;
-  margin-top: 2px;
+  gap: 5px;
+  margin-top: 3px;
+  font-size: 10px;
 }
 
 .rs-tooltip-row svg {
-  opacity: 0.5;
+  opacity: 0.45;
   width: 10px;
   height: 10px;
   flex-shrink: 0;
 }
 
+/* ---- Tooltip Arrow ---- */
+.route-stop .rs-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  width: 0;
+  height: 0;
+  border: 5px solid transparent;
+  border-top-color: rgba(30, 41, 59, 0.95);
+}
+
+.route-stop[data-side="left"] .rs-tooltip::after {
+  right: 16px;
+}
+
+.route-stop[data-side="right"] .rs-tooltip::after {
+  left: 16px;
+}
+
 /* =======================================================================
-   ROUTE PREVIEW INFO BAR
+   ROUTE PREVIEW INFO BAR (Premium)
    ======================================================================= */
 
 .route-preview-info {
@@ -703,6 +888,103 @@
 }
 
 /* =======================================================================
+   ROUTE TRUCK INDICATOR
+   ======================================================================= */
+
+.rs-truck {
+  position: absolute;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  pointer-events: none;
+  transition: top 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+    left 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+    right 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.rs-truck-icon {
+  width: 28px;
+  height: 28px;
+  background: linear-gradient(135deg, #16A34A 0%, #15803D 100%);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 3px 10px rgba(22, 163, 74, 0.4), 0 0 0 2px rgba(255, 255, 255, 0.8);
+  animation: truck-bounce 1.5s ease-in-out infinite;
+}
+
+.rs-truck-icon svg {
+  width: 16px;
+  height: 16px;
+  color: #fff;
+}
+
+@keyframes truck-bounce {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+/* Truck finish state */
+.rs-truck.finished .rs-truck-icon {
+  background: linear-gradient(135deg, #F59E0B 0%, #D97706 100%);
+  box-shadow: 0 3px 10px rgba(245, 158, 11, 0.4), 0 0 0 2px rgba(255, 255, 255, 0.8);
+  animation: none;
+}
+
+.rs-truck-flag {
+  display: none;
+}
+
+.rs-truck.finished .rs-truck-flag {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: flag-wave 1s ease-in-out infinite alternate;
+}
+
+.rs-truck-flag svg {
+  width: 18px;
+  height: 18px;
+}
+
+@keyframes flag-wave {
+  from {
+    transform: rotate(-5deg);
+  }
+
+  to {
+    transform: rotate(5deg);
+  }
+}
+
+/* Truck label */
+.rs-truck-label {
+  font-size: 7px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #fff;
+  background: rgba(22, 163, 74, 0.85);
+  padding: 2px 5px;
+  border-radius: 3px;
+  white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.15);
+}
+
+.rs-truck.finished .rs-truck-label {
+  background: rgba(245, 158, 11, 0.85);
+}
+
+/* =======================================================================
    SCHEDULE DETAILS
    ======================================================================= */
 
@@ -733,8 +1015,15 @@
 }
 
 @keyframes pulse-dot {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
 }
 
 .details-grid {
@@ -763,7 +1052,9 @@
   color: var(--sc-text);
 }
 
-.detail-item.full-width { grid-column: 1 / -1; }
+.detail-item.full-width {
+  grid-column: 1 / -1;
+}
 
 /* Progress Section */
 .progress-section {
@@ -830,7 +1121,9 @@
   background: #D1D5DB;
 }
 
-.progress-stop.completed .stop-dot { background: var(--sc-primary); }
+.progress-stop.completed .stop-dot {
+  background: var(--sc-primary);
+}
 
 .progress-stop.current .stop-dot {
   background: var(--sc-accent);
@@ -860,11 +1153,22 @@
   flex-shrink: 0;
 }
 
-.crew-avatar.leader { background: linear-gradient(135deg, #16A34A, #15803D); }
-.crew-avatar.member { background: linear-gradient(135deg, #3B82F6, #2563EB); }
-.crew-avatar.member2 { background: linear-gradient(135deg, #F59E0B, #D97706); }
+.crew-avatar.leader {
+  background: linear-gradient(135deg, #16A34A, #15803D);
+}
 
-.crew-info { flex: 1; min-width: 0; }
+.crew-avatar.member {
+  background: linear-gradient(135deg, #3B82F6, #2563EB);
+}
+
+.crew-avatar.member2 {
+  background: linear-gradient(135deg, #F59E0B, #D97706);
+}
+
+.crew-info {
+  flex: 1;
+  min-width: 0;
+}
 
 .crew-info .crew-name {
   font-size: 14px;
@@ -879,7 +1183,10 @@
   margin: 0;
 }
 
-.crew-actions { display: flex; gap: 6px; }
+.crew-actions {
+  display: flex;
+  gap: 6px;
+}
 
 .crew-action-btn {
   width: 32px;
@@ -901,7 +1208,10 @@
   background: var(--sc-primary-light);
 }
 
-.crew-action-btn svg { width: 16px; height: 16px; }
+.crew-action-btn svg {
+  width: 16px;
+  height: 16px;
+}
 
 .crew-members-list {
   display: flex;
@@ -942,9 +1252,15 @@
   letter-spacing: 0.2px;
 }
 
-.day-action-btn svg { width: 14px; height: 14px; flex-shrink: 0; }
+.day-action-btn svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
 
-.day-action-btn:active { transform: scale(0.96); }
+.day-action-btn:active {
+  transform: scale(0.96);
+}
 
 .day-action-btn.move-btn {
   background: linear-gradient(135deg, #D97706, #B45309);
@@ -953,7 +1269,7 @@
 
 .day-action-btn.move-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(217,119,6,0.35);
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.35);
 }
 
 .day-action-btn.danger-btn {
@@ -963,7 +1279,7 @@
 
 .day-action-btn.danger-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(239,68,68,0.35);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.35);
 }
 
 .day-action-section {
@@ -987,7 +1303,9 @@
   color: #92400E;
 }
 
-.day-action-header svg { color: #D97706; }
+.day-action-header svg {
+  color: #D97706;
+}
 
 .day-action-row {
   display: flex;
@@ -1012,7 +1330,7 @@
 
 .day-action-input:focus {
   border-color: #D97706;
-  box-shadow: 0 0 0 3px rgba(217,119,6,0.12);
+  box-shadow: 0 0 0 3px rgba(217, 119, 6, 0.12);
 }
 
 /* =======================================================================
@@ -1035,9 +1353,14 @@
   opacity: 0;
 }
 
-.day-route-item:hover .day-route-delete-btn { opacity: 1; }
+.day-route-item:hover .day-route-delete-btn {
+  opacity: 1;
+}
 
-.day-route-delete-btn svg { width: 14px; height: 14px; }
+.day-route-delete-btn svg {
+  width: 14px;
+  height: 14px;
+}
 
 .day-route-delete-btn:hover {
   background: #FEF2F2;
@@ -1062,7 +1385,9 @@
   transform: translateX(3px);
 }
 
-.day-route-item:last-child { margin-bottom: 0; }
+.day-route-item:last-child {
+  margin-bottom: 0;
+}
 
 .day-route-index {
   width: 32px;
@@ -1077,7 +1402,10 @@
   flex-shrink: 0;
 }
 
-.day-route-info { flex: 1; min-width: 0; }
+.day-route-info {
+  flex: 1;
+  min-width: 0;
+}
 
 .day-route-barangay {
   font-size: 14px;
@@ -1154,7 +1482,7 @@
 
 .bulk-status-select:focus {
   border-color: var(--sc-primary);
-  box-shadow: 0 0 0 2px rgba(22,163,74,0.1);
+  box-shadow: 0 0 0 2px rgba(22, 163, 74, 0.1);
 }
 
 .bulk-status-btn {
@@ -1173,10 +1501,12 @@
 
 .bulk-status-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 3px 8px rgba(22,163,74,0.3);
+  box-shadow: 0 3px 8px rgba(22, 163, 74, 0.3);
 }
 
-.bulk-status-btn:active { transform: translateY(0); }
+.bulk-status-btn:active {
+  transform: translateY(0);
+}
 
 /* =======================================================================
    SCHEDULE MODAL
@@ -1263,9 +1593,14 @@
   color: var(--sc-text);
 }
 
-.modal-close-btn svg { width: 18px; height: 18px; }
+.modal-close-btn svg {
+  width: 18px;
+  height: 18px;
+}
 
-.schedule-modal .modal-body { padding: 24px; }
+.schedule-modal .modal-body {
+  padding: 24px;
+}
 
 .modal-footer {
   display: flex;
@@ -1318,7 +1653,9 @@
   gap: 6px;
 }
 
-.form-group.full-width { grid-column: 1 / -1; }
+.form-group.full-width {
+  grid-column: 1 / -1;
+}
 
 .form-label {
   font-size: 13px;
@@ -1352,7 +1689,9 @@
   box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
 }
 
-.form-input::placeholder { color: #9CA3AF; }
+.form-input::placeholder {
+  color: #9CA3AF;
+}
 
 .form-select {
   appearance: none;
@@ -1379,9 +1718,15 @@
   font-family: inherit;
 }
 
-.btn svg { width: 16px; height: 16px; }
+.btn svg {
+  width: 16px;
+  height: 16px;
+}
 
-.btn:disabled { opacity: 0.6; cursor: not-allowed; }
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
 
 .btn-primary {
   background: linear-gradient(135deg, var(--sc-primary), var(--sc-primary-dark));
@@ -1399,21 +1744,28 @@
   color: var(--sc-text);
 }
 
-.btn-secondary:hover:not(:disabled) { background: #E2E8F0; }
+.btn-secondary:hover:not(:disabled) {
+  background: #E2E8F0;
+}
 
 .btn-danger {
   background: var(--sc-error);
   color: #fff;
 }
 
-.btn-danger:hover:not(:disabled) { background: #DC2626; }
+.btn-danger:hover:not(:disabled) {
+  background: #DC2626;
+}
 
 .btn-sm {
   padding: 6px 12px;
   font-size: 13px;
 }
 
-.btn-sm svg { width: 14px; height: 14px; }
+.btn-sm svg {
+  width: 14px;
+  height: 14px;
+}
 
 /* =======================================================================
    MODAL DATE BAR & ROUTE ENTRIES
@@ -1455,13 +1807,13 @@
   border-radius: var(--sc-radius-sm);
   background: var(--sc-surface);
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
   transition: var(--sc-transition);
 }
 
 .route-entry:hover {
   border-color: #D1D5DB;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 .route-entry:first-child {
@@ -1478,7 +1830,9 @@
   border-bottom: 1px solid #F3F4F6;
 }
 
-.route-entry:first-child .route-entry-header { background: #F0FDF4; }
+.route-entry:first-child .route-entry-header {
+  background: #F0FDF4;
+}
 
 .route-entry-number {
   display: flex;
@@ -1518,7 +1872,10 @@
   transition: var(--sc-transition);
 }
 
-.route-entry-remove svg { width: 14px; height: 14px; }
+.route-entry-remove svg {
+  width: 14px;
+  height: 14px;
+}
 
 .route-entry-remove:hover {
   background: #FEF2F2;
@@ -1571,7 +1928,9 @@
   box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.1);
 }
 
-.re-input::placeholder { color: #9CA3AF; }
+.re-input::placeholder {
+  color: #9CA3AF;
+}
 
 .re-select option:disabled {
   color: #D1D5DB;
@@ -1619,7 +1978,9 @@
   background: #F0FDF4;
 }
 
-.add-route-btn:active { background: #DCFCE7; }
+.add-route-btn:active {
+  background: #DCFCE7;
+}
 
 /* =======================================================================
    DELETE CONFIRM MODAL
@@ -1640,9 +2001,14 @@
   color: var(--sc-error);
 }
 
-.delete-modal .confirm-icon svg { width: 32px; height: 32px; }
+.delete-modal .confirm-icon svg {
+  width: 32px;
+  height: 32px;
+}
 
-.delete-modal .confirm-text { text-align: center; }
+.delete-modal .confirm-text {
+  text-align: center;
+}
 
 .delete-modal .confirm-text h3 {
   margin: 0 0 6px;
@@ -1688,7 +2054,11 @@
   animation: slideOutRight 0.3s ease forwards;
 }
 
-.toast svg { width: 20px; height: 20px; flex-shrink: 0; }
+.toast svg {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
 
 .toast.success {
   background: #F0FDF4;
@@ -1709,13 +2079,27 @@
 }
 
 @keyframes slideInRight {
-  from { transform: translateX(100%); opacity: 0; }
-  to { transform: translateX(0); opacity: 1; }
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
 }
 
 @keyframes slideOutRight {
-  from { transform: translateX(0); opacity: 1; }
-  to { transform: translateX(100%); opacity: 0; }
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
 }
 
 /* =======================================================================
@@ -1746,19 +2130,29 @@
   font-size: 14px;
 }
 
-@keyframes spin { to { transform: rotate(360deg); } }
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
 
 /* Scrollbar styling for modal */
-.schedule-modal::-webkit-scrollbar { width: 6px; }
+.schedule-modal::-webkit-scrollbar {
+  width: 6px;
+}
 
-.schedule-modal::-webkit-scrollbar-track { background: transparent; }
+.schedule-modal::-webkit-scrollbar-track {
+  background: transparent;
+}
 
 .schedule-modal::-webkit-scrollbar-thumb {
   background: #D1D5DB;
   border-radius: 3px;
 }
 
-.schedule-modal::-webkit-scrollbar-thumb:hover { background: #9CA3AF; }
+.schedule-modal::-webkit-scrollbar-thumb:hover {
+  background: #9CA3AF;
+}
 
 /* =======================================================================
    RESPONSIVE
@@ -1772,7 +2166,9 @@
 }
 
 @media (max-width: 1024px) {
-  .schedule-container { grid-template-columns: 1fr; }
+  .schedule-container {
+    grid-template-columns: 1fr;
+  }
 
   .schedule-sidebar {
     display: grid;
@@ -1780,18 +2176,24 @@
     gap: 20px;
   }
 
-  .day-actions { grid-column: 1 / -1; }
+  .day-actions {
+    grid-column: 1 / -1;
+  }
 }
 
 @media (max-width: 768px) {
-  .main { padding: 20px 16px; }
+  .main {
+    padding: 20px 16px;
+  }
 
   .schedule-header-wrapper {
     flex-direction: column;
     gap: 12px;
   }
 
-  .view-switcher { width: 100%; }
+  .view-switcher {
+    width: 100%;
+  }
 
   .view-btn {
     flex: 1;
@@ -1803,28 +2205,44 @@
     padding: 4px;
   }
 
-  .schedule-sidebar { grid-template-columns: 1fr; }
+  .schedule-sidebar {
+    grid-template-columns: 1fr;
+  }
 
-  .details-grid { grid-template-columns: 1fr; }
+  .details-grid {
+    grid-template-columns: 1fr;
+  }
 
   .schedule-modal {
     margin: 16px;
     max-width: none;
   }
 
-  .form-grid { grid-template-columns: 1fr; }
+  .form-grid {
+    grid-template-columns: 1fr;
+  }
 
-  .calendar-legend { gap: 4px 12px; }
+  .calendar-legend {
+    gap: 4px 12px;
+  }
 
-  .legend-item { font-size: 10px; }
+  .legend-item {
+    font-size: 10px;
+  }
 }
 
 @media (max-width: 640px) {
-  .main { padding: 20px 16px 116px; }
+  .main {
+    padding: 20px 16px 116px;
+  }
 
-  .calendar-header { padding: 14px 12px 0; }
+  .calendar-header {
+    padding: 14px 12px 0;
+  }
 
-  .calendar-grid-wrapper { padding: 12px 10px 16px; }
+  .calendar-grid-wrapper {
+    padding: 12px 10px 16px;
+  }
 
   .calendar-day {
     min-height: 56px;
@@ -1838,18 +2256,27 @@
     font-size: 12px;
   }
 
-  .calendar-event { font-size: 10px; padding: 2px 4px; }
+  .calendar-event {
+    font-size: 10px;
+    padding: 2px 4px;
+  }
 
-  .route-entry-grid { grid-template-columns: 1fr; }
+  .route-entry-grid {
+    grid-template-columns: 1fr;
+  }
 
   .modal-footer {
     flex-direction: column;
     align-items: stretch;
   }
 
-  .modal-footer-actions { justify-content: flex-end; }
+  .modal-footer-actions {
+    justify-content: flex-end;
+  }
 
-  .route-preview-info { flex-wrap: wrap; }
+  .route-preview-info {
+    flex-wrap: wrap;
+  }
 }
 
 /* =======================================================================
@@ -1890,7 +2317,11 @@
   word-break: break-word;
 }
 
-.sc-value small { font-size: 11px; color: #9ca3af; font-weight: 500; }
+.sc-value small {
+  font-size: 11px;
+  color: #9ca3af;
+  font-weight: 500;
+}
 
 .sc-scope-row {
   display: flex;

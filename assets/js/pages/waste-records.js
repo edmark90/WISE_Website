@@ -163,18 +163,29 @@ function viewWasteRecord(recordId) {
   if (!r) return;
 
   var conf = r.confidence != null ? r.confidence.toFixed(1) + '%' : '—';
+  var confLevel = wcConfLevel(r.confidence);
+  var barW = r.confidence != null ? Math.min(r.confidence, 100) : 0;
+  var imageBlock = (r.image_url)
+    ? '<div class="wc-detail-image-wrap"><img src="' + escapeHtml(CONFIG.API_BASE_URL + '/' + r.image_url) + '" alt="Classification Photo" class="wc-detail-img" onerror="this.parentElement.style.display=\'none\'"></div>'
+    : '';
+
   var rows = [
     ['Record ID', '#' + r.id],
-    ['Source', (r.fullname || '—') + ((r.barangay || r.zone) ? ' · ' + (r.barangay || '') + (r.zone ? ' Zone ' + r.zone : '') : ' — mobile capture')],
-    ['Classification', '<span class="wc-badge ' + wcBadgeClass(r.classification || r.waste_type) + '">' + escapeHtml(r.classification || r.waste_type || '—') + '</span>'],
-    ['Confidence', conf],
-    ['Flagged', r.is_flagged ? 'Yes' : 'No'],
-    ['Captured', wcFormatTime(r.created_at) + ' · ' + wcFormatDate(r.created_at)],
+    ['Citizen Scanner', escapeHtml(r.fullname || 'Anonymous Citizen')],
+    ['Location / Barangay', escapeHtml((r.barangay || '—') + (r.zone ? ' · Zone ' + r.zone : ''))],
+    ['Waste Classification', '<span class="wc-badge ' + wcBadgeClass(r.classification || r.waste_type) + '">' + escapeHtml(r.classification || r.waste_type || '—') + '</span>'],
+    ['AI Confidence', '<div class="wc-conf ' + confLevel + '" style="display:inline-flex; align-items:center; gap:8px;"><span class="wc-conf-pct">' + conf + '</span><span class="wc-conf-bar" style="width:70px;"><span class="wc-conf-fill" style="width:' + barW + '%"></span></span></div>'],
+    ['Flagged Status', r.is_flagged ? '<span style="color:#b45309;font-weight:700;">⚠️ Flagged for Review</span>' : '<span style="color:#047857;font-weight:600;">✓ Normal</span>'],
+    ['Timestamp', wcFormatTime(r.created_at) + ' · ' + wcFormatDate(r.created_at)],
   ];
 
-  detailBody.innerHTML = rows.map(function (row) {
-    return '<div class="wc-detail-row"><span class="wc-detail-label">' + row[0] + '</span><span class="wc-detail-value">' + row[1] + '</span></div>';
-  }).join('');
+  detailBody.innerHTML =
+    imageBlock +
+    '<div class="wc-detail-list">' +
+      rows.map(function (row) {
+        return '<div class="wc-detail-row"><span class="wc-detail-label">' + row[0] + '</span><span class="wc-detail-value">' + row[1] + '</span></div>';
+      }).join('') +
+    '</div>';
 
   modal.classList.add('active');
 }
