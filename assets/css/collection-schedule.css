@@ -2182,13 +2182,10 @@
 }
 
 @media (max-width: 768px) {
-  .main {
-    padding: 20px 16px;
-  }
-
   .schedule-header-wrapper {
     flex-direction: column;
     gap: 12px;
+    align-items: stretch;
   }
 
   .view-switcher {
@@ -2201,7 +2198,7 @@
   }
 
   .calendar-day {
-    min-height: 70px;
+    min-height: 64px;
     padding: 4px;
   }
 
@@ -2214,8 +2211,9 @@
   }
 
   .schedule-modal {
-    margin: 16px;
-    max-width: none;
+    margin: 12px;
+    max-width: calc(100vw - 24px);
+    max-height: 90vh;
   }
 
   .form-grid {
@@ -2223,42 +2221,45 @@
   }
 
   .calendar-legend {
-    gap: 4px 12px;
+    gap: 6px 12px;
   }
 
   .legend-item {
-    font-size: 10px;
+    font-size: 11px;
   }
 }
 
 @media (max-width: 640px) {
-  .main {
-    padding: 20px 16px 116px;
+  .calendar-header {
+    padding: 12px 10px 0;
+    flex-wrap: wrap;
+    gap: 8px;
   }
 
-  .calendar-header {
-    padding: 14px 12px 0;
+  .calendar-title-wrap {
+    width: 100%;
+    justify-content: space-between;
   }
 
   .calendar-grid-wrapper {
-    padding: 12px 10px 16px;
+    padding: 10px 8px 14px;
   }
 
   .calendar-day {
-    min-height: 56px;
-    padding: 3px;
+    min-height: 52px;
+    padding: 2px;
   }
 
   .calendar-day.today .day-number,
   .day-number {
-    width: 24px;
-    height: 24px;
-    font-size: 12px;
+    width: 22px;
+    height: 22px;
+    font-size: 11.5px;
   }
 
   .calendar-event {
-    font-size: 10px;
-    padding: 2px 4px;
+    font-size: 9.5px;
+    padding: 2px 3px;
   }
 
   .route-entry-grid {
@@ -2268,10 +2269,17 @@
   .modal-footer {
     flex-direction: column;
     align-items: stretch;
+    gap: 10px;
   }
 
   .modal-footer-actions {
     justify-content: flex-end;
+    width: 100%;
+  }
+
+  .modal-footer-actions .btn {
+    flex: 1;
+    justify-content: center;
   }
 
   .route-preview-info {

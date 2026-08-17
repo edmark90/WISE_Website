@@ -991,31 +991,42 @@
    ======================================================================= */
 
 @media (max-width: 1280px) {
-  .nt-container { grid-template-columns: minmax(0, 1fr) 400px; }
+  .nt-container { grid-template-columns: minmax(0, 1fr) 380px; }
   .nt-summary-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
 @media (max-width: 1024px) {
   .nt-container { grid-template-columns: 1fr; }
   .nt-detail-col { order: 2; }
+  .nt-detail-panel { position: static; max-height: none; }
   .nt-field-row { grid-template-columns: 1fr; }
   .nt-field-row-2 { grid-template-columns: 1fr; }
 }
 
-@media (max-width: 640px) {
-  .nt-summary-grid { grid-template-columns: 1fr; }
-  .nt-header { flex-direction: column; align-items: flex-start; }
+@media (max-width: 768px) {
+  .nt-toolbar { flex-direction: column; align-items: stretch; gap: 10px; padding: 12px; }
+  .nt-search-wrap { min-width: 0; width: 100%; }
+  .nt-filters-wrap { flex-wrap: wrap; }
+  .nt-filter-select { flex: 1; min-width: 130px; }
+  .nt-modal { width: min(560px, calc(100vw - 24px)); max-height: 90vh; margin: 12px; }
+  .nt-modal-body { max-height: calc(90vh - 130px); overflow-y: auto; }
 }
 
 @media (max-width: 640px) {
+  .nt-summary-grid { grid-template-columns: 1fr; gap: 12px; }
+  .nt-header { flex-direction: column; align-items: flex-start; gap: 14px; }
+  .nt-header-actions { width: 100%; }
+  .nt-header-actions .nt-btn-primary { width: 100%; justify-content: center; }
   .nt-detail-grid { grid-template-columns: 1fr; }
-  .nt-pagination { flex-direction: column; gap: 10px; align-items: flex-start; }
-  .nt-toolbar { padding: 12px; }
+  .nt-pagination { flex-direction: column; gap: 10px; align-items: center; }
   .nt-detail-head-row { flex-direction: column; align-items: flex-start; }
+  .nt-table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .nt-modal-footer { flex-direction: column-reverse; gap: 8px; }
+  .nt-modal-footer .nt-btn { width: 100%; justify-content: center; }
 }
 
 /* =======================================================================
-   New Notification modal � type selector + route-based (Delayed/Cancelled)
+   New Notification modal  type selector + route-based (Delayed/Cancelled)
    ======================================================================= */
 
 .nt-help {

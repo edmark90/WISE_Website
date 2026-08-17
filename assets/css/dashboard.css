@@ -1965,30 +1965,74 @@
    Responsive Breakpoints
    ----------------------------------------------------------------------- */
 
+/* -----------------------------------------------------------------------
+   Responsive Breakpoints
+   ----------------------------------------------------------------------- */
+
 @media (max-width: 1200px) {
   .db-stats  { grid-template-columns: repeat(2, 1fr); }
   .db-charts { grid-template-columns: 1fr; }
   .db-grid   { grid-template-columns: 1fr; }
 }
 
-@media (max-width: 768px) {
-  .db-head { flex-direction: column; align-items: flex-start; gap: 14px; }
-  .db-head-right { align-items: flex-start; flex-direction: row; flex-wrap: wrap; }
+@media (max-width: 900px) {
+  .db-head { flex-direction: column; align-items: flex-start; gap: 16px; }
+  .db-head-right { align-items: flex-start; flex-direction: row; flex-wrap: wrap; width: 100%; }
   .db-title { font-size: 24px; }
-  .db-period { flex-direction: column; align-items: flex-start; }
-  .db-week { grid-template-columns: repeat(4, 1fr); }
+  .db-period { flex-direction: column; align-items: flex-start; width: 100%; }
+  .db-week {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
   .db-skel-week { grid-template-columns: repeat(4, 1fr); }
 }
 
-@media (max-width: 540px) {
-  .db-stats { grid-template-columns: 1fr; }
-  .db-card, .db-rail-card { padding: 18px 16px; }
-  .db-week { grid-template-columns: repeat(2, 1fr); }
-  .db-skel-week { grid-template-columns: repeat(2, 1fr); }
-  .db-chart { height: 220px; }
-  .db-chart-head { flex-direction: column; align-items: flex-start; }
-  .db-donut { width: 160px; height: 160px; }
+@media (max-width: 640px) {
+  .db-stats { grid-template-columns: 1fr; gap: 14px; }
+  .db-card, .db-rail-card { padding: 18px 16px; border-radius: 14px; }
   .db-stat-value { font-size: 28px; }
+
+  /* 7-day strip touch scrollable on small phones */
+  .db-week {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 8px;
+    gap: 10px;
+    scrollbar-width: thin;
+  }
+  .db-day {
+    flex: 0 0 130px;
+    scroll-snap-align: start;
+    min-height: 108px;
+  }
+  .db-skel-week {
+    display: flex;
+    overflow-x: auto;
+    gap: 10px;
+  }
+  .db-skel-day { flex: 0 0 130px; }
+
+  .db-chart-head { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .db-chart-controls { width: 100%; justify-content: space-between; }
+  .db-chart { height: 240px; }
+  .db-donut { width: 180px; height: 180px; }
+  .db-donut-center strong { font-size: 24px; }
+  
+  .db-card-header-row { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .db-activity-filter { width: 100%; justify-content: stretch; }
+  .db-activity-filter .db-filter-pill { flex: 1; text-align: center; }
+}
+
+@media (max-width: 420px) {
+  .db-page-head { gap: 10px; }
+  .db-title { font-size: 22px; }
+  .db-day { flex: 0 0 115px; padding: 10px 8px; }
+  .db-day-date { font-size: 16px; }
+  .db-donut { width: 160px; height: 160px; }
+  .db-donut-center strong { font-size: 22px; }
 }
 
 /* -----------------------------------------------------------------------
