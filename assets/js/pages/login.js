@@ -9,11 +9,11 @@ $id('login-form').addEventListener('submit', async function(e) {
 
   const email = $id('admin-id').value;
   const password = $id('password').value;
-  const submitBtn = document.querySelector('.submit');
+  const submitBtn = document.querySelector('.login-btn') || document.querySelector('.submit');
 
   // Disable button during request
   submitBtn.disabled = true;
-  submitBtn.innerHTML = 'Logging in...';
+  submitBtn.innerHTML = '<span>Logging in...</span>';
 
   try {
     const response = await fetch(CONFIG.API_BASE_URL + '/api/auth/login', {
@@ -51,8 +51,8 @@ $id('login-form').addEventListener('submit', async function(e) {
     // Re-enable button
     submitBtn.disabled = false;
     submitBtn.innerHTML = `
-      Login to System
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <span>Login to System</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" class="btn-arrow">
         <line x1="5" y1="12" x2="19" y2="12"></line>
         <polyline points="12 5 19 12 12 19"></polyline>
       </svg>
@@ -81,7 +81,7 @@ function showError(message) {
     border: 1px solid #fecaca;
   `;
 
-  document.querySelector('.card').appendChild(errorDiv);
+  document.querySelector('.form-wrapper').appendChild(errorDiv);
 
   // Auto-remove after 3 seconds
   setTimeout(() => {
