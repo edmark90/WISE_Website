@@ -44,6 +44,7 @@ function initDashboard() {
 
   wireControls();
   loadDashboard();
+  loadWeather();
   loadMonthly();
 
   // Auto-refresh live data every 60s
@@ -303,10 +304,10 @@ function renderMonthlyStats(data) {
   animateNumber('stat-users', data.total_users || 0);
   $id('stat-users-foot').innerHTML = 'All registered citizens';
 
-  animateNumber('stat-records', data.total_waste_records || 0);
+  animateNumber('stat-records', data.total_routes || 0);
   var routesNote = data.total_routes
-    ? '<strong>' + data.total_routes + '</strong> routes scheduled'
-    : 'No routes scheduled';
+    ? '<strong>' + data.total_routes + '</strong> routes in ' + escapeHtml(label)
+    : 'No routes scheduled in ' + escapeHtml(label);
   $id('stat-records-foot').innerHTML = routesNote;
 
   animateNumber('stat-today-class', data.total_ai_classifications || 0);
@@ -1221,4 +1222,45 @@ function showChartError(id, msg) {
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>' +
       '<p><strong>Could not load data for this period.</strong><br>' + escapeHtml(msg) + '</p>' +
     '</div>';
+}
+
+
+var DB_WEATHER_CODES = {
+  0: ['Clear Sky', '☀️'], 1: ['Mainly Clear', '🌤️'], 2: ['Partly Cloudy', '⛅'], 3: ['Overcast', '☁️'],
+  45: ['Foggy', '🌫️'], 48: ['Rime Fog', '🌫️'],
+  51: ['Light Drizzle', '🌦️'], 53: ['Drizzle', '🌦️'], 55: ['Heavy Drizzle', '🌧️'],
+  61: ['Light Rain', '🌦️'], 63: ['Rain', '🌧️'], 65: ['Heavy Rain', '🌧️'],
+  71: ['Light Snow', '🌨️'], 73: ['Snow', '🌨️'], 75: ['Heavy Snow', '❄️'],
+  80: ['Light Rain Showers', '🌦️'], 81: ['Rain Showers', '🌧️'], 82: ['Violent Showers', '⛈️'],
+  95: ['Thunderstorm', '⛈️'], 96: ['Thunderstorm Hail', '⛈️'], 99: ['Thunderstorm Hail', '⛈️']
+};
+
+function loadWeather() {
+ var url = 'https://api.open-meteo.com/v1/forecast' +
+    '?latitude=14.4239&longitude=121.0414' +
+    '&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m' +
+    '&daily=temperature_2m_max,temperature_2m_min,weather_code' +
+    '&timezone=Asia%2FManila&forecast_days=1';
+
+  fetch(url)
+    .then(function (r) { return r.json(); })
+    .then(function (data) {
+      var code = data.current.weather_code;
+      var info = DB_WEATHER_CODES[code] || ['Unknown', '🌡️'];
+      $id('db-weather-icon').textContent = info[1];
+      $id('db-weather-condition').textContent = info[0];
+      $id('db-weather-temp').textContent = Math.round(data.current.temperature_2m) + '°';
+      $id('db-weather-humidity').textContent = data.current.relative_humidity_2m + '%';
+      $id('db-weather-wind').textContent = Math.round(data.current.wind_speed_10m) + ' km/h';
+      $id('db-weather-max').textContent = 'H ' + Math.round(data.daily.temperature_2m_max[0]) + '° / L ' + Math.round(data.daily.temperature_2m_min[0]) + '°';
+      var upd = data.current.time ? new Date(data.current.time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '';
+      $id('db-weather-updated').textContent = 'As of ' + upd;
+    })
+    .catch(function () {
+      $id('db-weather-updated').textContent = 'Weather unavailable';
+      $id('db-weather-condition').textContent = '—';
+      $id('db-weather-icon').textContent = '🌡️';
+    });
+
+
 }

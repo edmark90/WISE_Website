@@ -4,22 +4,37 @@
  */
 
 // ---------- Calendar ----------
-async function renderCalendar() {
+function renderCalendar() {
   const year = state.currentYear;
   const month = state.currentMonth;
   const today = state.today;
   calendarTitle.textContent = new Date(year, month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-  var fetched = await fetchSchedulesByMonth(year, month);
-  state.schedules = fetched;
+  // Draw the grid immediately so the UI appears without waiting for the network.
+  drawCalendarGrid({});
+  // Load schedules in the background, then redraw with events.
+  fetchSchedulesByMonth(year, month).then(function (fetched) {
+    state.schedules = fetched || [];
+    drawCalendarGrid({});
+    updateSidebarForDate(state.selectedDate || today);
+  });
+}
+
+function drawCalendarGrid(scheduleMap) {
+  const year = state.currentYear;
+  const month = state.currentMonth;
+  const today = state.today;
+  if (!scheduleMap || Object.keys(scheduleMap).length === 0) {
+    const map = {};
+    (state.schedules || []).forEach(s => {
+      const key = s.collection_date.substring(0, 10);
+      if (!map[key]) map[key] = [];
+      map[key].push(s);
+    });
+    scheduleMap = map;
+  }
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const daysInPrevMonth = new Date(year, month, 0).getDate();
-  const scheduleMap = {};
-  state.schedules.forEach(s => {
-    const key = s.collection_date.substring(0, 10);
-    if (!scheduleMap[key]) scheduleMap[key] = [];
-    scheduleMap[key].push(s);
-  });
   let html = '';
   ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(d => { html += '<div class="calendar-day-header">' + d + '</div>'; });
   for (let i = firstDay - 1; i >= 0; i--) html += '<div class="calendar-day other-month"><span class="day-number">' + (daysInPrevMonth - i) + '</span></div>';
@@ -57,7 +72,6 @@ async function renderCalendar() {
   for (let i = 1; i <= remainingCells; i++) html += '<div class="calendar-day other-month"><span class="day-number">' + i + '</span></div>';
   calendarGrid.innerHTML = html;
   attachCalendarListeners();
-  updateSidebarForDate(state.selectedDate || today);
 }
 
 function attachCalendarListeners() {

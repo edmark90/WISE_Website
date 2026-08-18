@@ -138,9 +138,8 @@ body {
   left: 0;
   width: var(--sidebar-w);
   height: 100vh;
-  background: #ffffff;
-  border-right: 1px solid var(--border);
-  border-left: 4px solid var(--blue);
+  background: linear-gradient(180deg, #0f1b2d 0%, #13233d 100%);
+  border-right: 1px solid rgba(255, 255, 255, 0.06);
   display: flex;
   flex-direction: column;
   padding: 22px 14px;
@@ -151,31 +150,45 @@ body {
 
 .sidebar-brand {
   position: relative;
-  text-align: center;
-  margin-bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 4px 8px 18px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  text-align: left;
 }
 
 .sidebar-brand .badge {
-  font-size: 22px;
+  font-size: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, #2563eb, #38bdf8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.4);
+  flex-shrink: 0;
 }
 
 .sidebar-brand h1 {
   font-family: 'Outfit', 'Inter', sans-serif;
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 800;
-  color: var(--green);
-  line-height: 1.25;
-  margin: 6px 0 2px;
+  color: #ffffff;
+  line-height: 1.2;
+  margin: 0;
   letter-spacing: -0.3px;
 }
 
 .sidebar-brand .tag {
-  font-size: 10px;
-  letter-spacing: 0.8px;
-  color: var(--text-muted);
+  font-size: 9.5px;
+  letter-spacing: 0.9px;
+  color: #7c93b5;
   font-weight: 700;
   text-transform: uppercase;
-  margin: 0 0 16px;
+  margin: 3px 0 0;
 }
 
 .sidebar-drawer-close {
@@ -186,87 +199,40 @@ body {
   width: 32px;
   height: 32px;
   border-radius: 8px;
-  border: 1px solid var(--border);
-  background: #f8fafc;
-  color: var(--text-muted);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.08);
+  color: #cbd5e1;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   padding: 0;
 }
 
+.sidebar-drawer-close:hover { background: rgba(255, 255, 255, 0.16); }
+
 .sidebar-drawer-close svg {
   width: 16px;
   height: 16px;
 }
 
-.user-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  background: #f8fafc;
-  border-radius: 10px;
-  margin-bottom: 16px;
-  border: 1px solid var(--border);
-}
-
-.user-avatar {
-  width: 36px;
-  height: 36px;
-  background: var(--blue);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.user-avatar svg {
-  width: 18px;
-  height: 18px;
-  color: #fff;
-}
-
-.user-details {
-  flex: 1;
-  min-width: 0;
-}
-
-.user-name {
-  font-size: 13.5px;
-  font-weight: 700;
-  color: var(--text-main);
-  margin: 0 0 2px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.user-role {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--text-muted);
-  margin: 0;
-}
-
 .sidebar-nav {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 9px 12px;
-  border-radius: 8px;
+  gap: 11px;
+  padding: 10px 12px;
+  border-radius: 10px;
   text-decoration: none;
-  color: var(--text-main);
+  color: #94a8c3;
   font-size: 13.5px;
   font-weight: 600;
   transition: all 0.16s ease;
+  position: relative;
 }
 
 .nav-item svg {
@@ -276,32 +242,35 @@ body {
 }
 
 .nav-item:hover {
-  background: #f1f5f9;
+  background: rgba(255, 255, 255, 0.07);
+  color: #e2e8f0;
   transform: translateX(2px);
 }
 
 .nav-item.active {
-  background: var(--blue);
-  color: #fff;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.25);
+  background: linear-gradient(90deg, rgba(37, 99, 235, 0.22), rgba(37, 99, 235, 0.06));
+  color: #ffffff;
+  box-shadow: inset 3px 0 0 var(--blue);
 }
+
+.nav-item.active svg { color: #60a5fa; }
 
 .sidebar-footer {
   margin-top: auto;
-  border-top: 1px solid var(--border);
-  padding-top: 12px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 14px;
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  gap: 4px;
 }
 
 .nav-item.logout {
-  color: var(--danger);
+  color: #fca5a5;
 }
 
 .nav-item.logout:hover {
-  background: #fef2f2;
-  color: #b91c1c;
+  background: rgba(220, 38, 38, 0.14);
+  color: #fecaca;
 }
 
 /* Sidebar Backdrop Overlay */
@@ -375,7 +344,7 @@ body {
 
   .sidebar.open {
     transform: translateX(0);
-    box-shadow: 0 20px 60px rgba(15, 23, 42, 0.25);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.45);
   }
 
   .sidebar-drawer-close {

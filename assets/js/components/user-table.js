@@ -10,6 +10,7 @@ function renderTable() {
     stateContainer.innerHTML = '<div class="empty-state"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg><h4>No users found</h4><p>' + (state.search || state.role ? 'Try adjusting your search or filter.' : 'Click Add User to create the first account.') + '</p></div>';
     paginationControls.innerHTML = '';
     paginationInfo.textContent = '0 users found';
+    updateUserCount();
     return;
   }
   stateContainer.innerHTML = '';
@@ -50,7 +51,8 @@ function renderPagination() {
   var start = (page - 1) * pageSize + 1;
   var end = Math.min(page * pageSize, total);
   paginationInfo.innerHTML = 'Showing <strong>' + start + '-' + end + '</strong> of <strong>' + total + '</strong> users';
-  if (totalPages <= 1) { paginationControls.innerHTML = ''; return; }
+  updateUserCount();
+  if (!total) { paginationControls.innerHTML = ''; return; }
   var html = '';
   html += '<button class="page-btn" onclick="goToPage(' + (page - 1) + ')" ' + (page <= 1 ? 'disabled' : '') + '><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>';
   var maxVisible = 5;
@@ -73,6 +75,12 @@ function renderPagination() {
 }
 
 function goToPage(p) { if (p < 1) return; state.page = p; fetchUsers(); }
+
+function updateUserCount() {
+  var el = $id('user-count');
+  if (!el) return;
+  el.textContent = state.total + ' user' + (state.total === 1 ? '' : 's');
+}
 
 // ---------- Stats ----------
 function updateStats(users) {
