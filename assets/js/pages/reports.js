@@ -1,7 +1,10 @@
 /**
  * WISE System - Reports Page Logic
- * Period picker (monthly/yearly), live summary chips, report-type
- * selection, and one-file downloads (Excel .xlsx / PDF).
+ * Administrative reports generator & exporter:
+ *  - Monthly & Yearly period selectors with quick presets
+ *  - Live period summary KPI analytics
+ *  - Multi-section report selection with select-all toggle
+ *  - End-to-end binary downloads for Excel (.xlsx) and PDF (.pdf)
  */
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -9,12 +12,21 @@ document.addEventListener('DOMContentLoaded', function () {
   initReports();
 });
 
+var ALL_REPORT_TYPES = [
+  'barangay_performance',
+  'waste_trends',
+  'collection_calendar',
+  'notification_analytics',
+  'schedule'
+];
+
 var RP = {
   mode: 'month',          // 'month' | 'year'
   year: null,
   month: null,            // 1-12 when mode is month
-  selectedTypes: ['waste', 'schedule', 'users'],
-  downloading: false
+  selectedTypes: ALL_REPORT_TYPES.slice(),
+  downloading: false,
+  loadingSummary: false
 };
 
 function rpPhNow() {
@@ -32,6 +44,9 @@ function initReports() {
   if (yearInput) yearInput.value = RP.year;
 
   wireReportsControls();
+  updateSelectedTypes();
+  updateSelectAll();
+  updatePeriodBadge();
   loadSummary();
 }
 
@@ -44,6 +59,7 @@ function wireReportsControls() {
       RP.mode = btn.dataset.mode;
       $id('rp-month-wrap').style.display = RP.mode === 'month' ? 'flex' : 'none';
       $id('rp-year-wrap').style.display = RP.mode === 'month' ? 'none' : 'flex';
+      updatePeriodBadge();
       loadSummary();
     });
   });
@@ -51,22 +67,28 @@ function wireReportsControls() {
   var monthInput = $id('rp-month');
   var yearInput = $id('rp-year');
 
-  monthInput.addEventListener('change', function () {
-    var val = monthInput.value;
-    if (!val) return;
-    RP.year = parseInt(val.slice(0, 4), 10);
-    RP.month = parseInt(val.slice(5, 7), 10);
-    loadSummary();
-  });
+  if (monthInput) {
+    monthInput.addEventListener('change', function () {
+      var val = monthInput.value;
+      if (!val) return;
+      RP.year = parseInt(val.slice(0, 4), 10);
+      RP.month = parseInt(val.slice(5, 7), 10);
+      updatePeriodBadge();
+      loadSummary();
+    });
+  }
 
-  yearInput.addEventListener('change', function () {
-    var val = parseInt(yearInput.value, 10);
-    if (isNaN(val) || val < 2000 || val > 2100) return;
-    RP.year = val;
-    loadSummary();
-  });
+  if (yearInput) {
+    yearInput.addEventListener('change', function () {
+      var val = parseInt(yearInput.value, 10);
+      if (isNaN(val) || val < 2000 || val > 2100) return;
+      RP.year = val;
+      updatePeriodBadge();
+      loadSummary();
+    });
+  }
 
-  // Quick period buttons
+  // Quick period preset buttons
   $all('.rp-quick-btn').forEach(function (btn) {
     btn.addEventListener('click', function () {
       var now = rpPhNow();
@@ -76,18 +98,21 @@ function wireReportsControls() {
 
       if (q === 'this-month') {
         RP.mode = 'month';
-        RP.year = y; RP.month = m;
+        RP.year = y;
+        RP.month = m;
       } else if (q === 'last-month') {
         RP.mode = 'month';
         RP.year = m === 1 ? y - 1 : y;
         RP.month = m === 1 ? 12 : m - 1;
-      } else {
+      } else if (q === 'this-year') {
         RP.mode = 'year';
-        RP.year = y; RP.month = null;
+        RP.year = y;
+        RP.month = null;
       }
 
       syncPeriodInputs();
       setModeUI();
+      updatePeriodBadge();
       loadSummary();
     });
   });
@@ -100,15 +125,33 @@ function wireReportsControls() {
     });
   });
 
-  $id('rp-select-all').addEventListener('change', function () {
-    var checked = $id('rp-select-all').checked;
-    $all('.rp-type-check').forEach(function (cb) { cb.checked = checked; });
-    updateSelectedTypes();
-  });
+  var selectAllEl = $id('rp-select-all');
+  if (selectAllEl) {
+    selectAllEl.addEventListener('change', function () {
+      var checked = selectAllEl.checked;
+      $all('.rp-type-check').forEach(function (cb) { cb.checked = checked; });
+      updateSelectedTypes();
+    });
+  }
 
-  // Download buttons
-  $id('rp-dl-excel').addEventListener('click', function () { downloadReport('excel'); });
-  $id('rp-dl-pdf').addEventListener('click', function () { downloadReport('pdf'); });
+  // Summary refresh button
+  var refreshBtn = $id('rp-summary-refresh');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', function () {
+      loadSummary();
+    });
+  }
+
+  // Export buttons
+  var excelBtn = $id('rp-dl-excel');
+  if (excelBtn) {
+    excelBtn.addEventListener('click', function () { downloadReport('excel'); });
+  }
+
+  var pdfBtn = $id('rp-dl-pdf');
+  if (pdfBtn) {
+    pdfBtn.addEventListener('click', function () { downloadReport('pdf'); });
+  }
 }
 
 function setModeUI() {
@@ -121,9 +164,23 @@ function setModeUI() {
 
 function syncPeriodInputs() {
   if (RP.mode === 'month') {
-    $id('rp-month').value = RP.year + '-' + pad(RP.month);
+    var monthEl = $id('rp-month');
+    if (monthEl) monthEl.value = RP.year + '-' + pad(RP.month);
   } else {
-    $id('rp-year').value = RP.year;
+    var yearEl = $id('rp-year');
+    if (yearEl) yearEl.value = RP.year;
+  }
+}
+
+function updatePeriodBadge() {
+  var badge = $id('rp-active-period-label');
+  if (!badge) return;
+  if (RP.mode === 'month' && RP.month) {
+    var dateObj = new Date(RP.year, RP.month - 1, 1);
+    var monthName = dateObj.toLocaleString('en-US', { month: 'long' });
+    badge.textContent = monthName + ' ' + RP.year;
+  } else {
+    badge.textContent = 'Year ' + RP.year;
   }
 }
 
@@ -136,8 +193,15 @@ function updateSelectedTypes() {
 
 function updateSelectAll() {
   var boxes = $all('.rp-type-check');
-  var checked = Array.prototype.filter.call(boxes, function (cb) { return cb.checked; }).length;
-  $id('rp-select-all').checked = checked === boxes.length && boxes.length > 0;
+  var checkedCount = 0;
+  boxes.forEach(function (cb) {
+    if (cb.checked) checkedCount++;
+  });
+  var selectAllEl = $id('rp-select-all');
+  if (selectAllEl) {
+    selectAllEl.checked = checkedCount === boxes.length && boxes.length > 0;
+    selectAllEl.indeterminate = checkedCount > 0 && checkedCount < boxes.length;
+  }
 }
 
 function buildParams(extra) {
@@ -149,81 +213,148 @@ function buildParams(extra) {
   return p.toString();
 }
 
+function setSummaryLoading(loading) {
+  RP.loadingSummary = loading;
+  var summaryCard = $id('rp-summary-card');
+  if (summaryCard) {
+    summaryCard.classList.toggle('loading', loading);
+  }
+}
+
 function loadSummary() {
   if (!RP.year) return;
+  setSummaryLoading(true);
+
   apiRequest('/api/reports/summary?' + buildParams())
     .then(function (res) {
-      if (!res) return;
+      if (!res) return null;
       if (!res.ok) throw new Error('HTTP ' + res.status);
       return res.json();
     })
     .then(function (data) {
-      $id('rp-waste').textContent = data.waste_records;
-      $id('rp-schedules').textContent = data.collection_schedules;
-      $id('rp-users').textContent = data.users;
+      if (!data) return;
 
-      $id('rp-avg-conf').textContent = data.waste_avg_confidence !== null && data.waste_avg_confidence !== undefined
-        ? data.waste_avg_confidence + '%' : '—';
-      $id('rp-low-conf').textContent = data.waste_low_confidence;
-      $id('rp-common-type').textContent = data.waste_most_common_type || '—';
+      // Overall Collection Performance
+      setElementText('rp-total-collections', data.total_collections);
+      setElementText('rp-completed-collections', data.completed_collections);
+      setElementText('rp-delayed-collections', data.delayed_collections);
+      setElementText('rp-completion-rate', (data.completion_rate !== null && data.completion_rate !== undefined)
+        ? data.completion_rate + '%' : '0%');
 
-      $id('rp-completed').textContent = data.routes_completed;
-      $id('rp-cancelled').textContent = data.routes_cancelled;
-      $id('rp-delayed').textContent = data.routes_delayed;
-      $id('rp-rate').textContent = (data.completion_rate !== null && data.completion_rate !== undefined)
-        ? data.completion_rate + '%' : '—';
+      // Waste Classification
+      setElementText('rp-waste-classifications', data.waste_classifications);
+      setElementText('rp-recycling-rate', (data.recycling_rate !== null && data.recycling_rate !== undefined)
+        ? data.recycling_rate + '%' : '0%');
+      setElementText('rp-avg-confidence', (data.avg_confidence !== null && data.avg_confidence !== undefined)
+        ? data.avg_confidence + '%' : '—');
+
+      // Barangay Performance
+      setElementText('rp-total-barangays', data.total_barangays);
+      setElementText('rp-top-barangay', data.top_barangay || '—');
     })
     .catch(function (err) {
-      $id('rp-waste').textContent = '—';
-      $id('rp-schedules').textContent = '—';
-      $id('rp-users').textContent = '—';
-      $id('rp-avg-conf').textContent = '—';
-      $id('rp-low-conf').textContent = '—';
-      $id('rp-common-type').textContent = '—';
-      $id('rp-completed').textContent = '—';
-      $id('rp-cancelled').textContent = '—';
-      $id('rp-delayed').textContent = '—';
-      $id('rp-rate').textContent = '—';
+      console.warn('Summary load error:', err);
+      // Display neutral dash states on error
+      setElementText('rp-total-collections', '—');
+      setElementText('rp-completed-collections', '—');
+      setElementText('rp-delayed-collections', '—');
+      setElementText('rp-completion-rate', '—');
+      setElementText('rp-waste-classifications', '—');
+      setElementText('rp-recycling-rate', '—');
+      setElementText('rp-avg-confidence', '—');
+      setElementText('rp-total-barangays', '—');
+      setElementText('rp-top-barangay', '—');
+    })
+    .finally(function () {
+      setSummaryLoading(false);
     });
 }
 
+function setElementText(id, value) {
+  var el = $id(id);
+  if (el) {
+    el.textContent = (value !== null && value !== undefined && value !== '') ? value : '0';
+  }
+}
+
+/**
+ * Download handler for Excel (.xlsx) and PDF (.pdf) reports.
+ * Uses auth headers, binary blob streams, and accurate Content-Disposition filenames.
+ */
 function downloadReport(format) {
   if (RP.downloading) return;
-  if (!RP.selectedTypes.length) {
-    showToast('Select at least one report type.', 'error');
+
+  if (!RP.selectedTypes || !RP.selectedTypes.length) {
+    showToast('Please select at least one report section to include.', 'error');
     return;
   }
   if (!RP.year) {
-    showToast('Select a valid period first.', 'error');
+    showToast('Please select a valid period first.', 'error');
     return;
   }
 
   RP.downloading = true;
-  setDownloading(true);
+  setDownloading(true, format);
 
-  var url = CONFIG.API_BASE_URL + '/api/reports/export?' + buildParams({ format: format, types: RP.selectedTypes.join(',') });
+  var token = localStorage.getItem('access_token');
+  var headers = token ? { 'Authorization': 'Bearer ' + token } : {};
 
-  fetch(url, { headers: getHeaders() })
-    .then(function (res) {
-      if (!res) return;
-      if (res.status === 401) { logout(); return; }
-      if (!res.ok) return res.json().then(function (d) { throw new Error((d && d.detail) || 'HTTP ' + res.status); });
-      return res.blob();
+  var url = CONFIG.API_BASE_URL + '/api/reports/export?' + buildParams({
+    format: format,
+    types: RP.selectedTypes.join(',')
+  });
+
+  fetch(url, { headers: headers })
+    .then(async function (res) {
+      if (!res) return null;
+      if (res.status === 401) {
+        logout();
+        return null;
+      }
+      if (!res.ok) {
+        var errorMsg = 'Failed to generate ' + format.toUpperCase() + ' report (HTTP ' + res.status + ')';
+        try {
+          var errJson = await res.json();
+          if (errJson && errJson.detail) errorMsg = errJson.detail;
+        } catch (e) {
+          try {
+            var errText = await res.text();
+            if (errText && errText.length < 160) errorMsg = errText;
+          } catch (e2) {}
+        }
+        throw new Error(errorMsg);
+      }
+
+      // Extract filename from Content-Disposition header if present
+      var filename = suggestedFilename(format);
+      var disposition = res.headers.get('Content-Disposition') || '';
+      var filenameMatch = disposition.match(/filename="?([^"]+)"?/);
+      if (filenameMatch && filenameMatch[1]) {
+        filename = filenameMatch[1];
+      }
+
+      var blob = await res.blob();
+      return { blob: blob, filename: filename };
     })
-    .then(function (blob) {
-      if (!blob) return;
+    .then(function (result) {
+      if (!result) return;
       var a = document.createElement('a');
-      var objUrl = URL.createObjectURL(blob);
+      var objUrl = URL.createObjectURL(result.blob);
       a.href = objUrl;
-      a.download = suggestedFilename(format);
+      a.download = result.filename;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      setTimeout(function () { URL.revokeObjectURL(objUrl); }, 2000);
-      showToast(format === 'excel' ? 'Excel report downloaded.' : 'PDF report downloaded.', 'success');
+      setTimeout(function () { URL.revokeObjectURL(objUrl); }, 3000);
+
+      var successMsg = format === 'excel'
+        ? 'Excel report (' + result.filename + ') downloaded successfully.'
+        : 'PDF report (' + result.filename + ') downloaded successfully.';
+      showToast(successMsg, 'success');
     })
     .catch(function (err) {
-      showToast('Download failed: ' + err.message, 'error');
+      console.error('Report export error:', err);
+      showToast(err.message || 'Unable to download report. Please try again.', 'error');
     })
     .finally(function () {
       RP.downloading = false;
@@ -231,17 +362,27 @@ function downloadReport(format) {
     });
 }
 
-function setDownloading(on) {
-  $id('rp-dl-excel').disabled = on;
-  $id('rp-dl-pdf').disabled = on;
-  var x = $id('rp-dl-excel');
-  var p = $id('rp-dl-pdf');
+function setDownloading(on, format) {
+  var excelBtn = $id('rp-dl-excel');
+  var pdfBtn = $id('rp-dl-pdf');
+  if (!excelBtn || !pdfBtn) return;
+
+  excelBtn.disabled = on;
+  pdfBtn.disabled = on;
+
   if (on) {
-    x.querySelector('.rp-dl-main').textContent = 'Preparing…';
-    p.querySelector('.rp-dl-main').textContent = 'Preparing…';
+    if (format === 'excel') {
+      excelBtn.classList.add('loading');
+      excelBtn.querySelector('.rp-dl-main').textContent = 'Preparing Excel...';
+    } else {
+      pdfBtn.classList.add('loading');
+      pdfBtn.querySelector('.rp-dl-main').textContent = 'Preparing PDF...';
+    }
   } else {
-    x.querySelector('.rp-dl-main').textContent = 'Download Excel';
-    p.querySelector('.rp-dl-main').textContent = 'Download PDF';
+    excelBtn.classList.remove('loading');
+    pdfBtn.classList.remove('loading');
+    excelBtn.querySelector('.rp-dl-main').textContent = 'Download Excel (.xlsx)';
+    pdfBtn.querySelector('.rp-dl-main').textContent = 'Download PDF (.pdf)';
   }
 }
 
@@ -249,5 +390,6 @@ function suggestedFilename(format) {
   var period = RP.mode === 'month'
     ? RP.year + '-' + pad(RP.month)
     : '' + RP.year;
-  return 'WISE_Report_' + period + '.' + (format === 'excel' ? 'xlsx' : 'pdf');
-}
+  var ext = format === 'excel' ? 'xlsx' : 'pdf';
+  return 'WISE_Report_' + period + '.' + ext;
+}
