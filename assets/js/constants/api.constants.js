@@ -39,7 +39,9 @@ const API_ENDPOINTS = {
     UPDATE: (id) => `/api/collection-schedules/${id}`,
     DELETE: (id) => `/api/collection-schedules/${id}`,
     BATCH: '/api/collection-schedules/batch',
+    BY_DATE: '/api/collection-schedules/by-date/',
     BY_DATE_RANGE: '/api/collection-schedules/by-date-range/',
+    ROUTE_PREVIEW: '/api/collection-schedules/route-preview/',
     UPDATE_STATUS: (id) => `/api/collection-schedules/${id}/status`
   },
 

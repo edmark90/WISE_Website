@@ -1,0 +1,269 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "WISE Platform — Integrated Waste Management System",
+    "subtitle": "Web Admin • Mobile Citizen App • FastAPI Backend • AI Classification • Firebase Push",
+    "visual_preset": "classic",
+    "animation": "trace",
+    "quality_profile": "standard",
+    "viewBox": [1400, 750],
+    "views": [
+      {
+        "id": "auth-flow",
+        "label": "Authentication Flow",
+        "focus": ["mobile-app", "web-app", "backend-api", "database"],
+        "note": "JWT-based login/signup for citizens and admins across both clients."
+      },
+      {
+        "id": "ai-classification",
+        "label": "AI Waste Classification",
+        "focus": ["mobile-app", "backend-api", "ai-model", "database"],
+        "note": "Mobile captures photo → Backend runs MobileNetV2 TFLite → Result stored in waste_records."
+      },
+      {
+        "id": "notifications",
+        "label": "Notification System",
+        "focus": ["backend-api", "firebase-fcm", "mobile-app", "database"],
+        "note": "Manual announcements + automatic route-status notifications → FCM → local notification."
+      }
+    ]
+  },
+  "components": [
+    {
+      "id": "mobile-app",
+      "type": "frontend",
+      "label": "WISE Mobile App",
+      "sublabel": "Flutter • Android/iOS",
+      "tag": "Citizen-facing",
+      "pos": [60, 160],
+      "size": [180, 68]
+    },
+    {
+      "id": "web-app",
+      "type": "frontend",
+      "label": "WISE Web Admin",
+      "sublabel": "Vanilla JS • HTML/CSS",
+      "tag": "Admin-facing",
+      "pos": [60, 280],
+      "size": [180, 68]
+    },
+    {
+      "id": "backend-api",
+      "type": "backend",
+      "label": "WISE Backend API",
+      "sublabel": "FastAPI • Python 3.10",
+      "tag": "REST • JWT • FCM",
+      "pos": [400, 200],
+      "size": [220, 72]
+    },
+    {
+      "id": "ai-model",
+      "type": "backend",
+      "label": "AI Waste Classifier",
+      "sublabel": "MobileNetV2 • TFLite",
+      "tag": "On-backend inference",
+      "pos": [720, 60],
+      "size": [200, 68]
+    },
+    {
+      "id": "worker",
+      "type": "backend",
+      "label": "Background Workers",
+      "sublabel": "Auto-status • App updates",
+      "tag": "Daemon threads",
+      "pos": [720, 340],
+      "size": [200, 68]
+    },
+    {
+      "id": "database",
+      "type": "database",
+      "label": "TiDB Cloud (MySQL)",
+      "sublabel": "Managed MySQL",
+      "tag": "Persistent storage",
+      "pos": [1040, 120],
+      "size": [190, 68]
+    },
+    {
+      "id": "firebase-fcm",
+      "type": "cloud",
+      "label": "Firebase Cloud Messaging",
+      "sublabel": "Push notifications",
+      "tag": "Optional (env-config)",
+      "pos": [1040, 280],
+      "size": [190, 68]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "security-group",
+      "label": "User Devices",
+      "wraps": ["mobile-app", "web-app"],
+      "pad": 28
+    },
+    {
+      "kind": "region",
+      "label": "Backend Runtime (Render)",
+      "wraps": ["backend-api", "ai-model", "worker"],
+      "pad": 28
+    },
+    {
+      "kind": "security-group",
+      "label": "Data Layer",
+      "wraps": ["database", "firebase-fcm"],
+      "pad": 28
+    }
+  ],
+  "connections": [
+    {
+      "from": "mobile-app",
+      "to": "backend-api",
+      "label": "HTTPS /api/* (JWT Bearer)",
+      "variant": "emphasis",
+      "route": "orthogonal-h",
+      "via": [[240, 194], [400, 194]]
+    },
+    {
+      "from": "web-app",
+      "to": "backend-api",
+      "label": "HTTPS /api/* (JWT Bearer)",
+      "variant": "emphasis",
+      "route": "orthogonal-h",
+      "via": [[240, 314], [400, 314]]
+    },
+    {
+      "from": "mobile-app",
+      "to": "ai-model",
+      "label": "POST /api/v1/predict (multipart)",
+      "variant": "emphasis",
+      "route": "orthogonal-h",
+      "via": [[240, 194], [400, 194], [400, 94], [720, 94]]
+    },
+    {
+      "from": "backend-api",
+      "to": "ai-model",
+      "label": "Internal async call",
+      "variant": "dashed",
+      "route": "orthogonal-h",
+      "via": [[620, 200], [620, 94], [720, 94]]
+    },
+    {
+      "from": "backend-api",
+      "to": "worker",
+      "label": "Spawns daemon threads",
+      "variant": "dashed",
+      "route": "orthogonal-h",
+      "via": [[620, 272], [720, 272], [720, 340]],
+      "labelAt": [670, 286]
+    },
+    {
+      "from": "ai-model",
+      "to": "database",
+      "label": "Persist waste_records",
+      "variant": "default",
+      "route": "orthogonal-h",
+      "via": [[920, 94], [920, 154], [1040, 154]],
+      "labelAt": [920, 142]
+    },
+    {
+      "from": "worker",
+      "to": "database",
+      "label": "Read schedules / Write notifications",
+      "variant": "dashed",
+      "route": "orthogonal-h",
+      "via": [[920, 374], [920, 450], [1250, 450], [1250, 154], [1040, 154]],
+      "labelAt": [920, 422]
+    },
+    {
+      "from": "worker",
+      "to": "backend-api",
+      "label": "Trigger FCM via service",
+      "variant": "dashed",
+      "route": "orthogonal-h",
+      "via": [[720, 408], [620, 408], [620, 200]],
+      "labelAt": [670, 422]
+    },
+    {
+      "from": "backend-api",
+      "to": "database",
+      "label": "SQLAlchemy ORM (PyMySQL)",
+      "variant": "default",
+      "route": "orthogonal-h",
+      "via": [[620, 236], [620, 154], [1040, 154]]
+    },
+    {
+      "from": "backend-api",
+      "to": "firebase-fcm",
+      "label": "FCM Multicast (Admin SDK)",
+      "variant": "security",
+      "route": "orthogonal-h",
+      "via": [[620, 236], [620, 314], [1040, 314]],
+      "labelAt": [620, 286]
+    },
+    {
+      "from": "firebase-fcm",
+      "to": "mobile-app",
+      "label": "Push notification (FCM)",
+      "variant": "security",
+      "route": "orthogonal-h",
+      "via": [[1040, 280], [800, 280], [800, 180], [240, 180], [240, 194]],
+      "labelAt": [640, 166]
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Client Layer",
+      "items": [
+        "Mobile App (Flutter) — citizen waste classification, schedule view, notifications",
+        "Web Admin (Vanilla JS) — dashboard analytics, user/record management, announcements"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Backend API (FastAPI on Render)",
+      "items": [
+        "REST endpoints under /api with JWT Bearer auth",
+        "Routers: auth, users, dashboard, waste-records, collection-schedules, notifications, ai-guides, reports, mobile-updates, prediction",
+        "Rate limiting + CORS + custom error handling"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "AI Classification (On-Backend)",
+      "items": [
+        "MobileNetV2 TFLite model loaded once at startup",
+        "POST /api/v1/predict accepts multipart image → returns category + confidence + probabilities",
+        "Result persisted to waste_records for admin dashboard (fail-open)"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "Collection Operations",
+      "items": [
+        "Admin manages schedules in web → stored in collection_schedule",
+        "Mobile views schedules with barangay filter & day grouping",
+        "Background worker polls every 60s → emits Arriving/Arrived/Completed notifications"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Notification Pipeline",
+      "items": [
+        "Manual announcements (admin) + auto-status (worker) → notifications table",
+        "FCM push via Firebase Admin SDK (optional, env-config)",
+        "Mobile receives via Firebase Messaging → shows local notification (flutter_local_notifications)",
+        "Per-user read state in notification_reads; preferences in users table"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "Data & Storage",
+      "items": [
+        "TiDB Cloud (MySQL) — all relational data via SQLAlchemy",
+        "Tables: users, waste_records, collection_schedule, collection_history, notifications, notification_reads, device_tokens, app_versions, app_update_announcements, ai_guides",
+        "File uploads served statically at /uploads (profile images + waste photos)"
+      ]
+    }
+  ]
+}

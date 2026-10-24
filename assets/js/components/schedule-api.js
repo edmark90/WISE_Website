@@ -16,6 +16,22 @@ async function fetchSchedulesByMonth(year, month) {
   } catch (err) { console.error('Fetch schedules error:', err); return []; }
 }
 
+async function fetchSchedulesByDate(targetDate) {
+  try {
+    const res = await apiRequest('/api/collection-schedules/by-date/?target_date=' + targetDate);
+    if (!res || !res.ok) return [];
+    return await res.json();
+  } catch (err) { console.error('Fetch schedules by date error:', err); return []; }
+}
+
+async function fetchRoutePreview(targetDate) {
+  try {
+    const res = await apiRequest('/api/collection-schedules/route-preview/?target_date=' + targetDate);
+    if (!res || !res.ok) return null;
+    return await res.json();
+  } catch (err) { console.error('Fetch route preview error:', err); return null; }
+}
+
 async function createSchedule(data) {
   try {
     const res = await apiRequest('/api/collection-schedules/', { method: 'POST', body: JSON.stringify(data) });
