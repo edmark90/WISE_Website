@@ -78,20 +78,20 @@ function initMobileNav() {
     topbar.className = 'mobile-topbar';
     topbar.innerHTML =
       '<button type="button" class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Toggle navigation menu">' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
-          '<line x1="4" y1="12" x2="20" y2="12"></line>' +
-          '<line x1="4" y1="6" x2="20" y2="6"></line>' +
-          '<line x1="4" y1="18" x2="20" y2="18"></line>' +
-        '</svg>' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
+      '<line x1="4" y1="12" x2="20" y2="12"></line>' +
+      '<line x1="4" y1="6" x2="20" y2="6"></line>' +
+      '<line x1="4" y1="18" x2="20" y2="18"></line>' +
+      '</svg>' +
       '</button>' +
       '<div class="mobile-brand">' +
-        '<span class="mobile-badge">⚙️</span>' +
-        '<span class="mobile-title">WISE SYSTEM</span>' +
+      '<span class="mobile-badge">⚙️</span>' +
+      '<span class="mobile-title">WISE SYSTEM</span>' +
       '</div>' +
       '<div class="mobile-top-right">' +
-        '<span class="mobile-user-avatar" title="Admin">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4 4-6 8-6s8 2 8 6"></path></svg>' +
-        '</span>' +
+      '<span class="mobile-user-avatar" title="Admin">' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4 4-6 8-6s8 2 8 6"></path></svg>' +
+      '</span>' +
       '</div>';
     app.insertBefore(topbar, app.firstChild);
   }

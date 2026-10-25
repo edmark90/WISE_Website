@@ -2956,4 +2956,394 @@
   color: #334155;
   font-size: 9.5px;
   font-weight: 700;
-}
+}
+
+/* =======================================================================
+   LEAFLET ROUTE PREVIEW MAP (OpenStreetMap + OpenRouteService)
+   ======================================================================= */
+.route-leaflet-map {
+  width: 100%;
+  height: 380px;
+  min-height: 340px;
+  position: relative;
+  z-index: 1;
+}
+
+.route-leaflet-map .leaflet-pane {
+  z-index: 10;
+}
+
+.route-leaflet-map .leaflet-top,
+.route-leaflet-map .leaflet-bottom {
+  z-index: 20;
+}
+
+/* Route Filter Tabs (for multiple trucks) */
+.route-map-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 8px 12px;
+  background: #F8FAFC;
+  border-bottom: 1px solid #E2E8F0;
+  overflow-x: auto;
+}
+
+.route-map-tab-btn {
+  background: #ffffff;
+  border: 1px solid #D1D5DB;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #374151;
+  cursor: pointer;
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  transition: all 0.15s ease;
+}
+
+.route-map-tab-btn:hover {
+  border-color: #16A34A;
+  color: #16A34A;
+}
+
+.route-map-tab-btn.active {
+  background: #16A34A;
+  border-color: #16A34A;
+  color: #ffffff;
+}
+
+/* Stop Pin on Leaflet Map */
+.wise-stop-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  color: #ffffff;
+  font-size: 11.5px;
+  font-weight: 700;
+  border: 2.5px solid #ffffff;
+  box-shadow: 0 2px 7px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  user-select: none;
+}
+
+.wise-stop-pin.start-pin {
+  box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.4), 0 2px 7px rgba(0, 0, 0, 0.35);
+}
+
+.wise-stop-pin.end-pin {
+  box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.4), 0 2px 7px rgba(0, 0, 0, 0.35);
+}
+
+.wise-stop-pin:hover {
+  transform: scale(1.18);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.45);
+}
+
+/* Dispatch Depot Pin */
+.wise-depot-pin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  color: #ffffff;
+  background: #0F172A;
+  font-size: 12.5px;
+  font-weight: 800;
+  border: 2.5px solid #F59E0B;
+  box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.4), 0 3px 8px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  user-select: none;
+}
+
+.wise-depot-pin:hover {
+  transform: scale(1.18);
+  box-shadow: 0 0 0 4px rgba(245, 158, 11, 0.55), 0 4px 12px rgba(0, 0, 0, 0.45);
+}
+
+/* Schedule Truck Marker - Stationary */
+.wise-truck-marker {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  filter: drop-shadow(0 3px 8px rgba(0, 0, 0, 0.32));
+  transition: transform 0.2s ease;
+}
+
+.wise-truck-marker:hover {
+  transform: scale(1.15);
+}
+
+.wise-truck-marker svg {
+  display: block;
+}
+
+/* Modern Leaflet Map Popup */
+.wise-map-popup {
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.4;
+  color: #1F2937;
+  padding: 4px 2px;
+  min-width: 190px;
+}
+
+.wise-map-popup .wmp-header {
+  padding-left: 8px;
+  margin-bottom: 6px;
+}
+
+.wise-map-popup .wmp-badge {
+  display: inline-block;
+  font-size: 9.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: #4B5563;
+  background: #F3F4F6;
+  padding: 1px 6px;
+  border-radius: 3px;
+  margin-bottom: 3px;
+}
+
+.wise-map-popup .wmp-badge-truck {
+  color: #1E40AF;
+  background: #EFF6FF;
+}
+
+.wise-map-popup .wmp-header strong {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: #111827;
+  display: block;
+}
+
+.wise-map-popup .wmp-street {
+  font-size: 11.5px;
+  color: #4B5563;
+  margin-top: 2px;
+}
+
+.wise-map-popup .wmp-time {
+  font-size: 12px;
+  font-weight: 600;
+  color: #059669;
+  background: #ECFDF5;
+  padding: 3px 8px;
+  border-radius: 4px;
+  margin-bottom: 6px;
+  display: inline-block;
+}
+
+.wise-map-popup .wmp-meta {
+  font-size: 11px;
+  color: #6B7280;
+  margin-bottom: 4px;
+}
+
+.wise-map-popup .wmp-status-pill {
+  display: inline-block;
+  font-size: 10.5px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 4px;
+  margin-bottom: 4px;
+}
+
+.wise-map-popup .status-active {
+  color: #047857;
+  background: #D1FAE5;
+}
+
+.wise-map-popup .status-scheduled {
+  color: #1D4ED8;
+  background: #DBEAFE;
+}
+
+.wise-map-popup .status-completed {
+  color: #475569;
+  background: #E2E8F0;
+}
+
+.wise-map-popup .wmp-warning {
+  font-size: 10px;
+  color: #B45309;
+  background: #FEF3C7;
+  padding: 3px 6px;
+  border-radius: 3px;
+  margin: 4px 0;
+}
+
+.wise-map-popup .wmp-notice {
+  font-size: 10px;
+  color: #9CA3AF;
+  font-style: italic;
+  border-top: 1px dashed #E5E7EB;
+  padding-top: 4px;
+  margin-top: 5px;
+}
+
+/* Route Info & Logistics Dashboard Layout */
+.route-map-dashboard {
+  padding: 10px 14px;
+  background: var(--sc-surface, #ffffff);
+  border-top: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+.rmd-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.rmd-title {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--sc-text, #111827);
+}
+
+.rmd-schedule-badge {
+  font-size: 10px;
+  font-weight: 600;
+  color: #15803D;
+  background: #DCFCE7;
+  padding: 2px 7px;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.rmd-trucks-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+
+.rmd-truck-card {
+  background: #F9FAFB;
+  border-radius: 5px;
+  padding: 6px 10px;
+  transition: background 0.15s ease;
+}
+
+.rmd-truck-card:hover {
+  background: #F3F4F6;
+}
+
+.rmd-tc-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 3px;
+}
+
+.rmd-tc-name {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #111827;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.rmd-swatch {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.rmd-tc-badge {
+  font-size: 9.5px;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 3px;
+  text-transform: uppercase;
+}
+
+.rmd-tc-badge.status-active {
+  color: #047857;
+  background: #D1FAE5;
+}
+
+.rmd-tc-badge.status-scheduled {
+  color: #1D4ED8;
+  background: #DBEAFE;
+}
+
+.rmd-tc-badge.status-completed {
+  color: #475569;
+  background: #E2E8F0;
+}
+
+.rmd-tc-meta {
+  font-size: 10.5px;
+  color: #6B7280;
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.rmd-tc-desc {
+  font-size: 11px;
+  color: #374151;
+  margin-top: 2px;
+  font-weight: 500;
+}
+
+.rmd-warning-note {
+  margin-top: 6px;
+  font-size: 10px;
+  color: #B45309;
+  background: #FFFBEB;
+  padding: 3px 8px;
+  border-radius: 4px;
+}
+
+/* Loading & Error States */
+.route-map-loading,
+.route-map-error {
+  padding: 12px 16px;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.route-map-loading {
+  color: #4B5563;
+  background: #F9FAFB;
+}
+
+.route-map-error {
+  color: #DC2626;
+  background: #FEF2F2;
+  border-top: 1px solid #FEE2E2;
+}
+
+.rml-spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid #E5E7EB;
+  border-top-color: #10B981;
+  border-radius: 50%;
+  animation: rml-spin 0.8s linear infinite;
+  display: inline-block;
+}
+
+@keyframes rml-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

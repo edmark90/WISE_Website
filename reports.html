@@ -1,255 +1,404 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WISE SYSTEM — Reports & Analytics</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/global.css">
-<link rel="stylesheet" href="assets/css/reports.css">
-<link rel="icon" type="image/png" href="assets/images/logo wise.png">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WISE SYSTEM — Reports & Analytics</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800&display=swap"
+    rel="stylesheet">
+  <link rel="stylesheet" href="assets/css/global.css">
+  <link rel="stylesheet" href="assets/css/reports.css">
+  <link rel="icon" type="image/png" href="assets/images/logo wise.png">
 </head>
+
 <body>
-<div class="app">
-  <aside class="sidebar">
-    <div class="sidebar-brand">
-      <div class="badge">
-        <img src="assets/images/logo wise.png" alt="WISE logo">
-      </div>
-      <h1>WISE<br>SYSTEM</h1>
-    </div>
-
-    <nav class="sidebar-nav">
-      <a href="dashboard.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect></svg><span>Dashboard</span></a>
-      <a href="users.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg><span>User Management</span></a>
-      <a href="waste records.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7"></path><polyline points="21 3 21 9 15 9"></polyline></svg><span>Waste Classification</span></a>
-      <a href="collection schedule.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg><span>Collection Schedule</span></a>
-      <a href="reports.html" class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg><span>Reports</span></a>
-      <a href="notification.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg><span>Notifications</span></a>
-    </nav>
-    <div class="sidebar-footer">
-      <a href="#" class="nav-item logout" id="logout-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg><span>Logout</span></a>
-    </div>
-  </aside>
-
-  <main class="main">
-    <!-- Page Header -->
-    <div class="page-header rp-page-header">
-      <div>
-        <h2>Reports & Analytics</h2>
-        <p>Generate, review, and export official administrative reports in Excel (.xlsx) and PDF.</p>
-      </div>
-      <div class="rp-header-badge">
-        <span class="rp-status-dot"></span>
-        <span id="rp-active-period-label">Loading period...</span>
-      </div>
-    </div>
-
-    <!-- Filter & Configuration Card -->
-    <div class="rp-card rp-filter-card">
-      <div class="rp-card-header">
-        <div class="rp-card-title">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>
-          <span>Reporting Period</span>
+  <div class="app">
+    <aside class="sidebar">
+      <div class="sidebar-brand">
+        <div class="badge">
+          <img src="assets/images/logo wise.png" alt="WISE logo">
         </div>
-      </div>
-      <div class="rp-controls">
-        <div class="rp-segmented" id="rp-period-mode">
-          <button type="button" class="rp-seg-btn active" data-mode="month">Monthly</button>
-          <button type="button" class="rp-seg-btn" data-mode="year">Yearly</button>
-        </div>
-        <div class="rp-picker" id="rp-month-wrap">
-          <label for="rp-month">Select Month</label>
-          <input type="month" id="rp-month">
-        </div>
-        <div class="rp-picker" id="rp-year-wrap" style="display:none;">
-          <label for="rp-year">Select Year</label>
-          <input type="number" id="rp-year" min="2000" max="2100">
-        </div>
-     
-      </div>
-    </div>
-
-    <!-- Executive Summary Card -->
-    <div class="rp-card rp-summary-card" id="rp-summary-card">
-      <div class="rp-card-header">
-        <div class="rp-card-title">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
-          <span>Period Summary Analytics</span>
-        </div>
-        <div class="rp-summary-refresh" id="rp-summary-refresh" title="Refresh metrics">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>
-        </div>
+        <h1>WISE<br>SYSTEM</h1>
       </div>
 
-      <div class="rp-summary-grid">
-        <!-- Collection Stats -->
-        <div class="rp-chip">
-          <div class="rp-chip-icon rp-chip-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></div>
-          <div class="rp-chip-content">
-            <div class="rp-chip-num" id="rp-total-collections">—</div>
-            <div class="rp-chip-label">Total Routes</div>
-          </div>
-        </div>
-
-        <div class="rp-chip">
-          <div class="rp-chip-icon rp-chip-emerald"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
-          <div class="rp-chip-content">
-            <div class="rp-chip-num" id="rp-completed-collections">—</div>
-            <div class="rp-chip-label">Completed</div>
-          </div>
-        </div>
-
-        <div class="rp-chip">
-          <div class="rp-chip-icon rp-chip-amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div>
-          <div class="rp-chip-content">
-            <div class="rp-chip-num" id="rp-delayed-collections">—</div>
-            <div class="rp-chip-label">Delayed / Issues</div>
-          </div>
-        </div>
-
-        <div class="rp-chip">
-          <div class="rp-chip-icon rp-chip-violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"></path></svg></div>
-          <div class="rp-chip-content">
-            <div class="rp-chip-num" id="rp-completion-rate">—</div>
-            <div class="rp-chip-label">Completion Rate</div>
-          </div>
-        </div>
-
-        <!-- Waste Stats -->
-        <div class="rp-chip">
-          <div class="rp-chip-icon rp-chip-cyan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg></div>
-          <div class="rp-chip-content">
-            <div class="rp-chip-num" id="rp-waste-classifications">—</div>
-            <div class="rp-chip-label">Classifications</div>
-          </div>
-        </div>
-
-        <div class="rp-chip">
-          <div class="rp-chip-icon rp-chip-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg></div>
-          <div class="rp-chip-content">
-            <div class="rp-chip-num" id="rp-recycling-rate">—</div>
-            <div class="rp-chip-label">Recycling Rate</div>
-          </div>
-        </div>
-
-        <div class="rp-chip">
-          <div class="rp-chip-icon rp-chip-red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg></div>
-          <div class="rp-chip-content">
-            <div class="rp-chip-num" id="rp-avg-confidence">—</div>
-            <div class="rp-chip-label">AI Confidence</div>
-          </div>
-        </div>
-
-        <div class="rp-chip">
-          <div class="rp-chip-icon rp-chip-pink"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect></svg></div>
-          <div class="rp-chip-content">
-            <div class="rp-chip-num" id="rp-total-barangays">—</div>
-            <div class="rp-chip-label">Active Barangays</div>
-          </div>
-        </div>
+      <nav class="sidebar-nav">
+        <a href="dashboard.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="7" height="7"></rect>
+            <rect x="14" y="3" width="7" height="7"></rect>
+            <rect x="3" y="14" width="7" height="7"></rect>
+            <rect x="14" y="14" width="7" height="7"></rect>
+          </svg><span>Dashboard</span></a>
+        <a href="users.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+            <circle cx="9" cy="7" r="4"></circle>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+          </svg><span>User Management</span></a>
+        <a href="waste records.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12a9 9 0 1 1-3-6.7"></path>
+            <polyline points="21 3 21 9 15 9"></polyline>
+          </svg><span>Waste Classification</span></a>
+        <a href="collection schedule.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg><span>Collection Schedule</span></a>
+        <a href="reports.html" class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="20" x2="18" y2="10"></line>
+            <line x1="12" y1="20" x2="12" y2="4"></line>
+            <line x1="6" y1="20" x2="6" y2="14"></line>
+          </svg><span>Reports</span></a>
+        <a href="notification.html" class="nav-item"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+            <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+          </svg><span>Notifications</span></a>
+      </nav>
+      <div class="sidebar-footer">
+        <a href="#" class="nav-item logout" id="logout-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+            <polyline points="16 17 21 12 16 7"></polyline>
+            <line x1="21" y1="12" x2="9" y2="12"></line>
+          </svg><span>Logout</span></a>
       </div>
-    </div>
+    </aside>
 
-    <!-- Report Sections Selection Card -->
-    <div class="rp-card">
-      <div class="rp-card-header rp-flex-between">
-        <div class="rp-card-title">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-          <span>Select Report Sections to Include</span>
+    <main class="main">
+      <!-- Page Header -->
+      <div class="page-header rp-page-header">
+        <div>
+          <h2>Reports & Analytics</h2>
+          <p>Generate, review, and export official administrative reports in Excel (.xlsx) and PDF.</p>
         </div>
-        <label class="rp-check-all">
-          <input type="checkbox" id="rp-select-all" checked>
-          <span>Select all 5 sections</span>
-        </label>
-      </div>
-
-      <div class="rp-type-grid">
-        <label class="rp-type">
-          <input type="checkbox" class="rp-type-check" data-type="barangay_performance" checked>
-          <span class="rp-type-box rp-type-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg></span>
-          <span class="rp-type-name">Barangay Performance</span>
-          <span class="rp-type-sub">Per-barangay route statistics, completion rates & AI records</span>
-        </label>
-
-        <label class="rp-type">
-          <input type="checkbox" class="rp-type-check" data-type="waste_trends" checked>
-          <span class="rp-type-box rp-type-emerald"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline><line x1="18" y1="20" x2="18" y2="10"></line><line x1="12" y1="20" x2="12" y2="4"></line><line x1="6" y1="20" x2="6" y2="14"></line></svg></span>
-          <span class="rp-type-name">Waste Classification Summary</span>
-          <span class="rp-type-sub">Material types, disposal categories, AI accuracy & flagged items</span>
-        </label>
-
-        <label class="rp-type">
-          <input type="checkbox" class="rp-type-check" data-type="collection_calendar" checked>
-          <span class="rp-type-box rp-type-amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg></span>
-          <span class="rp-type-name">Collection Operations Calendar</span>
-          <span class="rp-type-sub">Daily operational logs of scheduled & completed collection runs</span>
-        </label>
-
-        <label class="rp-type">
-          <input type="checkbox" class="rp-type-check" data-type="notification_analytics" checked>
-          <span class="rp-type-box rp-type-violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg></span>
-          <span class="rp-type-name">Notification Analytics</span>
-          <span class="rp-type-sub">Broadcast delivery numbers, citizen read rates & engagement</span>
-        </label>
-
-        <label class="rp-type">
-          <input type="checkbox" class="rp-type-check" data-type="schedule" checked>
-          <span class="rp-type-box rp-type-cyan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg></span>
-          <span class="rp-type-name">Collection Schedule Records</span>
-          <span class="rp-type-sub">Full operational records with routes, zones, times & personnel</span>
-        </label>
-      </div>
-    </div>
-
-    <!-- Export Actions Card -->
-    <div class="rp-card rp-download-card">
-      <div class="rp-card-header">
-        <div class="rp-card-title">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-          <span>Export Report Bundle</span>
+        <div class="rp-header-badge">
+          <span class="rp-status-dot"></span>
+          <span id="rp-active-period-label">Loading period...</span>
         </div>
       </div>
 
-      <div class="rp-download-row">
-        <button type="button" class="rp-dl-btn rp-dl-excel" id="rp-dl-excel">
-          <div class="rp-dl-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+      <!-- Filter & Configuration Card -->
+      <div class="rp-card rp-filter-card">
+        <div class="rp-card-header">
+          <div class="rp-card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+              <line x1="16" y1="2" x2="16" y2="6"></line>
+              <line x1="8" y1="2" x2="8" y2="6"></line>
+              <line x1="3" y1="10" x2="21" y2="10"></line>
+            </svg>
+            <span>Reporting Period</span>
           </div>
-          <div class="rp-dl-text">
-            <span class="rp-dl-main">Download Excel (.xlsx)</span>
-            <span class="rp-dl-sub">Full multi-sheet workbook with executive summary + data sheets</span>
+        </div>
+        <div class="rp-controls">
+          <div class="rp-segmented" id="rp-period-mode">
+            <button type="button" class="rp-seg-btn active" data-mode="month">Monthly</button>
+            <button type="button" class="rp-seg-btn" data-mode="year">Yearly</button>
           </div>
-        </button>
+          <div class="rp-picker" id="rp-month-wrap">
+            <label for="rp-month">Select Month</label>
+            <input type="month" id="rp-month">
+          </div>
+          <div class="rp-picker" id="rp-year-wrap" style="display:none;">
+            <label for="rp-year">Select Year</label>
+            <input type="number" id="rp-year" min="2000" max="2100">
+          </div>
 
-        <button type="button" class="rp-dl-btn rp-dl-pdf" id="rp-dl-pdf">
-          <div class="rp-dl-icon">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="9" y1="13" x2="15" y2="13"></line><line x1="9" y1="17" x2="13" y2="17"></line></svg>
-          </div>
-          <div class="rp-dl-text">
-            <span class="rp-dl-main">Download PDF (.pdf)</span>
-            <span class="rp-dl-sub">Official print-ready landscape report with headers and tables</span>
-          </div>
-        </button>
+        </div>
       </div>
-      <div class="rp-note">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
-        <span>The generated export will automatically include the Executive Summary plus dedicated sections for all checked report types.</span>
+
+      <!-- Executive Summary Card -->
+      <div class="rp-card rp-summary-card" id="rp-summary-card">
+        <div class="rp-card-header">
+          <div class="rp-card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+            </svg>
+            <span>Period Summary Analytics</span>
+          </div>
+          <div class="rp-summary-refresh" id="rp-summary-refresh" title="Refresh metrics">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <polyline points="23 4 23 10 17 10"></polyline>
+              <polyline points="1 20 1 14 7 14"></polyline>
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+            </svg>
+          </div>
+        </div>
+
+        <div class="rp-summary-grid">
+          <!-- Collection Stats -->
+          <div class="rp-chip">
+            <div class="rp-chip-icon rp-chip-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg></div>
+            <div class="rp-chip-content">
+              <div class="rp-chip-num" id="rp-total-collections">—</div>
+              <div class="rp-chip-label">Total Routes</div>
+            </div>
+          </div>
+
+          <div class="rp-chip">
+            <div class="rp-chip-icon rp-chip-emerald"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg></div>
+            <div class="rp-chip-content">
+              <div class="rp-chip-num" id="rp-completed-collections">—</div>
+              <div class="rp-chip-label">Completed</div>
+            </div>
+          </div>
+
+          <div class="rp-chip">
+            <div class="rp-chip-icon rp-chip-amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg></div>
+            <div class="rp-chip-content">
+              <div class="rp-chip-num" id="rp-delayed-collections">—</div>
+              <div class="rp-chip-label">Delayed / Issues</div>
+            </div>
+          </div>
+
+          <div class="rp-chip">
+            <div class="rp-chip-icon rp-chip-violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 12h-4l-3 9L9 3l-3 9H2"></path>
+              </svg></div>
+            <div class="rp-chip-content">
+              <div class="rp-chip-num" id="rp-completion-rate">—</div>
+              <div class="rp-chip-label">Completion Rate</div>
+            </div>
+          </div>
+
+          <!-- Waste Stats -->
+          <div class="rp-chip">
+            <div class="rp-chip-icon rp-chip-cyan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path
+                  d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z">
+                </path>
+              </svg></div>
+            <div class="rp-chip-content">
+              <div class="rp-chip-num" id="rp-waste-classifications">—</div>
+              <div class="rp-chip-label">Classifications</div>
+            </div>
+          </div>
+
+          <div class="rp-chip">
+            <div class="rp-chip-icon rp-chip-orange"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg></div>
+            <div class="rp-chip-content">
+              <div class="rp-chip-num" id="rp-recycling-rate">—</div>
+              <div class="rp-chip-label">Recycling Rate</div>
+            </div>
+          </div>
+
+          <div class="rp-chip">
+            <div class="rp-chip-icon rp-chip-red"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg></div>
+            <div class="rp-chip-content">
+              <div class="rp-chip-num" id="rp-avg-confidence">—</div>
+              <div class="rp-chip-label">AI Confidence</div>
+            </div>
+          </div>
+
+          <div class="rp-chip">
+            <div class="rp-chip-icon rp-chip-pink"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="3" y="14" width="7" height="7"></rect>
+                <rect x="14" y="14" width="7" height="7"></rect>
+              </svg></div>
+            <div class="rp-chip-content">
+              <div class="rp-chip-num" id="rp-total-barangays">—</div>
+              <div class="rp-chip-label">Active Barangays</div>
+            </div>
+          </div>
+        </div>
       </div>
-    </div>
-  </main>
-</div>
 
-<div id="toast-container"></div>
+      <!-- Report Sections Selection Card -->
+      <div class="rp-card">
+        <div class="rp-card-header rp-flex-between">
+          <div class="rp-card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+            <span>Select Report Sections to Include</span>
+          </div>
+          <label class="rp-check-all">
+            <input type="checkbox" id="rp-select-all" checked>
+            <span>Select all 5 sections</span>
+          </label>
+        </div>
 
-<!-- Shared core modules -->
-<script src="assets/js/core/config.js"></script>
-<script src="assets/js/core/dom.js"></script>
-<script src="assets/js/core/utils.js"></script>
-<script src="assets/js/core/auth.js"></script>
-<script src="assets/js/core/api.js"></script>
-<script src="assets/js/core/toast.js"></script>
-<script src="assets/js/pages/reports.js"></script>
+        <div class="rp-type-grid">
+          <label class="rp-type">
+            <input type="checkbox" class="rp-type-check" data-type="barangay_performance" checked>
+            <span class="rp-type-box rp-type-blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+                <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+              </svg></span>
+            <span class="rp-type-name">Barangay Performance</span>
+            <span class="rp-type-sub">Per-barangay route statistics, completion rates & AI records</span>
+          </label>
+
+          <label class="rp-type">
+            <input type="checkbox" class="rp-type-check" data-type="waste_trends" checked>
+            <span class="rp-type-box rp-type-emerald"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+                <line x1="18" y1="20" x2="18" y2="10"></line>
+                <line x1="12" y1="20" x2="12" y2="4"></line>
+                <line x1="6" y1="20" x2="6" y2="14"></line>
+              </svg></span>
+            <span class="rp-type-name">Waste Classification Summary</span>
+            <span class="rp-type-sub">Material types, disposal categories, AI accuracy & flagged items</span>
+          </label>
+
+          <label class="rp-type">
+            <input type="checkbox" class="rp-type-check" data-type="collection_calendar" checked>
+            <span class="rp-type-box rp-type-amber"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="4" width="18" height="18" rx="2"></rect>
+                <line x1="16" y1="2" x2="16" y2="6"></line>
+                <line x1="8" y1="2" x2="8" y2="6"></line>
+                <line x1="3" y1="10" x2="21" y2="10"></line>
+              </svg></span>
+            <span class="rp-type-name">Collection Operations Calendar</span>
+            <span class="rp-type-sub">Daily operational logs of scheduled & completed collection runs</span>
+          </label>
+
+          <label class="rp-type">
+            <input type="checkbox" class="rp-type-check" data-type="notification_analytics" checked>
+            <span class="rp-type-box rp-type-violet"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+              </svg></span>
+            <span class="rp-type-name">Notification Analytics</span>
+            <span class="rp-type-sub">Broadcast delivery numbers, citizen read rates & engagement</span>
+          </label>
+
+          <label class="rp-type">
+            <input type="checkbox" class="rp-type-check" data-type="schedule" checked>
+            <span class="rp-type-box rp-type-cyan"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="16" y1="13" x2="8" y2="13"></line>
+                <line x1="16" y1="17" x2="8" y2="17"></line>
+                <polyline points="10 9 9 9 8 9"></polyline>
+              </svg></span>
+            <span class="rp-type-name">Collection Schedule Records</span>
+            <span class="rp-type-sub">Full operational records with routes, zones, times & personnel</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Export Actions Card -->
+      <div class="rp-card rp-download-card">
+        <div class="rp-card-header">
+          <div class="rp-card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span>Export Report Bundle</span>
+          </div>
+        </div>
+
+        <div class="rp-download-row">
+          <button type="button" class="rp-dl-btn rp-dl-excel" id="rp-dl-excel">
+            <div class="rp-dl-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+            </div>
+            <div class="rp-dl-text">
+              <span class="rp-dl-main">Download Excel (.xlsx)</span>
+              <span class="rp-dl-sub">Full multi-sheet workbook with executive summary + data sheets</span>
+            </div>
+          </button>
+
+          <button type="button" class="rp-dl-btn rp-dl-pdf" id="rp-dl-pdf">
+            <div class="rp-dl-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="9" y1="13" x2="15" y2="13"></line>
+                <line x1="9" y1="17" x2="13" y2="17"></line>
+              </svg>
+            </div>
+            <div class="rp-dl-text">
+              <span class="rp-dl-main">Download PDF (.pdf)</span>
+              <span class="rp-dl-sub">Official print-ready landscape report with headers and tables</span>
+            </div>
+          </button>
+        </div>
+        <div class="rp-note">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+            stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="16" x2="12" y2="12"></line>
+            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+          </svg>
+          <span>The generated export will automatically include the Executive Summary plus dedicated sections for all
+            checked report types.</span>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <!-- Shared core modules -->
+  <script src="assets/js/core/config.js"></script>
+  <script src="assets/js/core/dom.js"></script>
+  <script src="assets/js/core/utils.js"></script>
+  <script src="assets/js/core/auth.js"></script>
+  <script src="assets/js/core/api.js"></script>
+  <script src="assets/js/core/toast.js"></script>
+  <script src="assets/js/pages/reports.js"></script>
 </body>
+
 </html>

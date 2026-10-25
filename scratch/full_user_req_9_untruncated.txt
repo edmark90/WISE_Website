@@ -1,0 +1,209 @@
+<USER_REQUEST>
+# FIX WISE MAP PREVIEW — OVERLAPPING TRUCK ICONS, UNIQUE ROUTE COLORS, AND COMPLETED ROUTES
+
+Act as a senior frontend developer. Fix and enhance the existing Map Preview UI of my WISE Waste Collection Management System.
+
+The route preview already works, but there are three problems:
+
+1. When two or more trucks have routes on the map, their truck icons overlap and become difficult to distinguish.
+2. Different routes can have the same or similar line colors, making it difficult to identify which route belongs to which truck.
+3. When a truck reaches a scheduled stop, the completed portion of its route should disappear. When it reaches its final stop, the remaining route line should disappear and the route should display a Completed status.
+
+**IMPORTANT: Inspect the existing implementation first. Fix the actual problems instead of rebuilding the map or creating a separate route-preview component.**
+
+## 1. Fix Overlapping Truck Icons
+
+When multiple trucks appear in the same location, their icons must not completely overlap or become indistinguishable.
+
+Requirements:
+
+- Give each truck a clearly distinguishable marker.
+- When two or more truck icons occupy the same or nearly the same coordinates, apply a lightweight visual separation technique, such as a small pixel-based offset, grouped markers, or a clean expandable marker group.
+- Keep the actual latitude and longitude unchanged. Never modify the real coordinates just to separate the icons visually.
+- When markers are close together, ensure the map remains readable and the correct truck can still be selected.
+- Display a clear truck identifier, such as `Truck 1`, `Truck 2`, and the corresponding route name or ID.
+- Show useful details in a popup or tooltip when a truck marker is selected, including its assigned route, current scheduled stop, next stop, and status when available.
+- Ensure marker positions remain visually clear when the map is zoomed in or out.
+- If multiple trucks share the same depot, show all assigned trucks without stacking their icons directly on top of each other.
+- If markers are temporarily separated visually, make their relationship to the real depot location obvious.
+
+Do not use GPS or change the existing schedule-based truck-position logic.
+
+## 2. Assign a Unique, Consistent Color to Every Route
+
+Each truck route must have its own distinct line color.
+
+Requirements:
+
+- Assign a unique, high-contrast color to each route displayed simultaneously.
+- Avoid duplicate or visually similar colors among active routes whenever possible.
+- Use a deterministic color assignment based on a stable route ID or truck ID. A route must not randomly change colors on every render or page refresh.
+- Use the same color consistently for the truck marker accent, route line, route label, stop-related indicators, and route legend, while keeping start and destination markers easy to recognize.
+- Make it easy to identify which route belongs to `Truck 1`, `Truck 2`, `Truck 3`, and so on.
+- Add or improve a compact legend showing each truck identifier, route name, and assigned color.
+- If there are many simultaneous routes, use a color palette designed to maximize visual distinction. Use an additional label, icon, or marker pattern if colors alone are insufficient.
+- Ensure the route colors remain distinguishable against the OpenStreetMap tiles.
+- Keep the UI accessible and avoid relying on color alone to communicate truck identity or status.
+
+Do not assign a new random color every time the component renders. Reuse the existing route and truck identifiers.
+
+## 3. Remove Completed Route Segments as the Truck Reaches Stops
+
+The route line must represent the truck's remaining planned journey, not permanently display the entire original route after stops have been reached.
+
+Use the existing schedule-based position logic and scheduled stop sequence as the source of truth. Do not introduce GPS or live tracking.
+
+Example:
+
+- Depot: Arandia Street, Tunasan
+- 6:00 AM: Alabang Market
+- 7:00 AM: Buli
+- 8:00 AM: Sucat
+- 9:00 AM: Final collection stop
+
+Expected behavior:
+
+**Before 6:00 AM**
+- The truck icon stays at the depot.
+- Display the planned route from the depot through all scheduled stops.
+
+**At 6:00 AM — Alabang Market**
+- Move the truck icon directly to Alabang Market according to the existing schedule logic.
+- Remove the completed route segment from the depot to Alabang Market.
+- Keep the remaining route from Alabang Market toward Buli, Sucat, and the final stop.
+
+**At 7:00 AM — Buli**
+- Move the truck icon directly to Buli.
+- Remove all previously completed route segments up to Buli.
+- Display only the remaining route from Buli through the future stops.
+
+**At 8:00 AM — Sucat**
+- Move the truck icon directly to Sucat.
+- Remove the completed route segments up to Sucat.
+- Display only the route remaining between Sucat and the final scheduled stop.
+
+**At 9:00 AM — Final Stop**
+- Move the truck icon directly to the final stop.
+- Remove the remaining route polyline for that truck.
+- Change the truck's route status to `Completed`.
+- Display a clear `Completed` label in the route summary or status indicator.
+- Keep the completed truck marker and stop information visible as appropriate, but do not show an active route line for the completed journey.
+
+The schedule times above are examples. Always use the actual scheduled date and time stored for each route.
+
+## 4. Implement Route Segments Correctly
+
+Inspect how the existing route geometry is created and stored.
+
+Do not simply hide the entire polyline as soon as the first stop is reached. Remove only the portions corresponding to completed travel.
+
+Preferred approach:
+
+- Represent the planned route as ordered road-route segments between consecutive stops, using the existing OpenRouteService geometry wherever possible.
+- Track the current scheduled stop index.
+- When the scheduled stop index advances, remove or hide the completed route segments and render only the remaining segments.
+- Preserve the original stop ordering and the correct road geometry.
+- Ensure the remaining polyline starts from the current scheduled stop and continues through all future stops in order.
+- Avoid drawing straight lines between stops as a substitute for actual road geometry.
+- Reuse cached route geometry rather than unnecessarily requesting a new route whenever a scheduled time changes.
+- If the existing route geometry is stored as one continuous line, implement the smallest safe change that can accurately identify and hide completed portions without drawing misleading lines.
+
+The truck marker must stay at the scheduled stop until the next scheduled time. Do not animate it continuously or interpolate its position between stops.
+
+## 5. Correct Completion Logic
+
+A truck route is completed only when the final scheduled stop has been reached according to the existing schedule and route rules.
+
+Requirements:
+
+- Use the route's scheduled service date and the `Asia/Manila` timezone.
+- Determine the current scheduled stop correctly when the map initially loads or refreshes.
+- Ensure the route lines and marker position are immediately consistent with the current schedule.
+- A past scheduled stop must not remain part of the active route.
+- A completed route must not reappear as an active route on every rerender.
+- Do not mark a route completed just because its final stop is missing or its schedule is invalid.
+- Handle empty routes, missing stop times, invalid dates, and multiple trucks independently.
+- Respect any existing manual completion or cancellation statuses instead of overwriting them incorrectly.
+
+Use the existing application data and business rules. Do not create a second status system if a suitable one already exists.
+
+## 6. Improve the Map UI Without Rebuilding It
+
+Enhance only the existing map preview and its directly related components.
+
+The final UI should provide:
+
+- Clearly separated truck icons.
+- Stable, unique route colors.
+- A readable legend mapping colors to trucks.
+- A clear indicator of each truck's current scheduled location.
+- The next scheduled stop and its time, when available.
+- A clean remaining-route visualization.
+- A clearly visible `Completed` status once the final scheduled stop is reached.
+- Consistent behavior when multiple routes are selected or displayed simultaneously.
+- Responsive behavior without cluttering the map.
+- Proper handling of route loading, API failures, and missing data.
+
+Keep the current scheduling form and unrelated UI unchanged.
+
+## 7. Clean Code and Performance
+
+- Inspect and understand the existing code before editing.
+- Reuse existing map components, route services, schedule utilities, and status models.
+- Fix the root causes rather than applying temporary hardcoded patches.
+- Avoid duplicated polylines, duplicate timers, repeated routing API calls, unnecessary state, and excessive rerenders.
+- Clean up removed map layers, marker event listeners, and timers properly.
+- Do not add GPS, geolocation, live tracking, unnecessary animations, or heavy dependencies.
+- Preserve route creation, editing, saving, truck assignments, collection personnel, schedules, and unrelated features.
+- Make small, maintainable, targeted changes only.
+
+## 8. Required Tests
+
+Verify the following:
+
+1. Two trucks at the same depot are visually distinguishable.
+2. Two routes displayed simultaneously use different, stable colors.
+3. The route legend correctly identifies each truck and route.
+4. At the first scheduled stop, the truck marker advances while the completed depot-to-stop segment disappears.
+5. At each subsequent stop, completed segments disappear and future route segments remain visible.
+6. The remaining line follows actual road geometry between the current scheduled stop and future stops.
+7. At the final stop's scheduled time, the remaining route line disappears and the truck displays `Completed`.
+8. Refreshing the map at a later time restores the correct remaining route and truck position.
+9. Multiple trucks progress independently according to their own schedules.
+10. One truck completing its route does not remove another truck's route line.
+11. Missing or invalid schedules do not cause routes to be marked completed incorrectly.
+12. The implementation does not trigger unnecessary OpenRouteService requests for scheduled marker updates.
+13. Existing route creation, assignments, and other features continue to work.
+
+Run relevant tests, lint checks, and build commands when available. Do not claim that a test passed unless it was actually executed.
+
+## 9. Final Report
+
+After implementation, list:
+
+- The root cause of overlapping truck icons.
+- How stable route colors are assigned.
+- How completed route segments are hidden.
+- How the final route completion state is determined.
+- Exact files changed and why.
+- Actual test and build results.
+- Any remaining limitations.
+
+**Acceptance criteria:** Multiple trucks must be distinguishable on the map, each route must have a stable and unique visible color, completed segments must disappear as the schedule advances, and the remaining route line must disappear when the truck reaches its final scheduled stop. Keep the implementation lightweight and preserve all existing functionality.
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-10-25T17:44:27+08:00.
+
+The user's current state is as follows:
+Active Document: c:\Users\Admin\OneDrive\Desktop\WISE\assets\js\state\store.js (LANGUAGE_JAVASCRIPT)
+Cursor is on line: 1
+Other open documents:
+- c:\Users\Admin\OneDrive\Desktop\WISE\assets\js\components\route-map.js (LANGUAGE_JAVASCRIPT)
+- c:\Users\Admin\OneDrive\Desktop\WISE\collection schedule.html (LANGUAGE_HTML)
+- c:\Users\Admin\OneDrive\Desktop\WISE\assets\css\collection-schedule.css (LANGUAGE_CSS)
+- c:\Users\Admin\OneDrive\Desktop\WISE\assets\js\state\store.js (LANGUAGE_JAVASCRIPT)
+- c:\Users\Admin\OneDrive\Desktop\wise-backend\.env (LANGUAGE_UNSPECIFIED)
+</ADDITIONAL_METADATA>
+<USER_SETTINGS_CHANGE>
+The user changed setting `Model Selection` from Gemini 3.8 Flash (High) to Claude Sonnet 4.6 (Thinking). No need to comment on this change if the user doesn't ask about it. If reporting what model you are, please use a human readable name instead of the exact string.
+</USER_SETTINGS_CHANGE>

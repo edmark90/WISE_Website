@@ -1,0 +1,63 @@
+<USER_REQUEST>
+# FIX WISE MAP PREVIEW — OVERLAPPING TRUCK ICONS, UNIQUE ROUTE COLORS, AND COMPLETED ROUTES
+
+Act as a senior frontend developer. Fix and enhance the existing Map Preview UI of my WISE Waste Collection Management System.
+
+The route preview already works, but there are three problems:
+
+1. When two or more trucks have routes on the map, their truck icons overlap and become difficult to distinguish.
+2. Different routes can have the same or similar line colors, making it difficult to identify which route belongs to which truck.
+3. When a truck reaches a scheduled stop, the completed portion of its route should disappear. When it reaches its final stop, the remaining route line should disappear and the route should display a Completed status.
+
+**IMPORTANT: Inspect the existing implementation first. Fix the actual problems instead of rebuilding the map or creating a separate route-preview component.**
+
+## 1. Fix Overlapping Truck Icons
+
+When multiple trucks appear in the same location, their icons must not completely overlap or become indistinguishable.
+
+Requirements:
+
+- Give each truck a clearly distinguishable marker.
+- When two or more truck icons occupy the same or nearly the same coordinates, apply a lightweight visual separation technique, such as a small pixel-based offset, grouped markers, or a clean expandable marker group.
+- Keep the actual latitude and longitude unchanged. Never modify the real coordinates just to separate the icons visually.
+- When markers are close together, ensure the map remains readable and the correct truck can still be selected.
+- Display a clear truck identifier, such as `Truck 1`, `Truck 2`, and the corresponding route name or ID.
+- Show useful details in a popup or tooltip when a truck marker is selected, including its assigned route, current scheduled stop, next stop, and status when available.
+- Ensure marker positions remain visually clear when the map is zoomed in or out.
+- If multiple trucks share the same depot, show all assigned truck
+<truncated 8384 bytes>
+tion does not trigger unnecessary OpenRouteService requests for scheduled marker updates.
+13. Existing route creation, assignments, and other features continue to work.
+
+Run relevant tests, lint checks, and build commands when available. Do not claim that a test passed unless it was actually executed.
+
+## 9. Final Report
+
+After implementation, list:
+
+- The root cause of overlapping truck icons.
+- How stable route colors are assigned.
+- How completed route segments are hidden.
+- How the final route completion state is determined.
+- Exact files changed and why.
+- Actual test and build results.
+- Any remaining limitations.
+
+**Acceptance criteria:** Multiple trucks must be distinguishable on the map, each route must have a stable and unique visible color, completed segments must disappear as the schedule advances, and the remaining route line must disappear when the truck reaches its final scheduled stop. Keep the implementation lightweight and preserve all existing functionality.
+</USER_REQUEST>
+<ADDITIONAL_METADATA>
+The current local time is: 2026-10-25T17:44:27+08:00.
+
+The user's current state is as follows:
+Active Document: c:\Users\Admin\OneDrive\Desktop\WISE\assets\js\state\store.js (LANGUAGE_JAVASCRIPT)
+Cursor is on line: 1
+Other open documents:
+- c:\Users\Admin\OneDrive\Desktop\WISE\assets\js\components\route-map.js (LANGUAGE_JAVASCRIPT)
+- c:\Users\Admin\OneDrive\Desktop\WISE\collection schedule.html (LANGUAGE_HTML)
+- c:\Users\Admin\OneDrive\Desktop\WISE\assets\css\collection-schedule.css (LANGUAGE_CSS)
+- c:\Users\Admin\OneDrive\Desktop\WISE\assets\js\state\store.js (LANGUAGE_JAVASCRIPT)
+- c:\Users\Admin\OneDrive\Desktop\wise-backend\.env (LANGUAGE_UNSPECIFIED)
+</ADDITIONAL_METADATA>
+<USER_SETTINGS_CHANGE>
+The user changed setting `Model Selection` from Gemini 3.8 Flash (High) to Claude Sonnet 4.6 (Thinking). No need to comment on this change if the user doesn't ask about it. If reporting what model you are, please use a human readable name instead of the exact string.
+</USER_SETTINGS_CHANGE>
