@@ -49,20 +49,121 @@ var _routeLayers = [];  // Dynamic route markers, lines, truck icons
 var _truckDataList = [];
 var _truckClockInterval = null;
 var _routeGeometries = {};
+var _renderChain = Promise.resolve();
+var _lastRenderContext = null;
 
-// Palette for up to 10 distinct truck routes
+// High-contrast palette for simultaneously displayed truck routes.
+// Saturated mid-tones stay legible over OpenStreetMap's yellow/green tiles.
 var ROUTE_COLORS = [
-  '#16A34A', // Green
-  '#2563EB', // Blue
-  '#D97706', // Amber
-  '#9333EA', // Purple
+  '#1D4ED8', // Blue
   '#DC2626', // Red
-  '#0D9488', // Teal
-  '#DB2777', // Pink
-  '#4F46E5', // Indigo
-  '#EA580C', // Orange
-  '#0284C7'  // Sky
+  '#047857', // Emerald
+  '#7E22CE', // Purple
+  '#C2410C', // Burnt orange
+  '#0F766E', // Teal
+  '#BE185D', // Pink
+  '#4338CA', // Indigo
+  '#A16207', // Ochre
+  '#0E7490', // Cyan
+  '#7C2D12', // Brown
+  '#4D7C0F'  // Olive
 ];
+
+// Dash patterns used only when more routes are shown than palette entries,
+// so route identity never depends on colour alone.
+var ROUTE_DASH_PATTERNS = [null, '14, 8', '3, 7', '18, 6, 4, 6'];
+
+// Truck marker layout. Pure pixel offsets — scheduled coordinates are never changed.
+// The slot is deliberately large enough that spread icons never cover the depot pin.
+var TRUCK_SLOT_SIZE = 168;
+var TRUCK_CLUSTER_TOLERANCE = 0.0002; // ~22 m: icons closer than this are spread apart
+
+/**
+ * Stable identity key for a route.
+ * Uses the persisted schedule id, so a route keeps the same colour across renders,
+ * page refreshes and partial selections.
+ */
+function routeIdentityKey(a) {
+  if (!a) return 'route:';
+  if (a.id !== undefined && a.id !== null && a.id !== '') return 'id:' + a.id;
+  return 'route:' + (a.routeName || '') + '|' + (a.truck || '');
+}
+
+/** FNV-1a hash -> deterministic palette index source (never random). */
+function hashStringToUint(str) {
+  var h = 2166136261;
+  var s = String(str || '');
+  for (var i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = (h * 16777619) >>> 0;
+  }
+  return h >>> 0;
+}
+
+/**
+ * Assigns each assignment a unique, deterministic route colour.
+ * - Base colour = hash of the stable route id (never random, never per-render).
+ * - Collisions between simultaneously displayed routes are resolved in sorted-key
+ *   order, so the same set of routes always receives the same colours regardless of
+ *   the order the assignments arrive in.
+ * - With more routes than palette entries, colours repeat but every repeat gets its
+ *   own dash pattern so routes stay distinguishable without relying on colour alone.
+ *
+ * @param {Array} assignments
+ * @returns {Object} assignment index -> { color, colorIndex, dashArray }
+ */
+function assignRouteColors(assignments) {
+  var result = {};
+  if (!assignments || assignments.length === 0) return result;
+
+  var entries = assignments.map(function (a, idx) {
+    return { idx: idx, key: routeIdentityKey(a) };
+  });
+
+  entries.sort(function (x, y) {
+    if (x.key === y.key) return x.idx - y.idx;
+    return x.key < y.key ? -1 : 1;
+  });
+
+  var paletteUses = {};
+
+  entries.forEach(function (entry) {
+    var start = hashStringToUint(entry.key) % ROUTE_COLORS.length;
+    var chosen = -1;
+    for (var step = 0; step < ROUTE_COLORS.length; step++) {
+      var cand = (start + step) % ROUTE_COLORS.length;
+      if (!paletteUses[cand]) { chosen = cand; break; }
+    }
+    var repeat = 0;
+    if (chosen === -1) {
+      chosen = start;
+      repeat = paletteUses[chosen] || 0;
+    }
+    paletteUses[chosen] = (paletteUses[chosen] || 0) + 1;
+
+    result[entry.idx] = {
+      color: ROUTE_COLORS[chosen],
+      colorIndex: chosen,
+      dashArray: repeat > 0 ? ROUTE_DASH_PATTERNS[repeat % ROUTE_DASH_PATTERNS.length] : null
+    };
+  });
+
+  return result;
+}
+
+/** True only for a real calendar date string (YYYY-MM-DD). */
+function isValidScheduleDate(value) {
+  var s = String(value || '').slice(0, 10);
+  var parts = s.split('-');
+  if (parts.length !== 3 || parts[0].length !== 4 || parts[1].length !== 2 || parts[2].length !== 2) return false;
+  if (!/^[0-9]+$/.test(parts[0] + parts[1] + parts[2])) return false;
+  var y = parseInt(parts[0], 10);
+  var m = parseInt(parts[1], 10);
+  var d = parseInt(parts[2], 10);
+  if (m < 1 || m > 12 || d < 1 || d > 31) return false;
+  var probe = new Date(Date.UTC(y, m - 1, d));
+  return probe.getUTCFullYear() === y && probe.getUTCMonth() === m - 1 && probe.getUTCDate() === d;
+}
 
 /**
  * Creates an inverted polygon mask that shades regions outside Muntinlupa City.
@@ -487,21 +588,44 @@ function getManilaTodayStr(manilaDate) {
  * @returns {Object|null}
  */
 function calcTruckSchedulePosition(stops, collectionDate, customNow) {
+  return enrichSchedulePosition(calcTruckScheduleBase(stops, collectionDate, customNow), stops);
+}
+
+function calcTruckScheduleBase(stops, collectionDate, customNow) {
   if (!stops || stops.length === 0) return null;
 
   var manilaNow = customNow ? getManilaDate(customNow) : getManilaDate();
   var todayStr = getManilaTodayStr(manilaNow);
-  var schedDateStr = (collectionDate || '').slice(0, 10) || todayStr;
+  var schedDateStr = (collectionDate || '').slice(0, 10);
+  var hasValidDate = isValidScheduleDate(schedDateStr);
 
-  var isToday = (schedDateStr === todayStr);
-  var isPast = (schedDateStr < todayStr);
-  var isFuture = (schedDateStr > todayStr);
+  var isToday = hasValidDate && (schedDateStr === todayStr);
+  var isPast = hasValidDate && (schedDateStr < todayStr);
+  var isFuture = hasValidDate && (schedDateStr > todayStr);
 
   var parsedTimes = stops.map(function (s) {
     return parseTimeToMinutes(s.collection_time);
   });
 
   var firstStopName = stops[0].street || stops[0].barangay || 'Stop 1';
+
+  // 0. Missing or invalid collection date -> schedule unknown. Never "Completed".
+  if (!hasValidDate) {
+    return {
+      status: 'Scheduled',
+      isAtDepot: true,
+      stopIdx: null,
+      nextStopIdx: 0,
+      currentStop: null,
+      nextStop: stops[0],
+      coord: DEFAULT_DEPOT.coord,
+      isToday: false,
+      isPast: false,
+      isFuture: false,
+      detailText: 'At Tunasan Depot - collection date pending for ' + firstStopName,
+      badgeClass: 'status-scheduled'
+    };
+  }
 
   // 1. PAST collection date -> Route completed; stationary at final stop
   if (isPast) {
@@ -631,6 +755,97 @@ function calcTruckSchedulePosition(stops, collectionDate, customNow) {
   };
 }
 
+/**
+ * Adds the derived fields the map UI needs (current / next stop labels and times)
+ * without changing the tested schedule-position contract above.
+ */
+function enrichSchedulePosition(pos, stops) {
+  if (!pos) return pos;
+
+  var cur = (pos.stopIdx !== null && pos.stopIdx !== undefined) ? stops[pos.stopIdx] : null;
+  var nxt = (pos.nextStopIdx !== null && pos.nextStopIdx !== undefined) ? stops[pos.nextStopIdx] : null;
+  var curMinutes = cur ? parseTimeToMinutes(cur.collection_time) : null;
+  var nextMinutes = nxt ? parseTimeToMinutes(nxt.collection_time) : null;
+
+  pos.isCompleted = pos.status === 'Completed';
+  pos.isCancelled = false;
+  pos.currentStopName = cur ? (cur.street || cur.barangay || ('Stop ' + (pos.stopIdx + 1))) : '';
+  pos.currentStopTimeStr = curMinutes !== null ? formatMinutes12(curMinutes) : '';
+  pos.nextStopName = nxt ? (nxt.street || nxt.barangay || ('Stop ' + (pos.nextStopIdx + 1))) : '';
+  pos.nextStopTimeStr = nextMinutes !== null ? formatMinutes12(nextMinutes) : '';
+
+  return pos;
+}
+
+/** Normalises a persisted/manual route status to 'Completed' | 'Cancelled' | null. */
+function normalizeManualRouteStatus(status) {
+  var s = String(status || '').trim().toLowerCase();
+  if (s === 'cancelled' || s === 'canceled') return 'Cancelled';
+  if (s === 'completed') return 'Completed';
+  return null;
+}
+
+/**
+ * Combines the schedule-based position with the route's persisted status.
+ * A manually completed or cancelled assignment is respected and never overwritten
+ * by the clock, and an invalid schedule is never reported as completed.
+ *
+ * @param {Object} a - normalised assignment ({ id, schedule, routeName, truck, status, stops })
+ * @param {Date} [now]
+ * @returns {Object|null} schedule position with status overrides applied
+ */
+function deriveRouteState(a, now) {
+  if (!a || !a.stops || a.stops.length === 0) return null;
+
+  var collDate = a.schedule ? String(a.schedule.collection_date || '').slice(0, 10) : '';
+  var pos = calcTruckSchedulePosition(a.stops, collDate, now);
+  if (!pos) return null;
+
+  pos.isCancelled = false;
+  var manual = normalizeManualRouteStatus(a.status);
+
+  if (manual === 'Cancelled') {
+    pos.status = 'Cancelled';
+    pos.isCancelled = true;
+    pos.isCompleted = false;
+    pos.isAtDepot = true;
+    pos.stopIdx = null;
+    pos.nextStopIdx = null;
+    pos.currentStop = null;
+    pos.nextStop = null;
+    pos.coord = DEFAULT_DEPOT.coord;
+    pos.currentStopName = '';
+    pos.currentStopTimeStr = '';
+    pos.nextStopName = '';
+    pos.nextStopTimeStr = '';
+    pos.detailText = 'Route cancelled - no collection run scheduled';
+    pos.badgeClass = 'status-cancelled';
+    return pos;
+  }
+
+  if (manual === 'Completed' && !pos.isCompleted) {
+    var lastIdx = a.stops.length - 1;
+    var lastMinutes = parseTimeToMinutes(a.stops[lastIdx].collection_time);
+    pos.status = 'Completed';
+    pos.isCompleted = true;
+    pos.isAtDepot = false;
+    pos.stopIdx = lastIdx;
+    pos.nextStopIdx = null;
+    pos.nextStop = null;
+    pos.nextStopName = '';
+    pos.nextStopTimeStr = '';
+    pos.currentStop = a.stops[lastIdx];
+    pos.currentStopName = a.stops[lastIdx].street || a.stops[lastIdx].barangay || ('Stop ' + (lastIdx + 1));
+    pos.currentStopTimeStr = lastMinutes !== null ? formatMinutes12(lastMinutes) : '';
+    pos.coord = null;
+    pos.detailText = 'Completed route at ' + pos.currentStopName + (pos.currentStopTimeStr ? ' (' + pos.currentStopTimeStr + ')' : '');
+    pos.badgeClass = 'status-completed';
+    return pos;
+  }
+
+  return pos;
+}
+
 // =========================================================================
 // 3. MAP INITIALIZATION & CLEANUP
 // =========================================================================
@@ -709,7 +924,8 @@ function renderMuntinlupaOverview(customNote) {
     iconSize: [30, 30],
     iconAnchor: [15, 15]
   });
-  var depotMarker = L.marker(DEFAULT_DEPOT.coord, { icon: depotIcon, zIndexOffset: 300 });
+  // Always painted above the truck markers so the depot pin never gets buried.
+  var depotMarker = L.marker(DEFAULT_DEPOT.coord, { icon: depotIcon, zIndexOffset: 2600 });
   depotMarker.bindTooltip('<strong>' + escapeHtml(DEFAULT_DEPOT.name) + '</strong><br><small>' + escapeHtml(DEFAULT_DEPOT.address) + '</small>', { direction: 'top', offset: [0, -15] });
   depotMarker.bindPopup('<div class="wise-map-popup">' +
     '<div class="wmp-header" style="border-left:3.5px solid #F59E0B">' +
@@ -777,6 +993,7 @@ function clearMapLayers() {
   }
   _routeLayers = [];
   _truckDataList = [];
+  _lastRenderContext = null;
   stopTruckClock();
 }
 
@@ -802,57 +1019,145 @@ function startTruckClock(truckList) {
   stopTruckClock();
   if (!truckList || truckList.length === 0) return;
 
-  function tick() {
-    var now = getManilaDate();
-    truckList.forEach(function (td) {
-      updateTruckMarkerPosition(td, now);
-    });
-  }
+  // Re-checks scheduled boundaries every 20 s. Route geometry is cached on each
+  // truck record, so a tick never issues a routing request and never animates.
+  _truckClockInterval = setInterval(function () {
+    updateFleetFromSchedule(getManilaDate());
+  }, 20000);
+}
 
-  // Update position every 20 seconds; does NOT make any API calls
-  _truckClockInterval = setInterval(tick, 20000);
+/** Stable signature of a truck's scheduled state, used to skip redundant redraws. */
+function routeStateKey(posInfo) {
+  if (!posInfo) return '';
+  return [
+    posInfo.status,
+    posInfo.isAtDepot ? 1 : 0,
+    posInfo.stopIdx === null || posInfo.stopIdx === undefined ? '-' : posInfo.stopIdx,
+    posInfo.nextStopIdx === null || posInfo.nextStopIdx === undefined ? '-' : posInfo.nextStopIdx
+  ].join('|');
 }
 
 /**
- * Updates marker location and popups when a scheduled time boundary is crossed.
- * Truck jumps directly to the new stop marker and remains stationary.
+ * Recalculates every truck against its own schedule and redraws only what changed.
+ * Trucks advance independently; a completed truck keeps its marker and stop pins but
+ * loses its active route line. No GPS, no interpolation, no API calls.
  */
-function updateTruckMarkerPosition(td, now) {
-  if (!td.marker || !td.assignment || !td.assignment.stops) return;
-  var posInfo = calcTruckSchedulePosition(td.assignment.stops, td.collectionDate, now);
-  if (!posInfo) return;
+function updateFleetFromSchedule(now) {
+  if (!_leafletMap || !_truckDataList || _truckDataList.length === 0) return;
 
-  var targetCoord;
-  if (posInfo.isAtDepot) {
-    targetCoord = DEFAULT_DEPOT.coord;
-  } else if (posInfo.stopIdx !== null && td.stopCoords[posInfo.stopIdx]) {
-    targetCoord = td.stopCoords[posInfo.stopIdx];
-  } else {
-    targetCoord = DEFAULT_DEPOT.coord;
-  }
+  var stateChanged = false;
 
-  // Direct stationary placement — NO INTERPOLATION
-  td.marker.setLatLng(targetCoord);
+  _truckDataList.forEach(function (td) {
+    if (!td || !td.assignment) return;
 
-  var truckName = td.assignment.truck || 'Truck';
-  var statusBadge = posInfo.status;
+    var nextState = deriveRouteState(td.assignment, now);
+    if (!nextState) return;
 
-  td.marker.setIcon(makeTruckIcon(td.color, '[' + statusBadge + '] ' + truckName));
+    var previousKey = routeStateKey(td.posInfo);
+    td.posInfo = nextState;
 
-  if (td.marker.getTooltip()) {
-    td.marker.setTooltipContent(
-      '<strong>' + escapeHtml(truckName) + '</strong><br>' +
-      '<span class="wmp-status-pill ' + posInfo.badgeClass + '">' + escapeHtml(statusBadge) + '</span><br>' +
-      '<small style="opacity:0.85;font-size:10px">\u26a0 Schedule-based \u2014 No GPS<br>' + escapeHtml(posInfo.detailText) + '</small>'
-    );
-  }
+    if (previousKey !== routeStateKey(td.posInfo)) {
+      stateChanged = true;
+      renderTruckRouteLine(td);
+      refreshStopMarkers(td);
+    }
+
+    td.currentCoord = resolveTruckCoord(td);
+  });
+
+  // Spread depends on current coordinates only - recompute (cheap) and reposition.
+  computeTruckSpread(_truckDataList);
+  _truckDataList.forEach(function (td) {
+    if (td && td.marker) refreshTruckMarker(td);
+  });
+
+  if (stateChanged) refreshRouteInfoBar();
+}
+
+/** Re-renders the summary / legend from the last render context. */
+function refreshRouteInfoBar() {
+  var ctx = _lastRenderContext;
+  if (!ctx || !ctx.infoEl) return;
+  renderRouteInfoBar(ctx.assignments, ctx.label, ctx.truckList, ctx.warnings, ctx.infoEl);
 }
 
 // =========================================================================
-// 5. ICONS & STYLING (STOP PINS & TRUCK MARKER)
+// 5. ICONS, MARKER SPREAD & STYLING (STOP PINS & TRUCK MARKER)
 // =========================================================================
 
-function makeTruckIcon(color, titleText) {
+/** Short truck identifier shown on the marker and in the legend (e.g. T01). */
+function truckShortId(assignment, index) {
+  var name = String((assignment && assignment.truck) || '');
+  var digits = name.match(/[0-9]+/);
+  if (digits && digits[0]) return 'T' + digits[0];
+  return 'T' + (index + 1);
+}
+
+/**
+ * Pixel offsets for n markers that share one location.
+ * Pure screen-space math: latitude/longitude are never modified.
+ */
+function computeClusterOffsets(count) {
+  if (count <= 1) return [[0, 0]];
+  // Wide enough that the icons, their name chips and the depot pin never overlap.
+  if (count === 2) return [[-52, 0], [52, 0]];
+  var radius = count === 3 ? 56 : (count <= 8 ? 60 : 64);
+  var offsets = [];
+  for (var i = 0; i < count; i++) {
+    var angle = (-Math.PI / 2) + (i * 2 * Math.PI / count);
+    offsets.push([Math.round(Math.cos(angle) * radius), Math.round(Math.sin(angle) * radius)]);
+  }
+  return offsets;
+}
+
+/**
+ * Groups trucks standing at (nearly) the same coordinate and gives each one a small
+ * pixel offset so icons never sit exactly on top of each other. Mutates only the
+ * render offset (spreadDx / spreadDy) on each truck record - never the coordinates.
+ */
+function computeTruckSpread(truckList) {
+  var groups = [];
+  var toleranceSq = TRUCK_CLUSTER_TOLERANCE * TRUCK_CLUSTER_TOLERANCE;
+
+  (truckList || []).forEach(function (td) {
+    if (!td) return;
+    if (!td.currentCoord) {
+      td.spreadDx = 0;
+      td.spreadDy = 0;
+      return;
+    }
+    var group = null;
+    for (var g = 0; g < groups.length; g++) {
+      var rep = groups[g][0].currentCoord;
+      var dLat = rep[0] - td.currentCoord[0];
+      var dLng = rep[1] - td.currentCoord[1];
+      if (dLat * dLat + dLng * dLng <= toleranceSq) { group = groups[g]; break; }
+    }
+    if (!group) { group = []; groups.push(group); }
+    group.push(td);
+  });
+
+  groups.forEach(function (group) {
+    var offsets = computeClusterOffsets(group.length);
+    group.forEach(function (td, i) {
+      td.spreadDx = offsets[i][0];
+      td.spreadDy = offsets[i][1];
+    });
+  });
+}
+
+/**
+ * Truck marker.
+ * The divIcon is a fixed pixel slot centred on the real coordinate; the icon inside
+ * may be shifted for legibility and a dashed leader shows where the truck actually is.
+ */
+function makeTruckIcon(color, titleText, opts) {
+  opts = opts || {};
+  var dx = Math.round(opts.dx || 0);
+  var dy = Math.round(opts.dy || 0);
+  var label = opts.label || '';
+  var half = TRUCK_SLOT_SIZE / 2;
+
   var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="38" height="38" viewBox="0 0 38 38">' +
     '<circle cx="19" cy="19" r="18" fill="' + color + '" opacity="0.22"/>' +
     '<circle cx="19" cy="19" r="14.5" fill="' + color + '" stroke="#ffffff" stroke-width="2.5"/>' +
@@ -864,18 +1169,64 @@ function makeTruckIcon(color, titleText) {
     '</g>' +
     '</svg>';
 
+  // Dashed stem from the shifted icon toward the real coordinate. It stops short of
+  // the centre so the depot (or stop) pin itself is never drawn over.
+  var leader = '';
+  var distance = Math.sqrt(dx * dx + dy * dy);
+  var iconRadius = 19;
+  var stemStart = 20;
+  var stemEnd = distance - iconRadius;
+  if (distance > 0 && stemEnd - stemStart >= 4) {
+    var ux = dx / distance;
+    var uy = dy / distance;
+    leader = '<svg class="wise-truck-leader" width="' + TRUCK_SLOT_SIZE + '" height="' + TRUCK_SLOT_SIZE + '" aria-hidden="true">' +
+      '<line x1="' + (half + ux * stemStart).toFixed(1) + '" y1="' + (half + uy * stemStart).toFixed(1) + '"' +
+      ' x2="' + (half + ux * stemEnd).toFixed(1) + '" y2="' + (half + uy * stemEnd).toFixed(1) + '"' +
+      ' stroke="' + color + '" stroke-width="2.5" stroke-linecap="round" stroke-dasharray="4 3" opacity="0.95"/>' +
+      '</svg>';
+  }
+
+  var labelHtml = label
+    ? '<span class="wise-truck-label" style="color:' + color + ';border-color:' + color + '">' + escapeHtml(label) + '</span>'
+    : '';
+
+  var html = '<div class="wise-truck-slot">' + leader +
+    '<div class="wise-truck-marker" style="--wise-truck-dx:' + dx + 'px;--wise-truck-dy:' + dy + 'px" title="' + escapeHtml(titleText) + '">' +
+    '<span class="wise-truck-icon">' + svg + '</span>' +
+    labelHtml +
+    '</div>' +
+    '</div>';
+
   return L.divIcon({
-    html: '<div class="wise-truck-marker" title="' + escapeHtml(titleText) + '">' + svg + '</div>',
+    html: html,
     className: '',
-    iconSize: [38, 38],
-    iconAnchor: [19, 19]
+    iconSize: [TRUCK_SLOT_SIZE, TRUCK_SLOT_SIZE],
+    iconAnchor: [half, half]
   });
 }
 
-function makeStopPinIcon(label, bColor, borderColor, isFirst, isLast) {
-  var pinClass = 'wise-stop-pin' + (isFirst ? ' start-pin' : (isLast ? ' end-pin' : ''));
+/**
+ * Stop pin in the route's own colour. Completed stops are muted and marked with a
+ * tick; the start pin is labelled S and the final stop F so they stay recognisable
+ * without relying on colour.
+ */
+function makeStopPinIcon(label, color, opts) {
+  opts = opts || {};
+  var classes = 'wise-stop-pin';
+  if (opts.isFirst) classes += ' start-pin';
+  if (opts.isLast) classes += ' end-pin';
+  if (opts.phase === 'completed') classes += ' passed-pin';
+  if (opts.phase === 'current') classes += ' current-pin';
+  if (opts.isCancelled) classes += ' cancelled-pin';
+
+  var background = opts.phase === 'completed' ? '#94A3B8' : color;
+  var text = opts.phase === 'completed' ? '&#10003;' : escapeHtml(label);
+  var ring = opts.phase === 'current'
+    ? ';box-shadow:0 0 0 3px ' + color + '66,0 2px 7px rgba(0,0,0,0.35)'
+    : '';
+
   return L.divIcon({
-    html: '<div class="' + pinClass + '" style="background:' + bColor + ';border-color:' + borderColor + '">' + escapeHtml(label) + '</div>',
+    html: '<div class="' + classes + '" style="background:' + background + ';border-color:#ffffff' + ring + '">' + text + '</div>',
     className: '',
     iconSize: [28, 28],
     iconAnchor: [14, 14]
@@ -920,15 +1271,523 @@ async function fetchRouteGeometry(waypoints) {
 }
 
 // =========================================================================
-// 7. MAIN ROUTE MAP RENDERER
+// 7. ROUTE GEOMETRY, SEGMENT SPLITTING & MAIN ROUTE MAP RENDERER
 // =========================================================================
 
-async function renderRouteMap(assignments, label) {
+/**
+ * Straight-line legs used only when OpenRouteService is unavailable.
+ * Always labelled in the UI - never used while real road geometry exists.
+ */
+function buildStraightLegs(waypoints) {
+  var legs = [];
+  for (var i = 0; i < waypoints.length - 1; i++) {
+    legs.push([waypoints[i], waypoints[i + 1]]);
+  }
+  return legs;
+}
+
+/** Index of the polyline vertex closest to a waypoint, searched forward only. */
+function findNearestVertexIndex(latlngs, target, fromIndex) {
+  var bestIdx = -1;
+  var bestDist = Infinity;
+  for (var i = Math.max(0, fromIndex); i < latlngs.length; i++) {
+    var dLat = latlngs[i][0] - target[0];
+    var dLng = latlngs[i][1] - target[1];
+    var dist = dLat * dLat + dLng * dLng;
+    if (dist < bestDist) { bestDist = dist; bestIdx = i; }
+  }
+  if (bestIdx === -1) return null;
+  // Reject matches further than roughly 1.5 km: a bad geometry must never be cut blindly.
+  if (bestDist > 0.00018) return null;
+  return bestIdx;
+}
+
+/**
+ * Splits one continuous road polyline into ordered legs between consecutive stops.
+ * The ORS geometry is preserved untouched - only cut indices are computed, so every
+ * leg still follows real roads (no synthetic straight lines are introduced).
+ *
+ * @param {Array} latlngs - full road geometry as [lat, lng] pairs
+ * @param {Array} waypoints - [depot, stop1, stop2, ...] as [lat, lng] pairs
+ * @returns {Array|null} legs[i] = polyline from waypoint i to waypoint i + 1
+ */
+function splitRouteIntoLegs(latlngs, waypoints) {
+  if (!latlngs || latlngs.length < 2 || !waypoints || waypoints.length < 2) return null;
+
+  var cuts = [0];
+  var cursor = 0;
+  for (var w = 1; w < waypoints.length - 1; w++) {
+    // Search forward only: stops must stay in their scheduled order. Two stops that
+    // share one coordinate simply produce a zero-length leg.
+    var idx = findNearestVertexIndex(latlngs, waypoints[w], cursor);
+    if (idx === null || idx < cursor) return null;
+    cuts.push(idx);
+    cursor = idx;
+  }
+  cuts.push(latlngs.length - 1);
+
+  var legs = [];
+  for (var i = 0; i < cuts.length - 1; i++) {
+    legs.push(latlngs.slice(cuts[i], cuts[i + 1] + 1));
+  }
+  return legs;
+}
+
+/**
+ * Fetches (or reuses) road geometry for a waypoint chain.
+ * Successful road geometry is cached by chain, so schedule ticks and repeated
+ * renders never trigger another OpenRouteService request.
+ */
+async function getRouteGeometry(waypoints) {
+  var cacheKey = waypoints.map(function (c) { return c.join(','); }).join('|');
+  var cached = _routeGeometries[cacheKey];
+  if (cached) return cached;
+
+  var result = await fetchRouteGeometry(waypoints);
+  var entry;
+
+  if (result && result.fullGeometry && result.fullGeometry.coordinates && result.fullGeometry.coordinates.length >= 2) {
+    var latlngs = result.fullGeometry.coordinates.map(function (c) { return [c[1], c[0]]; });
+    var legs = splitRouteIntoLegs(latlngs, waypoints);
+    entry = {
+      latlngs: latlngs,
+      legs: legs || buildStraightLegs(waypoints),
+      summary: result.summary || null,
+      isFallback: !legs,
+      // Never pass straight stop-to-stop lines off as road geometry: label them.
+      isStraightFallback: !legs
+    };
+    // Cache only real road geometry - a failed request is retried on the next render.
+    if (legs) _routeGeometries[cacheKey] = entry;
+  } else {
+    entry = {
+      latlngs: waypoints.slice(),
+      legs: buildStraightLegs(waypoints),
+      summary: null,
+      isFallback: true,
+      isStraightFallback: true
+    };
+  }
+
+  return entry;
+}
+
+/** Waypoint index (0 = depot) from which a truck's remaining route starts. */
+function startWaypointIndex(td, stopIdx) {
+  if (!td || stopIdx === null || stopIdx === undefined) return null;
+  var map = td.waypointOfStop || [];
+  if (map[stopIdx] !== undefined && map[stopIdx] !== null) return map[stopIdx];
+  for (var s = stopIdx - 1; s >= 0; s--) {
+    if (map[s] !== undefined && map[s] !== null) return map[s];
+  }
+  return 0;
+}
+
+/**
+ * Builds the polyline of the truck's REMAINING planned journey.
+ * Legs already driven (up to and including the current scheduled stop) are dropped.
+ * Completed or cancelled routes return null so no active line is drawn at all.
+ */
+function buildRemainingTrail(td, state) {
+  if (!td || !td.legs || td.legs.length === 0) return null;
+  if (!state || state.isCompleted || state.isCancelled) return null;
+
+  var startLeg = 0;
+  if (!state.isAtDepot) {
+    var wpIdx = startWaypointIndex(td, state.stopIdx);
+    if (wpIdx === null) return null;
+    startLeg = wpIdx;
+  }
+  if (startLeg >= td.legs.length) return null;
+
+  var trail = [];
+  for (var i = startLeg; i < td.legs.length; i++) {
+    var leg = td.legs[i];
+    if (!leg) continue;
+    for (var j = 0; j < leg.length; j++) {
+      var point = leg[j];
+      var last = trail[trail.length - 1];
+      if (!last || last[0] !== point[0] || last[1] !== point[1]) trail.push(point);
+    }
+  }
+  return trail.length >= 2 ? trail : null;
+}
+
+/** Where the truck icon belongs right now - a scheduled stop, never interpolated. */
+function resolveTruckCoord(td) {
+  if (!td) return DEFAULT_DEPOT.coord;
+  var state = td.posInfo;
+  if (!state || state.isCancelled || state.isAtDepot) return DEFAULT_DEPOT.coord;
+  if (state.stopIdx !== null && state.stopIdx !== undefined) {
+    for (var s = state.stopIdx; s >= 0; s--) {
+      if (td.stopCoords && td.stopCoords[s]) return td.stopCoords[s];
+    }
+  }
+  return DEFAULT_DEPOT.coord;
+}
+
+/** 'completed' | 'current' | 'pending' for one stop of a truck's route. */
+function stopPhase(td, sIdx) {
+  var state = td && td.posInfo;
+  if (!state || state.isCancelled) return 'pending';
+  if (state.isCompleted) return 'completed';
+  if (state.stopIdx === null || state.stopIdx === undefined) return 'pending';
+  if (sIdx < state.stopIdx) return 'completed';
+  if (sIdx === state.stopIdx) return 'current';
+  return 'pending';
+}
+
+/** S / F / sequence number for a stop pin. */
+function stopPinLabel(td, sIdx) {
+  var total = td.stops ? td.stops.length : 0;
+  if (sIdx === 0) return 'S';
+  if (sIdx === total - 1 && total > 1) return 'F';
+  return String(sIdx + 1);
+}
+
+function stopPlaceName(stop, idx) {
+  if (!stop) return 'Stop ' + (idx + 1);
+  return stop.street || stop.barangay || ('Stop ' + (idx + 1));
+}
+
+function buildStopPopupHtml(td, sIdx) {
+  var stop = td.stops[sIdx];
+  var phase = stopPhase(td, sIdx);
+  var total = td.stops.length;
+  var timeStr = stop && stop.collection_time ? formatTime12((stop.collection_time + '').substring(0, 5)) : '';
+  var resolved = (td.resolvedStops && td.resolvedStops[sIdx]) || {};
+  var isFirst = sIdx === 0;
+  var isLast = sIdx === total - 1 && total > 1;
+  var roleLabel = isFirst ? 'First Scheduled Stop' : (isLast ? 'Final Destination' : ('Collection Stop ' + (sIdx + 1)));
+
+  var phaseNote = '';
+  if (phase === 'completed') {
+    phaseNote = '<div class="wmp-phase wmp-phase-done">Completed - removed from the active route</div>';
+  } else if (phase === 'current') {
+    phaseNote = '<div class="wmp-phase wmp-phase-now">Current scheduled position</div>';
+  }
+
+  var warning = '';
+  if (resolved.isOutOfBoundary) {
+    warning = '<div class="wmp-warning" style="background:#FEE2E2;color:#991B1B;padding:4px 6px;border-radius:4px;margin-top:4px">Outside Muntinlupa City - flagged for review</div>';
+  } else if (resolved.isApproximate) {
+    warning = '<div class="wmp-warning">Approximate center (exact address unmapped)</div>';
+  }
+
+  return '<div class="wise-map-popup">' +
+    '<div class="wmp-header" style="border-left:3.5px solid ' + td.color + '">' +
+    '<span class="wmp-badge" style="color:' + td.color + ';background:' + td.color + '1a">' + escapeHtml(roleLabel) + '</span>' +
+    '<strong>' + escapeHtml((stop && stop.barangay) || '') + '</strong>' +
+    (stop && stop.street ? '<div class="wmp-street">' + escapeHtml(stop.street) + '</div>' : '') +
+    '</div>' +
+    (timeStr ? '<div class="wmp-time">' + timeStr + '</div>' : '') +
+    '<div class="wmp-meta">' + escapeHtml(td.truckLabel) + ' &middot; Stop ' + (sIdx + 1) + ' of ' + total + '</div>' +
+    phaseNote +
+    warning +
+    '<div class="wmp-notice">Scheduled itinerary - not live GPS</div>' +
+    '</div>';
+}
+
+function buildTruckPopupHtml(td) {
+  var a = td.assignment || {};
+  var state = td.posInfo || {};
+  var currentLabel = state.isAtDepot ? DEFAULT_DEPOT.name : (state.currentStopName || 'Scheduled stop');
+  var currentTime = state.isAtDepot ? '' : (state.currentStopTimeStr || '');
+  var nextLabel = state.nextStopName || '';
+  var nextTime = state.nextStopTimeStr || '';
+  var stopsCount = td.stops ? td.stops.length : 0;
+
+  return '<div class="wise-map-popup">' +
+    '<div class="wmp-header" style="border-left:3.5px solid ' + td.color + '">' +
+    '<span class="wmp-badge wmp-badge-truck" style="color:' + td.color + ';background:' + td.color + '1a">Assigned Fleet</span>' +
+    '<strong>' + escapeHtml(td.truckLabel) + '</strong>' +
+    '<div class="wmp-street">' + escapeHtml(a.routeName || 'Collection Route') + (a.personnel ? ' &middot; ' + escapeHtml(a.personnel) : '') + '</div>' +
+    '</div>' +
+    '<div class="wmp-status-pill ' + (state.badgeClass || '') + '">' + escapeHtml(state.status || 'Scheduled') + '</div>' +
+    '<div class="wmp-rows">' +
+    '<div class="wmp-row"><span class="wmp-row-label">Current</span><span class="wmp-row-value">' + escapeHtml(currentLabel) + (currentTime ? ' &middot; ' + escapeHtml(currentTime) : '') + '</span></div>' +
+    (nextLabel ? '<div class="wmp-row"><span class="wmp-row-label">Next</span><span class="wmp-row-value">' + escapeHtml(nextLabel) + (nextTime ? ' &middot; ' + escapeHtml(nextTime) : '') + '</span></div>' : '') +
+    '<div class="wmp-row"><span class="wmp-row-label">Stops</span><span class="wmp-row-value">' + stopsCount + ' scheduled' + (td.routeDistance ? ' &middot; ' + escapeHtml(td.routeDistance) : '') + '</span></div>' +
+    '</div>' +
+    (state.detailText ? '<div class="wmp-detail">' + escapeHtml(state.detailText) + '</div>' : '') +
+    '<div class="wmp-notice">Schedule-based simulation - not a live GPS tracker</div>' +
+    '</div>';
+}
+
+function buildTruckTooltipHtml(td) {
+  var state = td.posInfo || {};
+  var routeName = td.assignment && td.assignment.routeName ? td.assignment.routeName : '';
+  return '<strong>' + escapeHtml(td.truckLabel) + '</strong>' +
+    (routeName ? '<br><span style="font-size:10px;opacity:.85">' + escapeHtml(routeName) + '</span>' : '') +
+    '<br><span class="wmp-status-pill ' + (state.badgeClass || '') + '">' + escapeHtml(state.status || 'Scheduled') + '</span>' +
+    (state.detailText ? '<br><small style="opacity:.8;font-size:10px">' + escapeHtml(state.detailText) + '</small>' : '') +
+    '<br><small style="opacity:.7;font-size:9px">Schedule-based - no GPS</small>';
+}
+
+/**
+ * Repositions / relabels a truck marker. Returns true when the DOM changed.
+ * Pixel spread offsets keep coincident trucks separable; coordinates are untouched.
+ */
+function refreshTruckMarker(td) {
+  if (!td || !td.marker || !td.posInfo) return false;
+
+  var key = routeStateKey(td.posInfo) + '#' +
+    (td.currentCoord ? td.currentCoord.join(',') : '') + '#' +
+    (td.spreadDx || 0) + ',' + (td.spreadDy || 0);
+
+  if (td.markerKey === key) return false;
+  td.markerKey = key;
+
+  if (td.currentCoord) td.marker.setLatLng(td.currentCoord);
+
+  td.marker.setIcon(makeTruckIcon(td.color, '[' + td.posInfo.status + '] ' + td.truckLabel, {
+    dx: td.spreadDx || 0,
+    dy: td.spreadDy || 0,
+    label: td.truckLabel
+  }));
+
+  td.marker.unbindTooltip();
+  td.marker.bindTooltip(buildTruckTooltipHtml(td), {
+    direction: 'top',
+    offset: [td.spreadDx || 0, -20 + (td.spreadDy || 0)]
+  });
+
+  td.marker.unbindPopup();
+  td.marker.bindPopup(buildTruckPopupHtml(td), {
+    offset: [td.spreadDx || 0, td.spreadDy || 0]
+  });
+
+  return true;
+}
+
+/**
+ * Draws only the truck's remaining journey. Called on first render and whenever the
+ * scheduled stop index changes; cached legs are reused (no new routing request).
+ */
+function renderTruckRouteLine(td) {
+  if (!td || !td.routeGroup) return;
+  td.routeGroup.clearLayers();
+
+  var trail = buildRemainingTrail(td, td.posInfo);
+  if (!trail) return;
+
+  var dash = td.dashArray ? { dashArray: td.dashArray } : {};
+  var straightFallback = !!td.isStraightFallback;
+
+  var haloStyle = { color: td.color, weight: 9, opacity: 0.14, lineCap: 'round', lineJoin: 'round' };
+  if (straightFallback) haloStyle.dashArray = '8, 6';
+  td.routeGroup.addLayer(L.polyline(trail, haloStyle));
+
+  var lineStyle = {
+    color: td.color,
+    weight: straightFallback ? 3.5 : 4.5,
+    opacity: straightFallback ? 0.7 : 0.95,
+    lineCap: 'round',
+    lineJoin: 'round'
+  };
+  if (straightFallback) lineStyle.dashArray = '8, 6';
+
+  var line = L.polyline(trail, Object.assign(lineStyle, dash));
+  var state = td.posInfo || {};
+  var label = (td.assignment.routeName || td.truckLabel) +
+    (td.routeDistance ? ' - ' + td.routeDistance : '') +
+    (!state.isAtDepot && state.nextStopName ? ' - next: ' + state.nextStopName : '') +
+    (straightFallback ? ' - road routing unavailable' : '');
+  line.bindTooltip(escapeHtml(label), { sticky: true });
+  td.routeGroup.addLayer(line);
+}
+
+/** Re-styles existing stop pins when the scheduled stop index advances. */
+function refreshStopMarkers(td) {
+  if (!td || !td.stopMarkers) return;
+  var isCancelled = !!(td.posInfo && td.posInfo.isCancelled);
+
+  td.stopMarkers.forEach(function (item) {
+    if (!item || !item.marker) return;
+    item.marker.setIcon(makeStopPinIcon(stopPinLabel(td, item.index), td.color, {
+      isFirst: item.index === 0,
+      isLast: item.index === td.stops.length - 1 && td.stops.length > 1,
+      phase: stopPhase(td, item.index),
+      isCancelled: isCancelled
+    }));
+    item.marker.setPopupContent(buildStopPopupHtml(td, item.index));
+  });
+}
+
+/** Creates stop pins, the remaining-route layer group and the truck marker. */
+function drawTruckLayers(td) {
+  if (!td || !td.stops || !td.validCoords || td.validCoords.length === 0) return;
+  var isCancelled = !!(td.posInfo && td.posInfo.isCancelled);
+
+  td.stops.forEach(function (stop, sIdx) {
+    var coord = td.stopCoords[sIdx];
+    if (!coord) return;
+
+    var marker = L.marker(coord, {
+      icon: makeStopPinIcon(stopPinLabel(td, sIdx), td.color, {
+        isFirst: sIdx === 0,
+        isLast: sIdx === td.stops.length - 1 && td.stops.length > 1,
+        phase: stopPhase(td, sIdx),
+        isCancelled: isCancelled
+      }),
+      zIndexOffset: 200
+    });
+
+    marker.bindPopup(buildStopPopupHtml(td, sIdx));
+    marker.bindTooltip(
+      (sIdx === 0 ? 'Start: ' : (sIdx === td.stops.length - 1 && td.stops.length > 1 ? 'Final: ' : ('Stop ' + (sIdx + 1) + ': '))) +
+      escapeHtml(stopPlaceName(stop, sIdx)) +
+      (stop.collection_time ? ' - ' + formatTime12((stop.collection_time + '').substring(0, 5)) : ''),
+      { direction: 'top', offset: [0, -14] }
+    );
+
+    addLayer(marker);
+    td.stopMarkers.push({ index: sIdx, marker: marker });
+  });
+
+  td.routeGroup = L.layerGroup();
+  addLayer(td.routeGroup);
+  renderTruckRouteLine(td);
+
+  if (td.currentCoord) {
+    td.marker = L.marker(td.currentCoord, {
+      icon: makeTruckIcon(td.color, td.truckLabel, {
+        dx: td.spreadDx || 0,
+        dy: td.spreadDy || 0,
+        label: td.truckLabel
+      }),
+      zIndexOffset: 1500
+    });
+    addLayer(td.marker);
+    refreshTruckMarker(td);
+  }
+}
+
+/** Tunasan dispatch depot pin, shared by the overview and route views. */
+function addDepotMarker() {
+  var depotIcon = L.divIcon({
+    html: '<div class="wise-depot-pin" title="' + escapeHtml(DEFAULT_DEPOT.name) + '">D</div>',
+    className: '',
+    iconSize: [30, 30],
+    iconAnchor: [15, 15]
+  });
+  // Always painted above the truck markers so the depot pin never gets buried.
+  var depotMarker = L.marker(DEFAULT_DEPOT.coord, { icon: depotIcon, zIndexOffset: 2600 });
+  depotMarker.bindTooltip('<strong>' + escapeHtml(DEFAULT_DEPOT.name) + '</strong><br><small>' + escapeHtml(DEFAULT_DEPOT.address) + '</small>', { direction: 'top', offset: [0, -15] });
+  depotMarker.bindPopup('<div class="wise-map-popup">' +
+    '<div class="wmp-header" style="border-left:3.5px solid #F59E0B">' +
+    '<span class="wmp-badge" style="background:#FEF3C7;color:#B45309">Fleet Dispatch Depot</span>' +
+    '<strong>' + escapeHtml(DEFAULT_DEPOT.name) + '</strong>' +
+    '<div class="wmp-street">' + escapeHtml(DEFAULT_DEPOT.address) + '</div>' +
+    '</div>' +
+    '<div class="wmp-notice">Starting depot for all scheduled routes before Stop 1</div>' +
+    '</div>');
+  addLayer(depotMarker);
+  return depotMarker;
+}
+
+function fitMapToServiceArea() {
+  if (!_leafletMap) return;
+  try {
+    _leafletMap.fitBounds(MUNTINLUPA_BOUNDS, { padding: [12, 12] });
+  } catch (e) { }
+}
+
+/**
+ * Prepares one assignment for rendering: stop coordinates, cached road legs and the
+ * current schedule state. The assignment object itself is never modified.
+ */
+async function prepareTruck(assignment, aIdx, colorInfo, now, warnings) {
+  var a = assignment || {};
+  var stops = a.stops || [];
+  var truckLabel = a.truck || ('Truck ' + (aIdx + 1));
+
+  var resolvedStops = stops.map(function (s) {
+    return resolveStopCoords(s.barangay, s.street || s.zone || '');
+  });
+
+  var stopCoords = [];
+  resolvedStops.forEach(function (r, idx) {
+    var place = stopPlaceName(stops[idx], idx);
+    if (r.coord) {
+      stopCoords[idx] = r.coord;
+      if (r.isOutOfBoundary) {
+        warnings.push(truckLabel + ' Stop ' + (idx + 1) + ' (' + place + '): Outside Muntinlupa boundary - flagged for review');
+      } else if (r.isApproximate && r.reason) {
+        warnings.push(truckLabel + ' Stop ' + (idx + 1) + ': ' + r.reason);
+      }
+    } else {
+      stopCoords[idx] = null;
+      warnings.push(truckLabel + ' Stop ' + (idx + 1) + ': ' + (r.reason || 'Missing coordinates.'));
+    }
+  });
+
+  var waypointOfStop = [];
+  var validCoords = [];
+  stopCoords.forEach(function (coord, idx) {
+    if (coord) {
+      validCoords.push(coord);
+      waypointOfStop[idx] = validCoords.length; // waypoint 0 is the depot
+    } else {
+      waypointOfStop[idx] = null;
+    }
+  });
+
+  var td = {
+    index: aIdx,
+    assignment: a,
+    stops: stops,
+    resolvedStops: resolvedStops,
+    stopCoords: stopCoords,
+    validCoords: validCoords,
+    waypointOfStop: waypointOfStop,
+    color: (colorInfo && colorInfo.color) || ROUTE_COLORS[0],
+    dashArray: (colorInfo && colorInfo.dashArray) || null,
+    truckLabel: truckLabel,
+    collectionDate: a.schedule ? String(a.schedule.collection_date || '').slice(0, 10) : '',
+    posInfo: null,
+    currentCoord: null,
+    legs: null,
+    routeGroup: null,
+    stopMarkers: [],
+    routeDistance: '',
+    routeDuration: '',
+    isFallback: false,
+    isStraightFallback: false,
+    spreadDx: 0,
+    spreadDy: 0,
+    marker: null,
+    markerKey: ''
+  };
+
+  td.posInfo = deriveRouteState(a, now);
+  td.currentCoord = resolveTruckCoord(td);
+
+  if (validCoords.length > 0) {
+    var waypoints = [DEFAULT_DEPOT.coord].concat(validCoords);
+    var geo = await getRouteGeometry(waypoints);
+    td.legs = geo.legs;
+    td.isFallback = !!geo.isFallback;
+    td.isStraightFallback = !!geo.isStraightFallback;
+    if (geo.summary && geo.summary.distance) td.routeDistance = (geo.summary.distance / 1000).toFixed(1) + ' km';
+    if (geo.summary && geo.summary.duration) td.routeDuration = Math.round(geo.summary.duration / 60) + ' min';
+    if (geo.isFallback) {
+      warnings.push(truckLabel + ': road geometry could not be matched to its scheduled stops - showing direct stop-to-stop lines.');
+    }
+  } else {
+    warnings.push(truckLabel + ': no resolvable stop coordinates - route line unavailable.');
+  }
+
+  return td;
+}
+
+async function renderRouteMapInternal(assignments, label) {
   var mapEl = document.getElementById('route-leaflet-map');
   var infoEl = document.getElementById('route-preview-info');
-
   if (!mapEl) return;
+
   clearMapLayers();
+  _lastRenderContext = null;
 
   if (!assignments || assignments.length === 0) {
     mapEl.style.display = 'none';
@@ -938,7 +1797,7 @@ async function renderRouteMap(assignments, label) {
 
   mapEl.style.display = 'block';
   if (infoEl) {
-    infoEl.innerHTML = '<div class="route-map-loading"><span class="rml-spinner"></span> Loading road route\u2026</div>';
+    infoEl.innerHTML = '<div class="route-map-loading"><span class="rml-spinner"></span> Loading road route...</div>';
   }
 
   if (!ensureMapInitialised()) {
@@ -946,291 +1805,148 @@ async function renderRouteMap(assignments, label) {
     return;
   }
 
-  var allBounds = [DEFAULT_DEPOT.coord];
-  var newTruckList = [];
-  var warningNotes = [];
+  var now = getManilaDate();
+  var colors = assignRouteColors(assignments);
+  var warnings = [];
+  var truckList = [];
 
-  // Render the default configured Tunasan Dispatch Depot Pin ("D")
-  var depotIcon = L.divIcon({
-    html: '<div class="wise-depot-pin" title="' + escapeHtml(DEFAULT_DEPOT.name) + '">D</div>',
-    className: '',
-    iconSize: [30, 30],
-    iconAnchor: [15, 15]
-  });
-  var depotMarker = L.marker(DEFAULT_DEPOT.coord, { icon: depotIcon, zIndexOffset: 300 });
-  depotMarker.bindTooltip('<strong>' + escapeHtml(DEFAULT_DEPOT.name) + '</strong><br><small>' + escapeHtml(DEFAULT_DEPOT.address) + '</small>', { direction: 'top', offset: [0, -15] });
-  depotMarker.bindPopup('<div class="wise-map-popup">' +
-    '<div class="wmp-header" style="border-left:3.5px solid #F59E0B">' +
-    '<span class="wmp-badge" style="background:#FEF3C7;color:#B45309">Fleet Dispatch Depot</span>' +
-    '<strong>' + escapeHtml(DEFAULT_DEPOT.name) + '</strong>' +
-    '<div class="wmp-street">' + escapeHtml(DEFAULT_DEPOT.address) + '</div>' +
-    '</div>' +
-    '<div class="wmp-notice">\ud83c\udfed Starting depot for all scheduled routes before Stop 1</div>' +
-    '</div>');
-  addLayer(depotMarker);
+  addDepotMarker();
 
   for (var aIdx = 0; aIdx < assignments.length; aIdx++) {
-    var a = assignments[aIdx];
-    var color = ROUTE_COLORS[aIdx % ROUTE_COLORS.length];
-
-    // Resolve stop coordinates
-    var resolvedStops = a.stops.map(function (s) {
-      return resolveStopCoords(s.barangay, s.street || s.zone || '');
-    });
-
-    var stopCoords = [];
-    resolvedStops.forEach(function (r, idx) {
-      var stopPlace = (a.stops[idx] && (a.stops[idx].street || a.stops[idx].barangay)) || ('Stop ' + (idx + 1));
-      if (r.coord) {
-        stopCoords[idx] = r.coord;
-        allBounds.push(r.coord);
-        if (r.isOutOfBoundary) {
-          warningNotes.push(a.truck + ' Stop ' + (idx + 1) + ' (' + stopPlace + '): Outside Muntinlupa boundary \u2014 Flagged for review');
-        } else if (r.isApproximate && r.reason) {
-          warningNotes.push(a.truck + ' Stop ' + (idx + 1) + ': ' + r.reason);
-        }
-      } else {
-        stopCoords[idx] = null;
-        warningNotes.push(a.truck + ' Stop ' + (idx + 1) + ': ' + (r.reason || 'Missing coordinates.'));
-      }
-    });
-
-    var validCoords = stopCoords.filter(Boolean);
-    if (validCoords.length === 0) {
-      console.warn('[WISE Route Map] No valid coordinates for route:', a.routeName);
-      continue;
-    }
-
-    // 1. Draw Stop Markers (Numbered 1, 2, 3...)
-    a.stops.forEach(function (s, sIdx) {
-      var coord = stopCoords[sIdx];
-      if (!coord) return;
-
-      var isFirst = (sIdx === 0);
-      var isLast = (sIdx === a.stops.length - 1 && a.stops.length > 1);
-      var numLabel = String(sIdx + 1);
-      var borderColor = isFirst ? '#16A34A' : (isLast ? '#DC2626' : '#ffffff');
-      var bColor = (BARANGAY_COLORS && BARANGAY_COLORS[s.barangay] ? BARANGAY_COLORS[s.barangay].bg : '#4B5563');
-
-      var timeStr = s.collection_time ? formatTime12((s.collection_time + '').substring(0, 5)) : '';
-      var pinIcon = makeStopPinIcon(numLabel, bColor, borderColor, isFirst, isLast);
-
-      var placeName = escapeHtml(s.street || s.barangay || 'Collection Stop');
-      var stopType = isFirst ? 'First Scheduled Stop' : (isLast ? 'Final Destination' : ('Collection Stop ' + (sIdx + 1)));
-
-      var popupHtml = '<div class="wise-map-popup">' +
-        '<div class="wmp-header" style="border-left:3.5px solid ' + bColor + '">' +
-        '<span class="wmp-badge">' + stopType + '</span>' +
-        '<strong>' + escapeHtml(s.barangay || '') + '</strong>' +
-        (s.street ? '<div class="wmp-street">' + escapeHtml(s.street) + '</div>' : '') +
-        '</div>' +
-        (timeStr ? '<div class="wmp-time">\ud83d\udd50 ' + timeStr + '</div>' : '') +
-        '<div class="wmp-meta">' + escapeHtml(a.truck || 'Truck') + ' \u00b7 Stop ' + (sIdx + 1) + ' of ' + a.stops.length + '</div>' +
-        (resolvedStops[sIdx].isOutOfBoundary ? '<div class="wmp-warning" style="background:#FEE2E2;color:#991B1B;padding:4px 6px;border-radius:4px;margin-top:4px">\u26a0 Outside Muntinlupa City \u2014 Flagged for review</div>' : (resolvedStops[sIdx].isApproximate ? '<div class="wmp-warning">\u26a0 Approximate center (exact address unmapped)</div>' : '')) +
-        '<div class="wmp-notice">\ud83d\udcc5 Scheduled itinerary \u2014 Not live GPS</div>' +
-        '</div>';
-
-      var stopMarker = L.marker(coord, { icon: pinIcon, zIndexOffset: 200 });
-      stopMarker.bindPopup(popupHtml);
-      stopMarker.bindTooltip('Stop ' + numLabel + ': ' + placeName + (timeStr ? ' \u00b7 ' + timeStr : ''), {
-        direction: 'top',
-        offset: [0, -14]
-      });
-      addLayer(stopMarker);
-    });
-
-    // 2. Fetch and Draw Road Route Line Starting from Tunasan Depot
-    // Depot -> First scheduled stop -> Remaining scheduled stops
-    var waypoints = [DEFAULT_DEPOT.coord].concat(validCoords);
-    var routeResult = null;
-    if (waypoints.length >= 2) {
-      var cacheKey = waypoints.map(function (c) { return c.join(','); }).join('|');
-      if (_routeGeometries[cacheKey]) {
-        routeResult = _routeGeometries[cacheKey];
-      } else {
-        routeResult = await fetchRouteGeometry(waypoints);
-        if (routeResult) _routeGeometries[cacheKey] = routeResult;
-      }
-    }
-
-    var routeDistance = '';
-    var routeDuration = '';
-
-    if (routeResult && routeResult.fullGeometry) {
-      // ORS coordinates are [longitude, latitude] -> convert to Leaflet [lat, lng]
-      var latlngs = routeResult.fullGeometry.coordinates.map(function (c) {
-        return [c[1], c[0]];
-      });
-      latlngs.forEach(function (ll) { allBounds.push(ll); });
-
-      if (routeResult.summary) {
-        routeDistance = (routeResult.summary.distance / 1000).toFixed(1) + ' km';
-        routeDuration = Math.round(routeResult.summary.duration / 60) + ' min';
-      }
-
-      // Route Shadow Layer (halo)
-      addLayer(L.polyline(latlngs, {
-        color: color,
-        weight: 9,
-        opacity: 0.14,
-        lineCap: 'round',
-        lineJoin: 'round'
-      }));
-
-      // Main Road Route Polyline
-      var roadLine = L.polyline(latlngs, {
-        color: color,
-        weight: 4.5,
-        opacity: 0.95,
-        lineCap: 'round',
-        lineJoin: 'round'
-      });
-
-      var tooltipSummary = escapeHtml(a.routeName || a.truck) +
-        (routeDistance ? ' \u00b7 ' + routeDistance : '') +
-        (routeDuration ? ' \u00b7 ' + routeDuration : '');
-      roadLine.bindTooltip(tooltipSummary, { sticky: true });
-      addLayer(roadLine);
-    } else if (waypoints.length >= 2) {
-      // Fallback: dashed route line connecting Depot to stops
-      var fallbackLine = L.polyline(waypoints, {
-        color: color,
-        weight: 3.5,
-        opacity: 0.65,
-        dashArray: '8, 6'
-      });
-      fallbackLine.bindTooltip('\u26a0 Road routing unavailable \u2014 straight line path from depot', { sticky: true });
-      addLayer(fallbackLine);
-    }
-
-    // 3. Position Stationary Truck Icon
-    // Must remain at Tunasan Depot until Stop 1 scheduled time arrives!
-    var collDate = a.schedule ? String(a.schedule.collection_date || '').slice(0, 10) : '';
-    var manilaNow = getManilaDate();
-    var posInfo = calcTruckSchedulePosition(a.stops, collDate, manilaNow);
-
-    var truckCoord;
-    if (posInfo && posInfo.isAtDepot) {
-      truckCoord = DEFAULT_DEPOT.coord;
-    } else if (posInfo && posInfo.stopIdx !== null && stopCoords[posInfo.stopIdx]) {
-      truckCoord = stopCoords[posInfo.stopIdx];
-    } else {
-      truckCoord = DEFAULT_DEPOT.coord;
-    }
-
-    if (truckCoord) {
-      var truckTitle = '[' + (posInfo ? posInfo.status : 'At Depot') + '] ' + (a.truck || 'Truck');
-      var truckMarker = L.marker(truckCoord, {
-        icon: makeTruckIcon(color, truckTitle),
-        zIndexOffset: 1500
-      });
-
-      var truckPopup = '<div class="wise-map-popup">' +
-        '<div class="wmp-header" style="border-left:3.5px solid ' + color + '">' +
-        '<span class="wmp-badge wmp-badge-truck">Assigned Fleet</span>' +
-        '<strong>' + escapeHtml(a.truck || 'Collection Truck') + '</strong>' +
-        '<div class="wmp-street">' + escapeHtml(a.personnel || 'Crew Assigned') + '</div>' +
-        '</div>' +
-        '<div class="wmp-status-pill ' + (posInfo ? posInfo.badgeClass : '') + '">' +
-        escapeHtml(posInfo ? posInfo.status : 'At Depot') +
-        '</div>' +
-        '<div class="wmp-detail" style="margin:6px 0;font-size:11.5px">' +
-        escapeHtml(posInfo ? posInfo.detailText : '') +
-        '</div>' +
-        (routeDistance ? '<div class="wmp-meta">\ud83d\udee3 ' + routeDistance + (routeDuration ? ' \u00b7 \u2248' + routeDuration : '') + ' (from Tunasan Depot)</div>' : '') +
-        '<div class="wmp-notice">\u26a0 Schedule-based simulation \u2014 NOT a live GPS tracker</div>' +
-        '</div>';
-
-      truckMarker.bindPopup(truckPopup);
-      truckMarker.bindTooltip(
-        '<strong>' + escapeHtml(a.truck || 'Truck') + '</strong><br>' +
-        '<span style="font-size:10.5px">' + escapeHtml(posInfo ? posInfo.status : 'At Depot') + '</span><br>' +
-        '<small style="opacity:0.8;font-size:9.5px">\u26a0 Schedule-based \u2014 No GPS</small>',
-        { direction: 'top', offset: [0, -18] }
-      );
-      addLayer(truckMarker);
-
-      newTruckList.push({
-        assignment: a,
-        stopCoords: stopCoords,
-        color: color,
-        collectionDate: collDate,
-        marker: truckMarker,
-        routeDistance: routeDistance,
-        routeDuration: routeDuration
-      });
-    }
+    var td = await prepareTruck(assignments[aIdx], aIdx, colors[aIdx], now, warnings);
+    truckList.push(td);
   }
 
-  // 4. Fit map strictly to full Muntinlupa boundary
-  if (_leafletMap) {
+  // All coordinates are known now - separate trucks that share a location.
+  computeTruckSpread(truckList);
+
+  truckList.forEach(function (prepared) {
     try {
-      _leafletMap.fitBounds(MUNTINLUPA_BOUNDS, {
-        padding: [12, 12]
-      });
-    } catch (e) { }
-  }
+      drawTruckLayers(prepared);
+    } catch (err) {
+      console.error('[WISE Route Map] Layer render error:', err);
+    }
+  });
 
-  _truckDataList = newTruckList;
-  startTruckClock(newTruckList);
+  fitMapToServiceArea();
 
-  // 5. Render Logistics Summary & Legend
-  renderRouteInfoBar(assignments, label, newTruckList, warningNotes, infoEl);
+  _truckDataList = truckList;
+  _lastRenderContext = {
+    assignments: assignments,
+    label: label,
+    truckList: truckList,
+    warnings: warnings,
+    infoEl: infoEl
+  };
+
+  startTruckClock(truckList);
+  renderRouteInfoBar(assignments, label, truckList, warnings, infoEl);
+}
+
+/**
+ * Public renderer. Renders are serialised so rapid date / route switches cannot
+ * interleave and leave duplicate polylines or stale markers behind.
+ */
+function renderRouteMap(assignments, label) {
+  _renderChain = _renderChain.then(function () {
+    return renderRouteMapInternal(assignments, label);
+  }).catch(function (err) {
+    console.error('[WISE Route Map] Render failed:', err);
+  });
+  return _renderChain;
 }
 
 // =========================================================================
 // 8. LOGISTICS DASHBOARD SUMMARY & LEGEND BAR
 // =========================================================================
 
+/**
+ * Compact legend and status summary. Each card is colour-keyed to its route and also
+ * names the truck id, route, current stop, next stop and status in text, so identity
+ * never depends on colour alone.
+ */
 function renderRouteInfoBar(assignments, label, truckList, warnings, infoEl) {
   if (!infoEl) return;
 
-  var manilaNow = getManilaDate();
+  var now = getManilaDate();
+  var colors = assignRouteColors(assignments);
+  var prepared = {};
+  (truckList || []).forEach(function (td) {
+    if (td) prepared[td.index] = td;
+  });
+
   var html = '<div class="route-map-dashboard">';
 
-  // Header / Title Row
   html += '<div class="rmd-header">';
-  if (label) {
-    html += '<span class="rmd-title">' + escapeHtml(label) + '</span>';
-  }
-  html += '<span class="rmd-schedule-badge">\ud83d\udcc5 Schedule-Based Simulation \u00b7 No GPS</span>';
+  if (label) html += '<span class="rmd-title">' + escapeHtml(label) + '</span>';
+  html += '<span class="rmd-schedule-badge">Schedule-based - no GPS</span>';
   html += '</div>';
 
-  // Per-truck summary cards
   html += '<div class="rmd-trucks-grid">';
+
   assignments.forEach(function (a, idx) {
-    var color = ROUTE_COLORS[idx % ROUTE_COLORS.length];
-    var td = truckList ? truckList[idx] : null;
-    var collDate = a.schedule ? String(a.schedule.collection_date || '').slice(0, 10) : '';
-    var posInfo = calcTruckSchedulePosition(a.stops, collDate, manilaNow);
+    var colorInfo = colors[idx] || { color: ROUTE_COLORS[0], dashArray: null };
+    var color = colorInfo.color;
+    var td = prepared[idx];
+    var state = td && td.posInfo ? td.posInfo : deriveRouteState(a, now);
 
     var stopCount = a.stops ? a.stops.length : 0;
-    var distStr = (td && td.routeDistance) ? td.routeDistance : '';
-    var statusText = posInfo ? posInfo.status : 'Scheduled';
-    var statusClass = posInfo ? posInfo.badgeClass : 'status-scheduled';
+    var truckLabel = a.truck || ('Truck ' + (idx + 1));
+    var routeName = a.routeName || 'Collection Route';
+    var statusText = state ? state.status : 'Scheduled';
+    var statusClass = state ? state.badgeClass : 'status-scheduled';
+
+    var currentLine;
+    if (!state) {
+      currentLine = 'Schedule data unavailable';
+    } else if (state.isCancelled) {
+      currentLine = 'Cancelled - no active run';
+    } else if (state.isCompleted) {
+      currentLine = 'Completed at ' + (state.currentStopName || 'final stop') +
+        (state.currentStopTimeStr ? ' - ' + state.currentStopTimeStr : '');
+    } else if (state.isAtDepot) {
+      currentLine = 'At Tunasan Depot' + (state.nextStopTimeStr ? ' - departs ' + state.nextStopTimeStr : '');
+    } else {
+      currentLine = 'At ' + (state.currentStopName || 'scheduled stop') +
+        (state.currentStopTimeStr ? ' - ' + state.currentStopTimeStr : '');
+    }
+
+    var nextLine = '';
+    if (state && !state.isCompleted && !state.isCancelled && state.nextStopName) {
+      nextLine = 'Next: ' + state.nextStopName + (state.nextStopTimeStr ? ' - ' + state.nextStopTimeStr : '');
+    }
+
+    var distance = td ? td.routeDistance : '';
 
     html += '<div class="rmd-truck-card" style="border-left:4px solid ' + color + '">' +
       '<div class="rmd-tc-top">' +
-      '<span class="rmd-tc-name"><span class="rmd-swatch" style="background:' + color + '"></span>' + escapeHtml(a.truck || 'Truck') + '</span>' +
+      '<span class="rmd-tc-name">' +
+      '<span class="rmd-swatch" style="background:' + color + '"></span>' +
+      '<span class="rmd-tc-id" style="background:' + color + '">' + escapeHtml(truckShortId(a, idx)) + '</span>' +
+      escapeHtml(truckLabel) +
+      '</span>' +
       '<span class="rmd-tc-badge ' + statusClass + '">' + escapeHtml(statusText) + '</span>' +
       '</div>' +
-      '<div class="rmd-tc-body">' +
+      '<div class="rmd-tc-route">' + escapeHtml(routeName) + '</div>' +
       '<div class="rmd-tc-meta">' +
       '<span>' + stopCount + ' stop' + (stopCount !== 1 ? 's' : '') + '</span>' +
-      (distStr ? '<span>\u00b7 ' + distStr + '</span>' : '') +
-      '<span>\u00b7 ' + escapeHtml(a.personnel || 'Crew assigned') + '</span>' +
+      (distance ? '<span> - ' + distance + '</span>' : '') +
+      '<span> - ' + escapeHtml(a.personnel || 'Crew assigned') + '</span>' +
       '</div>' +
-      '<div class="rmd-tc-desc">' + escapeHtml(posInfo ? posInfo.detailText : '') + '</div>' +
-      '</div>' +
+      '<div class="rmd-tc-desc">' + escapeHtml(currentLine) + '</div>' +
+      (nextLine ? '<div class="rmd-tc-next">' + escapeHtml(nextLine) + '</div>' : '') +
       '</div>';
   });
+
   html += '</div>';
 
-  // Warnings / Approximate notices if any
   if (warnings && warnings.length > 0) {
-    var shownWarnings = warnings.slice(0, 2);
-    html += '<div class="rmd-warning-note">\u26a0 Note: ' + escapeHtml(shownWarnings.join('; ')) + (warnings.length > 2 ? ' (+' + (warnings.length - 2) + ' more)' : '') + '</div>';
+    var shown = warnings.slice(0, 2);
+    html += '<div class="rmd-warning-note">Note: ' + escapeHtml(shown.join('; ')) +
+      (warnings.length > 2 ? ' (+' + (warnings.length - 2) + ' more)' : '') + '</div>';
   }
+
+  html += '<div class="rmd-legend-note">Legend: <strong>S</strong> start &middot; <strong>F</strong> final stop &middot; <strong>&#10003;</strong> completed stop. Trucks sharing a location are offset with a dashed leader - their real stop position is unchanged.</div>';
 
   html += '</div>';
   infoEl.innerHTML = html;
@@ -1341,3 +2057,20 @@ window.parseTimeToMinutes = parseTimeToMinutes;
 window.formatMinutes12 = formatMinutes12;
 window.BARANGAY_COORDS = BARANGAY_COORDS;
 window.LANDMARK_COORDS = LANDMARK_COORDS;
+window.ROUTE_COLORS = ROUTE_COLORS;
+window.ROUTE_DASH_PATTERNS = ROUTE_DASH_PATTERNS;
+window.assignRouteColors = assignRouteColors;
+window.routeIdentityKey = routeIdentityKey;
+window.isValidScheduleDate = isValidScheduleDate;
+window.deriveRouteState = deriveRouteState;
+window.splitRouteIntoLegs = splitRouteIntoLegs;
+window.getRouteGeometry = getRouteGeometry;
+window.buildStraightLegs = buildStraightLegs;
+window.buildRemainingTrail = buildRemainingTrail;
+window.startWaypointIndex = startWaypointIndex;
+window.computeClusterOffsets = computeClusterOffsets;
+window.computeTruckSpread = computeTruckSpread;
+window.truckShortId = truckShortId;
+window.routeStateKey = routeStateKey;
+window.stopPhase = stopPhase;
+window.updateFleetFromSchedule = updateFleetFromSchedule;

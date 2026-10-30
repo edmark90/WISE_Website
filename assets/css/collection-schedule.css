@@ -3347,3 +3347,206 @@
     transform: rotate(360deg);
   }
 }
+
+/* =====================================================================
+   ROUTE PREVIEW - TRUCK MARKER SPREAD, IDENTITY & ROUTE LEGEND
+   ===================================================================== */
+
+/* Fixed pixel slot centred on the real coordinate: the icon inside may be
+   offset for legibility while latitude/longitude stay untouched. */
+.wise-truck-slot {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.wise-truck-slot .wise-truck-leader {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.wise-truck-slot .wise-truck-marker {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 38px;
+  height: 38px;
+  margin-left: -19px;
+  margin-top: -19px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  transform: translate(var(--wise-truck-dx, 0px), var(--wise-truck-dy, 0px));
+}
+
+.wise-truck-slot .wise-truck-icon {
+  display: block;
+  transition: transform 0.15s ease;
+}
+
+.wise-truck-slot .wise-truck-marker:hover .wise-truck-icon {
+  transform: scale(1.12);
+}
+
+.wise-truck-label {
+  position: absolute;
+  top: 37px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 84px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  line-height: 1.2;
+  padding: 2px 5px;
+  border-radius: 3px;
+  border: 1px solid currentColor;
+  background: #ffffff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.28);
+  pointer-events: none;
+}
+
+/* Stop pins use the route colour; completed stops are muted and ticked. */
+.wise-stop-pin.passed-pin,
+.wise-stop-pin.passed-pin:hover {
+  background: #94A3B8 !important;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+  cursor: default;
+}
+
+.wise-stop-pin.cancelled-pin {
+  background: #94A3B8 !important;
+}
+
+/* Legend / summary cards */
+.rmd-tc-id {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 15px;
+  padding: 0 4px;
+  border-radius: 3px;
+  color: #ffffff;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+.rmd-tc-route {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #374151;
+  margin: 1px 0 2px;
+}
+
+.rmd-tc-next {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: #1D4ED8;
+  margin-top: 1px;
+}
+
+.rmd-legend-note {
+  margin-top: 6px;
+  font-size: 9.5px;
+  line-height: 1.4;
+  color: #6B7280;
+}
+
+.rmd-tc-badge.status-cancelled,
+.wise-map-popup .status-cancelled {
+  color: #334155;
+  background: #E2E8F0;
+}
+
+/* Truck / stop popup rows */
+.wise-map-popup .wmp-rows {
+  margin: 6px 0 4px;
+  border-top: 1px dashed #E5E7EB;
+  padding-top: 5px;
+}
+
+.wise-map-popup .wmp-row {
+  display: flex;
+  gap: 6px;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.wise-map-popup .wmp-row-label {
+  flex: 0 0 46px;
+  font-weight: 700;
+  color: #6B7280;
+  text-transform: uppercase;
+  font-size: 9px;
+  letter-spacing: 0.3px;
+  padding-top: 2px;
+}
+
+.wise-map-popup .wmp-row-value {
+  flex: 1;
+  color: #111827;
+  font-weight: 600;
+}
+
+.wise-map-popup .wmp-detail {
+  font-size: 10.5px;
+  color: #4B5563;
+  margin: 4px 0;
+}
+
+.wise-map-popup .wmp-phase {
+  display: inline-block;
+  margin-top: 4px;
+  padding: 2px 6px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.wise-map-popup .wmp-phase-done {
+  color: #475569;
+  background: #E2E8F0;
+}
+
+.wise-map-popup .wmp-phase-now {
+  color: #047857;
+  background: #D1FAE5;
+}
+
+/* Status pill inside Leaflet tooltips (not only popups) */
+.leaflet-tooltip .wmp-status-pill {
+  display: inline-block;
+  padding: 1px 5px;
+  border-radius: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  background: #F3F4F6;
+  color: #374151;
+}
+
+.leaflet-tooltip .wmp-status-pill.status-active {
+  background: #D1FAE5;
+  color: #047857;
+}
+
+.leaflet-tooltip .wmp-status-pill.status-scheduled {
+  background: #DBEAFE;
+  color: #1D4ED8;
+}
+
+.leaflet-tooltip .wmp-status-pill.status-completed {
+  background: #E2E8F0;
+  color: #475569;
+}
