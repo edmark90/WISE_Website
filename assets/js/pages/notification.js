@@ -375,25 +375,6 @@ document.addEventListener('DOMContentLoaded', function () {
       });
     }
 
-    // Mobile update specific fields if present
-    if (isValidValue(n.version) || isValidValue(n.version_name)) {
-      var vStr = n.version || n.version_name;
-      infoCards.push({
-        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect><line x1="12" y1="18" x2="12.01" y2="18"></line></svg>',
-        label: 'Target App Version',
-        value: '<span class="nt-badge-chip primary">' + escapeHtml(vStr) + '</span>',
-        isHtml: true
-      });
-    }
-    if (isValidValue(n.apk_url)) {
-      infoCards.push({
-        icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>',
-        label: 'APK Download',
-        value: '<a href="' + escapeHtml(n.apk_url) + '" target="_blank" rel="noopener noreferrer" class="nt-link-btn">Download Package</a>',
-        isHtml: true
-      });
-    }
-
     // 2. Reason Alert Banner (ONLY if reason is present and non-empty)
     var reasonBannerHtml = '';
     if (isValidValue(n.reason)) {

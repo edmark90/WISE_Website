@@ -84,15 +84,6 @@
           <p>Track automatic route alerts and compose manual announcements to the citizen network.</p>
         </div>
         <div class="nt-header-right">
-          <button class="nt-btn-secondary" id="mobile-update-btn">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-              stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 10 12 15 17 10"></polyline>
-              <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-            Mobile Update
-          </button>
           <button class="nt-btn-primary" id="new-announcement-btn">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
               stroke-linejoin="round">
@@ -282,116 +273,7 @@
             <button class="nt-btn-primary" id="a-send-btn">Send Notification</button>
           </div>
         </div>
-      </div>
-
-      <!-- Mobile Update Modal -->
-      <div class="modal-overlay" id="mobile-update-overlay">
-        <div class="nt-modal nt-modal-wide">
-          <div class="nt-modal-header">
-            <h3>Mobile Update Management</h3>
-            <button class="modal-close-btn" id="mobile-update-close-btn">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-                stroke-linejoin="round">
-                <line x1="18" y1="6" x2="6" y2="18"></line>
-                <line x1="6" y1="6" x2="18" y2="18"></line>
-              </svg>
-            </button>
-          </div>
-          <div class="nt-modal-body">
-            <div class="mu-tabs" role="tablist">
-              <button type="button" class="mu-tab-btn active" data-tab="send">Send Update</button>
-              <button type="button" class="mu-tab-btn" data-tab="upload">Add Version</button>
-              <button type="button" class="mu-tab-btn" data-tab="history">Version History</button>
-            </div>
-
-            <!-- TAB 1: SEND MOBILE UPDATE -->
-            <div class="mu-tab-pane active" data-pane="send">
-              <div class="nt-field">
-                <label class="nt-label" for="mu-title">Title <span class="nt-req">*</span></label>
-                <input class="nt-input" type="text" id="mu-title" placeholder="e.g. Critical Update — Wise Mobile v1.2.0">
-              </div>
-              <div class="nt-field">
-                <label class="nt-label" for="mu-message">Update Message <span class="nt-req">*</span></label>
-                <textarea class="nt-input nt-textarea" id="mu-message" rows="3"
-                  placeholder="Explain why users should update..."></textarea>
-              </div>
-              <div class="nt-field-row nt-field-row-2">
-                <div class="nt-field">
-                  <label class="nt-label" for="mu-version">Target Version <span class="nt-req">*</span></label>
-                  <select class="nt-select" id="mu-version">
-                    <option value="">Loading versions...</option>
-                  </select>
-                </div>
-                <div class="nt-field">
-                  <label class="nt-label" for="mu-reminder">Reminder</label>
-                  <select class="nt-select" id="mu-reminder">
-                    <option value="None">None</option>
-                    <option value="10 Minutes">10 Minutes</option>
-                    <option value="30 Minutes">30 Minutes</option>
-                    <option value="1 Hour">1 Hour</option>
-                    <option value="Next App Open">Next App Open</option>
-                    <option value="Daily">Daily</option>
-                  </select>
-                </div>
-              </div>
-              <div class="nt-field nt-switch-field">
-                <div>
-                  <label class="nt-label">Force Update ON/OFF</label>
-                  <span class="nt-help">Prevent app usage until updated</span>
-                </div>
-                <label class="nt-switch">
-                  <input type="checkbox" id="mu-force">
-                  <span class="nt-switch-slider"></span>
-                </label>
-              </div>
-              <div class="nt-modal-footer mu-pane-footer">
-                <button class="nt-btn-ghost" id="mu-cancel-btn">Cancel</button>
-                <button class="nt-btn-primary" id="mu-send-btn">Send Update</button>
-              </div>
-            </div>
-
-            <!-- TAB 2: ADD NEW VERSION -->
-            <div class="mu-tab-pane" data-pane="upload">
-              <div class="nt-field-row nt-field-row-2">
-                <div class="nt-field">
-                  <label class="nt-label" for="nuv-version">Version (e.g. v1.2.0) <span class="nt-req">*</span></label>
-                  <input class="nt-input" type="text" id="nuv-version" placeholder="v1.2.0">
-                </div>
-                <div class="nt-field">
-                  <label class="nt-label" for="nuv-code">Version Code (Numeric) <span class="nt-req">*</span></label>
-                  <input class="nt-input" type="number" id="nuv-code" placeholder="120">
-                </div>
-              </div>
-              <div class="nt-field">
-                <label class="nt-label" for="nuv-title">Release Title <span class="nt-req">*</span></label>
-                <input class="nt-input" type="text" id="nuv-title" placeholder="WISE Mobile v1.2.0 Release">
-              </div>
-              <div class="nt-field">
-                <label class="nt-label" for="nuv-notes">Release Notes</label>
-                <textarea class="nt-input nt-textarea" id="nuv-notes" rows="2"
-                  placeholder="List new features or bug fixes..."></textarea>
-              </div>
-              <div class="nt-field">
-                <label class="nt-label" for="nuv-apk">APK Download Link <span class="nt-req">*</span></label>
-                <input class="nt-input" type="url" id="nuv-apk"
-                  placeholder="https://example.com/downloads/wise-v1.2.0.apk">
-              </div>
-              <div class="nt-modal-footer mu-pane-footer">
-                <button class="nt-btn-ghost" id="nuv-clear-btn">Clear</button>
-                <button class="nt-btn-primary" id="nuv-save-btn">Save Version</button>
-              </div>
-            </div>
-
-            <!-- TAB 3: VERSION HISTORY -->
-            <div class="mu-tab-pane" data-pane="history">
-              <div id="version-history-list" class="mu-history-list">
-                <p class="mu-history-empty">Loading versions...</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </main>
+      </div></main>
   </div>
 
   <!-- Toast Container -->
@@ -405,8 +287,6 @@
   <script src="assets/js/core/auth.js"></script>
   <script src="assets/js/core/api.js"></script>
   <script src="assets/js/data/barangays.js"></script>
-  <!-- Components -->
-  <script src="assets/js/components/mobile-update-modal.js"></script>
   <!-- Page entry point -->
   <script src="assets/js/pages/notification.js"></script>
 </body>
