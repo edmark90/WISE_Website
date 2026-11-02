@@ -104,29 +104,65 @@
           </div>
         </div>
 
-        <!-- Weather Forecast Strip -->
-        <section class="db-weather db-reveal" style="--db-step:1" aria-label="Muntinlupa weather forecast">
-          <div class="db-weather-glow db-weather-glow-1"></div>
-          <div class="db-weather-glow db-weather-glow-2"></div>
-          <div class="db-weather-main">
-            <div class="db-weather-cond">
+        <!-- Weather & Operational Telemetry Strip -->
+        <section class="db-weather db-reveal" style="--db-step:1" aria-label="Muntinlupa weather and telemetry">
+          <div class="db-weather-primary">
+            <div class="db-weather-icon-box" id="db-weather-icon-box">
               <span class="db-weather-icon" id="db-weather-icon">🌤️</span>
-              <div>
-                <div class="db-weather-city-name">Muntinlupa City</div>
-                <div class="db-weather-condition" id="db-weather-condition">—</div>
+            </div>
+            <div class="db-weather-reading">
+              <span class="db-weather-temp" id="db-weather-temp">--°</span>
+              <div class="db-weather-meta">
+                <span class="db-weather-condition" id="db-weather-condition">—</span>
+                <span class="db-weather-tag">Muntinlupa Operations</span>
               </div>
             </div>
-            <div class="db-weather-temp" id="db-weather-temp">--°</div>
           </div>
+
+          <div class="db-weather-divider"></div>
+
           <div class="db-weather-stats">
-            <div class="db-weather-stat"><span class="db-weather-stat-icon">💧</span><span
-                class="db-weather-stat-label">Humidity</span><strong id="db-weather-humidity">—</strong></div>
-            <div class="db-weather-stat"><span class="db-weather-stat-icon">💨</span><span
-                class="db-weather-stat-label">Wind</span><strong id="db-weather-wind">—</strong></div>
-            <div class="db-weather-stat"><span class="db-weather-stat-icon">🌡️</span><span
-                class="db-weather-stat-label">Today</span><strong id="db-weather-max">—</strong></div>
+            <div class="db-weather-stat">
+              <span class="db-weather-stat-icon blue">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"></path>
+                </svg>
+              </span>
+              <div class="db-weather-stat-info">
+                <span class="db-weather-stat-label">Humidity</span>
+                <strong id="db-weather-humidity">—</strong>
+              </div>
+            </div>
+
+            <div class="db-weather-stat">
+              <span class="db-weather-stat-icon teal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"></path>
+                </svg>
+              </span>
+              <div class="db-weather-stat-info">
+                <span class="db-weather-stat-label">Wind</span>
+                <strong id="db-weather-wind">—</strong>
+              </div>
+            </div>
+
+            <div class="db-weather-stat">
+              <span class="db-weather-stat-icon amber">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z"></path>
+                </svg>
+              </span>
+              <div class="db-weather-stat-info">
+                <span class="db-weather-stat-label">Daily Range</span>
+                <strong id="db-weather-max">—</strong>
+              </div>
+            </div>
           </div>
-          <div class="db-weather-updated" id="db-weather-updated">Loading forecast…</div>
+
+          <div class="db-weather-status">
+            <span class="db-weather-dot"></span>
+            <span class="db-weather-updated" id="db-weather-updated">Loading forecast…</span>
+          </div>
         </section>
 
         <!-- Enhanced Month & Period Control Bar -->

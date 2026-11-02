@@ -1254,7 +1254,7 @@ var DB_WEATHER_CODES = {
 };
 
 function loadWeather() {
- var url = 'https://api.open-meteo.com/v1/forecast' +
+  var url = 'https://api.open-meteo.com/v1/forecast' +
     '?latitude=14.4239&longitude=121.0414' +
     '&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m' +
     '&daily=temperature_2m_max,temperature_2m_min,weather_code' +
@@ -1273,12 +1273,18 @@ function loadWeather() {
       $id('db-weather-max').textContent = 'H ' + Math.round(data.daily.temperature_2m_max[0]) + '° / L ' + Math.round(data.daily.temperature_2m_min[0]) + '°';
       var upd = data.current.time ? new Date(data.current.time).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' }) : '';
       $id('db-weather-updated').textContent = 'As of ' + upd;
+
+      var iconBox = $id('db-weather-icon-box');
+      if (iconBox) {
+        iconBox.className = 'db-weather-icon-box';
+        if (code === 0 || code === 1) iconBox.classList.add('is-sunny');
+        else if ((code >= 51 && code <= 82) || code === 95 || code === 96 || code === 99) iconBox.classList.add('is-rainy');
+        else if (code >= 2 && code <= 3) iconBox.classList.add('is-cloudy');
+      }
     })
     .catch(function () {
-      $id('db-weather-updated').textContent = 'Weather unavailable';
+      $id('db-weather-updated').textContent = 'Forecast offline';
       $id('db-weather-condition').textContent = '—';
       $id('db-weather-icon').textContent = '🌡️';
     });
-
-
 }
