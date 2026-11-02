@@ -28,13 +28,13 @@ function renderTable() {
       avatarHtml = '<div class="user-avatar-sm ' + avatarClass + '"><img class="user-avatar-img" src="' + escapeHtml(CONFIG.API_BASE_URL + '/' + u.profile_image) + '" alt="' + safeName + '" onerror="this.style.display=\'none\'"></div>';
     }
     html += '<tr>';
-    html += '<td style="font-weight:600;color:var(--text-muted);font-size:13px;">#' + u.id + '</td>';
+    html += '<td class="td-id">#' + u.id + '</td>';
     html += '<td><div class="user-cell">' + avatarHtml + '<div><div class="user-name-cell">' + safeName + '</div></div></div></td>';
     html += '<td><span class="user-email-cell">' + safeEmail + '</span></td>';
-    html += '<td style="color:var(--text-muted);">' + (u.phone || '-') + '</td>';
+    html += '<td class="td-muted">' + escapeHtml(u.phone || '—') + '</td>';
     html += '<td><span class="role-badge ' + u.role + '">' + roleLabel + '</span></td>';
     html += '<td><span class="user-status-badge ' + (u.is_active === false ? 'disabled' : 'active') + '"><span class="status-dot"></span>' + (u.is_active === false ? 'Disabled' : 'Active') + '</span></td>';
-    html += '<td style="color:var(--text-muted);font-size:13px;">' + created + '</td>';
+    html += '<td class="td-muted">' + created + '</td>';
     html += '<td><div class="actions-cell">';
     html += '<button class="btn-icon" onclick="openEditModal(' + u.id + ')" title="Edit user"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>';
     html += '<button class="btn-icon danger" onclick="openDeleteModal(' + u.id + ')" title="Delete user"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>';

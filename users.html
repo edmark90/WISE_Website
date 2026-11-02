@@ -5,6 +5,9 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WISE SYSTEM — User Management</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/global.css">
   <link rel="stylesheet" href="assets/css/users.css">
   <link rel="icon" type="image/png" href="assets/images/logo wise.png">
@@ -17,8 +20,7 @@
         <div class="badge">
           <img src="assets/images/logo wise.png" alt="wise logo">
         </div>
-        <h1>WISE<br>SYSTEM</h1>
-
+        <h1>WISE<br><span class="brand-sub">SYSTEM</span></h1>
       </div>
 
       <nav class="sidebar-nav">
@@ -69,42 +71,62 @@
           </svg><span>Logout</span></a>
       </div>
     </aside>
+
     <main class="main">
       <div class="page-header">
-        <h2>User Management</h2>
-        <p>Manage All accounts across the system.</p>
+        <div class="page-header-info">
+          <div class="page-eyebrow">Access &amp; Directory</div>
+          <h2>User Management</h2>
+          <p>Manage registered citizens and administrator accounts across Muntinlupa City.</p>
+        </div>
+        <div class="page-header-actions">
+          <button class="btn btn-primary" id="add-user-btn" type="button">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            <span>Add User</span>
+          </button>
+        </div>
       </div>
 
       <!-- Stats Cards -->
       <div class="stats-grid">
-        <div class="stat-card">
+        <div class="stat-card blue">
           <div class="stat-icon blue">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
               stroke-linejoin="round">
               <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
               <circle cx="9" cy="7" r="4"></circle>
+              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
             </svg>
           </div>
           <div class="stat-info">
-            <p class="stat-label">Total Users</p>
+            <p class="stat-label">Total Accounts</p>
             <p class="stat-number" id="stat-total">—</p>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon green">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-              stroke-linejoin="round">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-            </svg>
-          </div>
-          <div class="stat-info">
-            <p class="stat-label">Citizens</p>
-            <p class="stat-number" id="stat-citizens">—</p>
+            <p class="stat-foot">All registered accounts in directory</p>
           </div>
         </div>
 
-        <div class="stat-card">
+        <div class="stat-card green">
+          <div class="stat-icon green">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+              <circle cx="9" cy="7" r="4"></circle>
+              <polyline points="16 11 18 13 22 9"></polyline>
+            </svg>
+          </div>
+          <div class="stat-info">
+            <p class="stat-label">Citizens (Current View)</p>
+            <p class="stat-number" id="stat-citizens">—</p>
+            <p class="stat-foot">Mobile app &amp; community accounts</p>
+          </div>
+        </div>
+
+        <div class="stat-card orange">
           <div class="stat-icon orange">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
               stroke-linejoin="round">
@@ -113,8 +135,9 @@
             </svg>
           </div>
           <div class="stat-info">
-            <p class="stat-label">Admins</p>
+            <p class="stat-label">Administrators (Current View)</p>
             <p class="stat-number" id="stat-admins">—</p>
+            <p class="stat-foot">System operators &amp; dispatchers</p>
           </div>
         </div>
       </div>
@@ -130,55 +153,56 @@
           <input type="text" id="search-input" placeholder="Search users by name, email, or phone..." />
         </div>
         <div class="filter-group">
-          <select class="filter-select" id="role-filter">
+          <select class="filter-select" id="role-filter" aria-label="Filter by role">
             <option value="">All Roles</option>
             <option value="admin">Admin</option>
             <option value="citizen">Citizen</option>
           </select>
-          <button class="btn btn-primary" id="add-user-btn">
+          <button class="btn btn-secondary" id="reset-filter-btn" type="button" title="Reset search and filters">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
               stroke-linejoin="round">
-              <line x1="12" y1="5" x2="12" y2="19"></line>
-              <line x1="5" y1="12" x2="19" y2="12"></line>
+              <polyline points="1 4 1 10 7 10"></polyline>
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
             </svg>
-            Add User
+            <span>Reset</span>
           </button>
         </div>
       </div>
 
       <!-- Table Card -->
-      <div class="card" style="padding:0;">
-        <div class="table-card">
-          <div class="table-head">
-            <h3>All Users</h3>
-            <span class="table-count" id="user-count">0 users</span>
+      <div class="table-card">
+        <div class="table-head">
+          <div class="table-head-titles">
+            <h3>Directory Accounts</h3>
+            <p class="table-sub">View, edit, or manage account access status</p>
           </div>
-          <div class="table-wrap">
-            <table class="user-table" id="user-table">
-              <thead>
-                <tr>
-                  <th style="width:60px;">ID</th>
-                  <th>User</th>
-                  <th>Email</th>
-                  <th>Phone</th>
-                  <th>Role</th>
-                  <th>Status</th>
-                  <th>Created</th>
-                  <th style="width:100px;">Actions</th>
-                </tr>
-              </thead>
-              <tbody id="user-tbody">
-                <!-- Rows rendered by JS -->
-              </tbody>
-            </table>
-          </div>
-          <div id="table-state-container">
-            <!-- Loading / Empty state rendered by JS -->
-          </div>
-          <div class="pagination" id="pagination">
-            <div class="pagination-info" id="pagination-info">Showing 0 of 0 users</div>
-            <div class="pagination-controls" id="pagination-controls"></div>
-          </div>
+          <span class="table-count" id="user-count">0 users</span>
+        </div>
+        <div class="table-wrap">
+          <table class="user-table" id="user-table">
+            <thead>
+              <tr>
+                <th class="th-id">ID</th>
+                <th>User</th>
+                <th>Email</th>
+                <th>Phone</th>
+                <th>Role</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th class="th-actions">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="user-tbody">
+              <!-- Rows rendered by JS -->
+            </tbody>
+          </table>
+        </div>
+        <div id="table-state-container">
+          <!-- Loading / Empty state rendered by JS -->
+        </div>
+        <div class="pagination" id="pagination">
+          <div class="pagination-info" id="pagination-info">Showing 0 of 0 users</div>
+          <div class="pagination-controls" id="pagination-controls"></div>
         </div>
       </div>
     </main>
@@ -189,7 +213,7 @@
     <div class="modal">
       <div class="modal-header">
         <h3 id="modal-title">Add New User</h3>
-        <button class="modal-close" id="modal-close">
+        <button class="modal-close" id="modal-close" type="button" aria-label="Close modal">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
             stroke-linejoin="round">
             <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -203,12 +227,11 @@
 
           <div class="form-row">
             <div class="form-group">
-              <label class="form-label" for="form-fullname">Full Name <span
-                  style="color:var(--danger);">*</span></label>
+              <label class="form-label" for="form-fullname">Full Name <span class="req-star">*</span></label>
               <input class="form-input" id="form-fullname" type="text" placeholder="Juan Dela Cruz" required />
             </div>
             <div class="form-group">
-              <label class="form-label" for="form-email">Email <span style="color:var(--danger);">*</span></label>
+              <label class="form-label" for="form-email">Email <span class="req-star">*</span></label>
               <input class="form-input" id="form-email" type="email" placeholder="juan@example.com" required />
             </div>
           </div>
@@ -219,7 +242,7 @@
               <input class="form-input" id="form-phone" type="text" placeholder="+63 912 345 6789" />
             </div>
             <div class="form-group">
-              <label class="form-label" for="form-role">Role <span style="color:var(--danger);">*</span></label>
+              <label class="form-label" for="form-role">Role <span class="req-star">*</span></label>
               <select class="form-select" id="form-role" required>
                 <option value="">Select role...</option>
                 <option value="admin">Admin</option>
@@ -230,7 +253,7 @@
 
           <div class="form-row" id="password-fields">
             <div class="form-group">
-              <label class="form-label" for="form-password">Password <span style="color:var(--danger);"
+              <label class="form-label" for="form-password">Password <span class="req-star"
                   id="password-required">*</span></label>
               <input class="form-input" id="form-password" type="password" placeholder="Enter a password" />
             </div>
@@ -240,8 +263,8 @@
             </div>
           </div>
 
-          <div class="form-row" id="account-status-fields" style="display:none;">
-            <div class="form-group" style="grid-column:1 / -1;">
+          <div class="form-row status-row-hidden" id="account-status-fields">
+            <div class="form-group form-group-full">
               <label class="form-label" for="form-active">Account Status</label>
               <label class="status-toggle">
                 <input type="checkbox" id="form-active" />
@@ -254,8 +277,8 @@
         </form>
       </div>
       <div class="modal-footer">
-        <button class="btn btn-secondary" id="modal-cancel">Cancel</button>
-        <button class="btn btn-primary" id="modal-save">
+        <button class="btn btn-secondary" id="modal-cancel" type="button">Cancel</button>
+        <button class="btn btn-primary" id="modal-save" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
             stroke-linejoin="round">
             <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
@@ -270,8 +293,8 @@
 
   <!-- Delete Confirmation Modal -->
   <div class="modal-overlay" id="delete-modal">
-    <div class="modal" style="max-width:420px;">
-      <div class="modal-body" style="padding:32px 24px;">
+    <div class="modal modal-confirm">
+      <div class="modal-body modal-confirm-body">
         <div class="confirm-icon danger">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
             stroke-linejoin="round">
@@ -285,15 +308,15 @@
           <p>You are about to delete <strong id="delete-user-name">this user</strong>. This action cannot be undone.</p>
         </div>
       </div>
-      <div class="modal-footer" style="justify-content:center;">
-        <button class="btn btn-secondary" id="delete-cancel">Cancel</button>
-        <button class="btn btn-danger" id="delete-confirm">
+      <div class="modal-footer modal-confirm-footer">
+        <button class="btn btn-secondary" id="delete-cancel" type="button">Cancel</button>
+        <button class="btn btn-danger" id="delete-confirm" type="button">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
             stroke-linejoin="round">
             <polyline points="3 6 5 6 21 6"></polyline>
             <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
           </svg>
-          Delete
+          <span>Delete</span>
         </button>
       </div>
     </div>

@@ -15,7 +15,21 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (!openBtn || !overlay) return;
 
+  function switchTab(tabName) {
+    overlay.querySelectorAll(".mu-tab-btn").forEach(btn => {
+      btn.classList.toggle("active", btn.dataset.tab === tabName);
+    });
+    overlay.querySelectorAll(".mu-tab-pane").forEach(pane => {
+      pane.classList.toggle("active", pane.dataset.pane === tabName);
+    });
+  }
+
+  overlay.querySelectorAll(".mu-tab-btn").forEach(btn => {
+    btn.addEventListener("click", () => switchTab(btn.dataset.tab));
+  });
+
   function openModal() {
+    switchTab("send");
     overlay.classList.add("show");
     fetchVersions();
   }
@@ -27,6 +41,14 @@ document.addEventListener("DOMContentLoaded", () => {
   openBtn.addEventListener("click", openModal);
   if (closeBtn) closeBtn.addEventListener("click", closeModal);
   if (cancelBtn) cancelBtn.addEventListener("click", closeModal);
+  overlay.addEventListener("click", (e) => {
+    if (e.target === overlay) closeModal();
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && overlay.classList.contains("show")) {
+      closeModal();
+    }
+  });
 
   async function fetchVersions() {
     try {
@@ -53,7 +75,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderVersionDropdown() {
     if (loadedVersions.length === 0) {
-      versionSelect.innerHTML = '<option value="">No versions available — Add one below</option>';
+      versionSelect.innerHTML = '<option value="">No versions available — Add one in Add Version tab</option>';
       return;
     }
     versionSelect.innerHTML = '<option value="">Select Version</option>' +
@@ -64,58 +86,58 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderVersionHistory() {
     if (loadedVersions.length === 0) {
-      versionHistoryList.innerHTML = '<p style="color:var(--nt-text-muted); font-size:13px;">No versions created yet.</p>';
+      versionHistoryList.innerHTML = '<p class="mu-history-empty">No versions created yet.</p>';
       return;
     }
     versionHistoryList.innerHTML = loadedVersions.map(v => {
       const date = v.created_at ? new Date(v.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
       const apkBadge = v.apk_url
-        ? '<span style="color:#16a34a;font-size:11px;font-weight:600;">✓ APK Linked</span>'
-        : '<span style="color:#dc2626;font-size:11px;font-weight:600;">✗ No APK</span>';
+        ? '<span class="mu-badge-apk-ok">✓ APK Linked</span>'
+        : '<span class="mu-badge-apk-no">✗ No APK</span>';
       const forceBadge = v.is_force
-        ? '<span style="background:#fef2f2;color:#dc2626;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:700;">FORCE</span>'
+        ? '<span class="mu-badge-force">FORCE</span>'
         : '';
 
       // Get announcements for this version
       const versionAnnouncements = loadedAnnouncements.filter(a => a.app_version_id === v.id);
       const annCount = versionAnnouncements.length;
       const annBadge = annCount > 0
-        ? `<span style="background:#eff6ff;color:#2563eb;padding:2px 8px;border-radius:12px;font-size:10px;font-weight:600;">${annCount} announcement${annCount > 1 ? 's' : ''}</span>`
+        ? `<span class="mu-badge-ann">${annCount} announcement${annCount > 1 ? 's' : ''}</span>`
         : '';
 
       const announcementsHtml = versionAnnouncements.length > 0
-        ? `<div style="margin-top:8px;padding-top:8px;border-top:1px solid #e5e7eb;">
-            <div style="font-size:11px;font-weight:600;color:#6b7280;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;">Announcements</div>
+        ? `<div class="mu-ann-section">
+            <div class="mu-ann-heading">Announcements</div>
             ${versionAnnouncements.map(a => {
               const aDate = a.created_at ? new Date(a.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
-              const forceTag = a.force ? '<span style="color:#dc2626;font-size:10px;font-weight:600;">FORCE</span>' : '';
-              const reminderTag = a.reminder && a.reminder !== 'None' ? `<span style="color:#8b5cf6;font-size:10px;">⏰ ${escapeHtml(a.reminder)}</span>` : '';
-              return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:#f0f9ff;border:1px solid #bfdbfe;border-radius:6px;margin-bottom:4px;">
-                <div style="display:flex;align-items:center;gap:8px;min-width:0;">
-                  <div style="font-size:12px;color:#1e40af;font-weight:600;white-space:nowrap;">${escapeHtml(a.title)}</div>
+              const forceTag = a.force ? '<span class="mu-badge-force">FORCE</span>' : '';
+              const reminderTag = a.reminder && a.reminder !== 'None' ? `<span class="mu-ann-reminder">⏰ ${escapeHtml(a.reminder)}</span>` : '';
+              return `<div class="mu-ann-item">
+                <div class="mu-ann-meta">
+                  <div class="mu-ann-title">${escapeHtml(a.title)}</div>
                   ${forceTag}
                   ${reminderTag}
-                  <div style="font-size:10px;color:#9ca3af;">${aDate}</div>
+                  <div class="mu-ann-date">${aDate}</div>
                 </div>
-                <button class="nt-delete-btn nt-delete-ann-btn" data-delete-ann-id="${a.id}" data-delete-ann-title="${escapeHtml(a.title)}" title="Delete announcement" style="padding:3px 6px;font-size:10px;">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:12px;height:12px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                <button class="nt-delete-btn nt-delete-ann-btn" data-delete-ann-id="${a.id}" data-delete-ann-title="${escapeHtml(a.title)}" title="Delete announcement">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
                 </button>
               </div>`;
             }).join('')}
           </div>`
-        : `<div style="margin-top:6px;font-size:11px;color:#9ca3af;font-style:italic;">No announcements — version can be deleted</div>`;
+        : `<div class="mu-ann-empty">No announcements — version can be deleted</div>`;
 
-      return `<div style="padding:12px;background:#f9fafb;border:1px solid var(--nt-border);border-radius:8px;margin-bottom:8px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;">
-          <div style="display:flex;align-items:center;gap:10px;min-width:0;">
-            <div style="font-weight:700;font-size:13px;color:var(--nt-text);white-space:nowrap;">${escapeHtml(v.version)}</div>
+      return `<div class="mu-version-card">
+        <div class="mu-version-header">
+          <div class="mu-version-left">
+            <div class="mu-version-tag">${escapeHtml(v.version)}</div>
             ${forceBadge}
             ${annBadge}
-            <div style="font-size:12px;color:var(--nt-text-secondary);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(v.title)}</div>
+            <div class="mu-version-title">${escapeHtml(v.title)}</div>
           </div>
-          <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+          <div class="mu-version-right">
             ${apkBadge}
-            <span style="font-size:11px;color:var(--nt-text-muted);">${date}</span>
+            <span class="mu-version-date">${date}</span>
             <button class="nt-delete-btn nt-delete-version-btn" data-delete-version-id="${v.id}" data-delete-version-name="${escapeHtml(v.version)}" title="Delete version">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
               Delete
@@ -177,7 +199,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // SECTION 1 — Send Mobile Update
+  // TAB 1 — Send Mobile Update
   sendBtn.addEventListener("click", async () => {
     const title = document.getElementById("mu-title").value.trim();
     const message = document.getElementById("mu-message").value.trim();
@@ -223,7 +245,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // SECTION 2 — Add New Version
+  // TAB 2 — Add New Version
   saveVerBtn.addEventListener("click", async () => {
     const version = document.getElementById("nuv-version").value.trim();
     const version_code = parseInt(document.getElementById("nuv-code").value);
@@ -251,7 +273,8 @@ document.addEventListener("DOMContentLoaded", () => {
       }
       showToast("New Version saved!", "success");
       clearVersionForm();
-      fetchVersions();
+      await fetchVersions();
+      switchTab("send");
     } catch (err) {
       showToast(err.message || "Failed to save version.", "error");
     } finally {

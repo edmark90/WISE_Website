@@ -13,7 +13,8 @@ const fs = require('fs');
 const assert = require('assert');
 
 // 1. Load boundary GeoJSON and route-map.js
-const boundaryGeoJson = JSON.parse(fs.readFileSync('assets/data/muntinlupa-boundary.json', 'utf8'));
+const boundaryCode = fs.readFileSync('assets/js/data/muntinlupa-boundary.js', 'utf8');
+const boundaryGeoJson = new Function(boundaryCode + '; return MUNTINLUPA_BOUNDARY_GEOJSON;')();
 
 // Mock browser window/document environment
 global.window = {};

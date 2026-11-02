@@ -52,9 +52,9 @@ function renderWasteRows(records) {
     var sourceSub = (r.barangay ? escapeHtml(r.barangay) : '') + (r.zone ? ' · Zone ' + escapeHtml(r.zone) : '');
     var thumb;
     if (WC_SHOW_IMAGES && r.image_url) {
-      thumb = '<span class="wc-thumb"><img src="' + escapeHtml(CONFIG.API_BASE_URL + '/' + r.image_url) + '" alt="Waste scan" onerror="this.parentElement.innerHTML=\'' + WC_PLACEHOLDER.replace(/"/g, '&quot;') + '\'"></span>';
+      thumb = '<span class="wc-thumb" onclick="viewWasteRecord(' + r.id + ')" title="View photo preview"><img src="' + escapeHtml(CONFIG.API_BASE_URL + '/' + r.image_url) + '" alt="Waste scan" onerror="this.parentElement.innerHTML=\'' + WC_PLACEHOLDER.replace(/"/g, '&quot;') + '\'"></span>';
     } else {
-      thumb = '<span class="wc-thumb" aria-label="No image available">' + WC_PLACEHOLDER + '</span>';
+      thumb = '<span class="wc-thumb" onclick="viewWasteRecord(' + r.id + ')" title="View record details" aria-label="No image available">' + WC_PLACEHOLDER + '</span>';
     }
     var conf = r.confidence;
     var confLevel = wcConfLevel(conf);
@@ -92,9 +92,12 @@ function renderWasteState(kind, msg) {
 
 function renderWastePagination() {
   var total = state.total, page = state.page, pageSize = state.pageSize;
+  var totalPages = Math.max(1, Math.ceil(total / pageSize));
   var start = total === 0 ? 0 : (page - 1) * pageSize + 1;
   var end = Math.min(page * pageSize, total);
   $id('wc-count').innerHTML = 'Showing <strong>' + start + '-' + end + '</strong> of <strong>' + total.toLocaleString() + '</strong> records';
+  var pageInfo = $id('wc-page-info');
+  if (pageInfo) pageInfo.textContent = 'Page ' + page + ' of ' + totalPages;
   var prev = $id('wc-prev'), next = $id('wc-next');
   prev.disabled = page <= 1;
   next.disabled = end >= total;

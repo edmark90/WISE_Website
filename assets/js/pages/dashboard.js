@@ -253,9 +253,27 @@ function loadDashboard() {
   var recentP = apiRequest('/api/waste-records/?page=1&page_size=10').then(okJson);
 
   return Promise.all([notifP, routesP, recentP]).then(function (results) {
-    renderNotifs(results[0]);
-    renderMonthStrip(results[1]);
-    cacheActivities(results[1], results[2]);
+    var notifData = results[0] || {};
+    var routesData = results[1] || [];
+
+    // Verify today's delayed and cancelled counts with live schedule state
+    var todayIso = phToday();
+    var todayRoutes = (routesData || []).filter(function(s) {
+      return s.collection_date && s.collection_date.substring(0, 10) === todayIso;
+    });
+    var delayedToday = todayRoutes.filter(function(s) { return s.status === 'Delayed'; }).length;
+    var cancelledToday = todayRoutes.filter(function(s) { return s.status === 'Cancelled'; }).length;
+
+    if (delayedToday > 0 && (!notifData.delayed_routes || notifData.delayed_routes < delayedToday)) {
+      notifData.delayed_routes = delayedToday;
+    }
+    if (cancelledToday > 0 && (!notifData.cancelled_routes || notifData.cancelled_routes < cancelledToday)) {
+      notifData.cancelled_routes = cancelledToday;
+    }
+
+    renderNotifs(notifData);
+    renderMonthStrip(routesData);
+    cacheActivities(routesData, results[2]);
     renderFilteredActivities();
     touchUpdated();
   }).catch(function (err) {
@@ -933,17 +951,11 @@ function renderMonthStrip(schedules) {
   }
 
   var byDate = {};
-  list.forEach(function (s) { (byDate[s.collection_date] = byDate[s.collection_date] || []).push(s); });
+  list.forEach(function (s) {
+    var dKey = (s.collection_date || '').substring(0, 10);
+    (byDate[dKey] = byDate[dKey] || []).push(s);
+  });
   days.forEach(function (day) { day.routes = byDate[day.iso] || []; });
-
-  if (!list.length) {
-    body.innerHTML =
-      '<div class="db-state">' +
-        '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>' +
-        '<p><strong>No collection routes scheduled in the last 7 days.</strong><br>Create scheduled pickups in the Collection Schedule management module.</p>' +
-      '</div>';
-    return;
-  }
 
   var statusFor = function (day) {
     var rs = day.routes;
@@ -951,7 +963,7 @@ function renderMonthStrip(schedules) {
     if (rs.some(function (r) { return r.status === 'Cancelled'; })) return { status: 'cancelled', label: 'Cancelled' };
     if (rs.some(function (r) { return r.status === 'Delayed'; })) return { status: 'delayed', label: 'Delayed' };
     if (rs.some(function (r) { return r.status === 'Arriving' || r.status === 'Arrived'; })) return { status: 'arriving', label: 'Live' };
-    if (rs.every(function (r) { return r.status === 'Completed'; })) return { status: 'completed', label: 'Done' };
+    if (rs.every(function (r) { return r.status === 'Completed'; })) return { status: 'completed', label: 'Completed' };
     return { status: 'upcoming', label: 'Scheduled' };
   };
 
@@ -968,27 +980,33 @@ function renderMonthStrip(schedules) {
     var segPct = count ? Math.round((doneCount / count) * 100) : 0;
 
     return (
-      '<div class="db-day' + (day.isToday ? ' today' : '') + ' ' + stInfo.status + '" data-iso="' + day.iso + '" title="' + escapeHtml(day.label + ', ' + day.iso + ' — ' + count + ' routes — Click to view schedule') + '">' +
-        (day.isToday ? '<span class="db-day-today-tag">TODAY</span>' : '') +
+      '<div class="db-day' + (day.isToday ? ' today' : '') + ' ' + stInfo.status + '" data-iso="' + day.iso + '" title="' + escapeHtml(day.label + ', ' + day.iso + ' — ' + count + (count === 1 ? ' route' : ' routes') + ' — Click to view schedule') + '">' +
         '<div class="db-day-top">' +
-          '<span class="db-day-label">' + escapeHtml(day.label) + '</span>' +
+          '<div class="db-day-weekday">' +
+            '<span class="db-day-label">' + escapeHtml(day.label) + '</span>' +
+            (day.isToday ? '<span class="db-day-today-tag">Today</span>' : '') +
+          '</div>' +
           '<span class="db-day-date">' + escapeHtml(day.dayNum) + '</span>' +
         '</div>' +
-        '<div class="db-day-status-chip ' + stInfo.status + '">' +
-          '<span class="db-day-status-dot"></span>' +
-          '<span class="db-day-status-txt">' + stInfo.label + '</span>' +
+        '<div class="db-day-mid">' +
+          '<div class="db-day-status-chip ' + stInfo.status + '">' +
+            '<span class="db-day-status-dot"></span>' +
+            '<span class="db-day-status-txt">' + stInfo.label + '</span>' +
+          '</div>' +
         '</div>' +
         '<div class="db-day-metric">' +
-          '<span class="db-day-count-badge">' +
-            (count ? '<strong>' + count + '</strong> ' + (count === 1 ? 'Route' : 'Routes') : 'No Run') +
-          '</span>' +
+          '<div class="db-day-metric-row">' +
+            '<span class="db-day-count-badge">' +
+              (count ? '<strong>' + count + '</strong> ' + (count === 1 ? 'Route' : 'Routes') : 'No Run') +
+            '</span>' +
+            '<span class="db-day-go-icon" aria-hidden="true">' +
+              '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>' +
+            '</span>' +
+          '</div>' +
           (count > 0
             ? '<div class="db-day-mini-bar"><div class="db-day-mini-fill ' + stInfo.status + '" style="width:' + (segPct || 25) + '%"></div></div>'
             : '<div class="db-day-mini-bar empty"></div>') +
         '</div>' +
-        '<span class="db-day-go-icon">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg>' +
-        '</span>' +
       '</div>'
     );
   }).join('');
@@ -996,9 +1014,9 @@ function renderMonthStrip(schedules) {
   var metaChips =
     '<div class="db-rail-summary-chips">' +
       '<span class="db-rail-chip total"><strong>' + totalRoutes + '</strong> Total Routes</span>' +
-      '<span class="db-rail-chip good"><strong>' + doneRoutes + '</strong> Completed</span>' +
-      (delayedRoutes ? '<span class="db-rail-chip warn"><strong>' + delayedRoutes + '</strong> Delayed</span>' : '') +
-      (cancelledRoutes ? '<span class="db-rail-chip danger"><strong>' + cancelledRoutes + '</strong> Cancelled</span>' : '') +
+      '<span class="db-rail-chip good"><span class="db-chip-dot good"></span><strong>' + doneRoutes + '</strong> Completed</span>' +
+      (delayedRoutes ? '<span class="db-rail-chip warn"><span class="db-chip-dot warn"></span><strong>' + delayedRoutes + '</strong> Delayed</span>' : '') +
+      (cancelledRoutes ? '<span class="db-rail-chip danger"><span class="db-chip-dot danger"></span><strong>' + cancelledRoutes + '</strong> Cancelled</span>' : '') +
     '</div>';
 
   body.innerHTML =

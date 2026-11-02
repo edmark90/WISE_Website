@@ -29,17 +29,17 @@ function renderSidebar(date, schedules) {
     clearRouteDiagram();
     dayActions.style.display = 'none';
     const isPast = isDatePast(formatDate(date));
-    const addBtn = isPast ? '' : '<button class="add-assignment-btn" style="margin-top:16px" onclick="openScheduleModalForDate(state.selectedDate || state.today)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Collection Assignment</button>';
+    const addBtn = isPast ? '' : '<button class="add-assignment-btn mt-16" onclick="openScheduleModalForDate(state.selectedDate || state.today)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Collection Assignment</button>';
     
     sidebarDetails.innerHTML = '<div class="sidebar-card">' +
       '<div class="sidebar-card-header"><h3>Schedule Details</h3></div>' +
       '<div class="sidebar-card-body">' +
-        '<div class="empty-state" style="text-align:center;padding:20px 0">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:48px;height:48px;color:#D1D5DB;margin-bottom:12px">' +
+        '<div class="sidebar-empty-body">' +
+          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="sidebar-empty-icon">' +
             '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>' +
           '</svg>' +
-          '<p style="margin:0;color:var(--sc-text-secondary);font-size:14px">No assignments for <br><strong>' + dateFormatted + '</strong></p>' +
-          '<p style="margin:8px 0 0;color:var(--sc-text-secondary);font-size:13px">Click below to add a collection assignment.</p>' +
+          '<p class="sidebar-empty-text">No assignments for <br><strong>' + dateFormatted + '</strong></p>' +
+          '<p class="sidebar-empty-sub">Click below to add a collection assignment.</p>' +
           addBtn +
         '</div>' +
       '</div></div>';
@@ -61,7 +61,7 @@ function showDayRouteMap(schedules, dateFormatted) {
       '</div>' +
       '<span class="day-assignments-count">' + schedules.length + ' Assignment' + (schedules.length > 1 ? 's' : '') + '</span>' +
     '</div>' +
-    '<div class="sidebar-card-body" style="padding-top:14px">';
+    '<div class="sidebar-card-body sidebar-card-body-top">';
 
   detailsHtml += addBtn;
 
@@ -80,8 +80,8 @@ function showDayRouteMap(schedules, dateFormatted) {
       var stTime = st.collection_time ? formatTime12(st.collection_time.substring(0, 5)) : time12;
       stopsPreviewHtml += '<div class="assignment-stop-item">' +
         '<span class="stop-seq-dot">' + (sidx + 1) + '</span>' +
-        '<span style="flex:1">' + place + '</span>' +
-        (stTime ? '<span style="font-size:10px;font-weight:600;color:#2563EB;background:#EFF6FF;padding:1px 6px;border-radius:4px">' + stTime + '</span>' : '') +
+        '<span class="stop-place-label">' + place + '</span>' +
+        (stTime ? '<span class="stop-time-chip">' + stTime + '</span>' : '') +
       '</div>';
     });
     stopsPreviewHtml += '</div>';
@@ -89,7 +89,7 @@ function showDayRouteMap(schedules, dateFormatted) {
     detailsHtml += '<div class="assignment-card" onclick="showScheduleInSidebar(getScheduleById(' + s.id + '))">' +
       '<div class="assignment-header-row">' +
         '<div class="assignment-title">' +
-          '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:' + bColor.bg + '"></span>' +
+          '<span class="assignment-bgy-dot" style="background:' + bColor.bg + '"></span>' +
           '<span>' + escapeHtml(routeLabel) + '</span>' +
         '</div>' +
         '<div class="assignment-actions">' +
@@ -107,7 +107,7 @@ function showDayRouteMap(schedules, dateFormatted) {
     '</div>';
   });
 
-  detailsHtml += '<div class="bulk-status-bar" style="margin-top:14px">' +
+  detailsHtml += '<div class="bulk-status-bar">' +
     '<label class="bulk-status-label">Set all routes:</label>' +
     '<select class="bulk-status-select" id="bulk-status-select">' +
       '<option value="">Select status...</option>' +
@@ -118,10 +118,10 @@ function showDayRouteMap(schedules, dateFormatted) {
   '</div>';
 
   detailsHtml += '<div class="day-action-section reschedule-section">' +
-    '<div class="day-action-header"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span>Move All Routes</span></div>' +
+    '<div class="day-action-header"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span>Move All Routes</span></div>' +
     '<div class="day-action-row">' +
       '<input type="date" class="day-action-input" id="reschedule-date-input" value="" min="' + formatDate(new Date()) + '">' +
-      '<button class="day-action-btn move-btn" onclick="rescheduleAllRoutes()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><polyline points="9 18 15 12 9 6"/></svg> Move All</button>' +
+      '<button class="day-action-btn move-btn" onclick="rescheduleAllRoutes()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg> Move All</button>' +
     '</div></div>';
 
   detailsHtml += '</div></div>';
@@ -157,8 +157,8 @@ function showScheduleInSidebar(schedule) {
     '<div class="sidebar-card-body">' +
       '<div class="details-status"><span class="status-badge" style="background:' + sc.bg + ';color:' + sc.color + '"><span class="status-dot" style="background:' + sc.color + '"></span>' + schedule.status + '</span></div>' +
       '<div class="details-grid">' +
-        '<div class="detail-item"><span class="detail-label">Truck</span><span class="detail-value" style="color:#1D4ED8;font-weight:700">' + escapeHtml(truckLabel) + '</span></div>' +
-        '<div class="detail-item"><span class="detail-label">Personnel</span><span class="detail-value" style="color:#6D28D9;font-weight:700">' + escapeHtml(schedule.assigned_personnel || '-') + '</span></div>' +
+        '<div class="detail-item"><span class="detail-label">Truck</span><span class="detail-value detail-value-truck">' + escapeHtml(truckLabel) + '</span></div>' +
+        '<div class="detail-item"><span class="detail-label">Personnel</span><span class="detail-value detail-value-personnel">' + escapeHtml(schedule.assigned_personnel || '-') + '</span></div>' +
         '<div class="detail-item"><span class="detail-label">Barangay</span><span class="detail-value" style="color:' + bColor.bg + '">' + escapeHtml(schedule.barangay) + '</span></div>' +
         '<div class="detail-item"><span class="detail-label">Street / Area</span><span class="detail-value">' + escapeHtml(schedule.zone || '-') + '</span></div>' +
         '<div class="detail-item"><span class="detail-label">Date</span><span class="detail-value">' + dateFormatted + '</span></div>' +
@@ -171,4 +171,3 @@ function showScheduleInSidebar(schedule) {
 
   renderRouteDiagram([schedule], dateFormatted + ' \u00B7 ' + truckLabel);
 }
-

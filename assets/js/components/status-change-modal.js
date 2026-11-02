@@ -33,7 +33,7 @@ function openStatusChangeModal(scheduleOrList, newStatus) {
   renderStatusChangeModal();
   const overlay = $id('status-change-overlay');
   if (overlay) {
-    overlay.style.display = 'flex';
+    overlay.style.display = '';
     overlay.classList.add('active');
   }
 }
@@ -41,8 +41,8 @@ function openStatusChangeModal(scheduleOrList, newStatus) {
 function closeStatusChangeModal() {
   const overlay = $id('status-change-overlay');
   if (overlay) {
-    overlay.style.display = 'none';
     overlay.classList.remove('active');
+    overlay.style.display = '';
   }
   STATUS_CHANGE.schedules = [];
   STATUS_CHANGE.daySchedules = [];

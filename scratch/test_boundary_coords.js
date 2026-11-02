@@ -1,5 +1,6 @@
 const fs = require('fs');
-const boundary = JSON.parse(fs.readFileSync('assets/data/muntinlupa-boundary.json', 'utf8'));
+const boundaryCode = fs.readFileSync('assets/js/data/muntinlupa-boundary.js', 'utf8');
+const boundary = new Function(boundaryCode + '; return MUNTINLUPA_BOUNDARY_GEOJSON;')();
 
 function isInside(lat, lng) {
   const ring = boundary.coordinates[0];

@@ -22,7 +22,7 @@
         <div class="badge">
           <img src="assets/images/logo wise.png" alt="wise logo">
         </div>
-        <h1>WISE<br>SYSTEM</h1>
+        <h1>WISE<br><span class="brand-sub">SYSTEM</span></h1>
 
       </div>
 
@@ -79,17 +79,18 @@
       <div class="wc-page">
 
         <!-- Page header -->
-        <div class="wc-head">
+        <div class="wc-head wc-reveal" style="--wc-step: 0;">
           <div>
+            <div class="wc-eyebrow">Optical Telemetry &middot; AI Sorters</div>
             <h2 class="wc-title">AI Classification Monitoring</h2>
-            <p class="wc-subtitle">Real-time oversight of optical sorting and waste categorization accuracy.</p>
+            <p class="wc-subtitle">Real-time oversight of optical sorting and waste categorization accuracy across Muntinlupa City.</p>
           </div>
-          <span class="wc-live" title="Live feed from optical sorters"><span class="dot"></span>LIVE</span>
+          <span class="wc-live" title="Live telemetry feed from optical sorters"><span class="dot"></span>LIVE FEED</span>
         </div>
 
         <!-- Summary statistics cards -->
-        <div class="wc-stats">
-          <div class="wc-stat">
+        <div class="wc-stats wc-reveal" style="--wc-step: 1;">
+          <div class="wc-stat" style="--wc-substep: 0;">
             <span class="wc-stat-icon" title="Records stored">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                 stroke-linejoin="round">
@@ -104,7 +105,7 @@
             <p class="wc-stat-foot">past 24 hours</p>
           </div>
 
-          <div class="wc-stat">
+          <div class="wc-stat" style="--wc-substep: 1;">
             <span class="wc-stat-icon" title="Model confidence">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                 stroke-linejoin="round">
@@ -122,7 +123,7 @@
             </div>
           </div>
 
-          <div class="wc-stat">
+          <div class="wc-stat" style="--wc-substep: 2;">
             <span class="wc-stat-icon" title="Most frequent classification">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                 stroke-linejoin="round">
@@ -146,8 +147,87 @@
           </div>
         </div>
 
+        <!-- Barangay Sorting & Recycling Performance (Filtered by Month/Year) -->
+        <div class="wc-brgy-card wc-reveal" id="wc-brgy-card" style="--wc-step: 2;">
+          <div class="wc-brgy-header-row">
+            <div class="wc-brgy-title-group">
+              <h3 class="wc-brgy-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path>
+                  <path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path>
+                  <path d="M4 22h16"></path>
+                  <path d="M10 14.66V17c0 .55-.45 1-1 1H7c-.55 0-1-.45-1-1v-2.34"></path>
+                  <path d="M18 14.66V17c0 .55-.45 1-1 1h-2c-.55 0-1-.45-1-1v-2.34"></path>
+                  <path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path>
+                </svg>
+                <span>Barangay Segregation &amp; AI Recycling Performance</span>
+              </h3>
+              <p class="wc-brgy-sub">Verified database metrics for optical AI classifications, proper sorting rate, and barangay compliance ranking.</p>
+            </div>
+
+            <div class="wc-brgy-controls">
+              <span class="wc-brgy-meta-pill">
+                <span class="wc-brgy-meta-dot"></span>
+                <span>Citywide Sorting: <strong id="wc-citywide-rate">—</strong></span>
+              </span>
+
+              <div class="wc-brgy-btn-group" id="wc-brgy-period-mode">
+                <button type="button" class="wc-brgy-toggle-btn active" data-mode="month">Monthly</button>
+                <button type="button" class="wc-brgy-toggle-btn" data-mode="all">All Time</button>
+              </div>
+
+              <div class="wc-brgy-picker-wrap" id="wc-brgy-picker-wrap">
+                <label for="wc-brgy-month">Month:</label>
+                <input type="month" id="wc-brgy-month">
+              </div>
+
+              <button type="button" class="wc-brgy-refresh-btn" id="wc-brgy-refresh-btn" title="Refresh performance metrics">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="23 4 23 10 17 10"></polyline>
+                  <polyline points="1 20 1 14 7 14"></polyline>
+                  <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
+                </svg>
+              </button>
+            </div>
+          </div>
+
+          <!-- Top 3 Podium Cards -->
+          <div class="wc-brgy-podium" id="wc-brgy-podium">
+            <!-- Dynamically populated from database -->
+          </div>
+
+          <!-- Full Barangay Breakdown Table -->
+          <div class="wc-brgy-table-wrap">
+            <table class="wc-brgy-table">
+              <thead>
+                <tr>
+                  <th style="width: 70px;">Rank</th>
+                  <th>Barangay</th>
+                  <th style="min-width: 170px;">Proper Sorting Rate</th>
+                  <th>AI Classifications</th>
+                  <th>Diverted Materials</th>
+                  <th>AI Confidence</th>
+                  <th>Compliance Tier</th>
+                </tr>
+              </thead>
+              <tbody id="wc-brgy-tbody">
+                <!-- Dynamically populated from database -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
         <!-- Filter bar -->
-        <div class="wc-filters">
+        <div class="wc-filters wc-reveal" style="--wc-step: 3;">
+          <div class="wc-search-box">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"></circle>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="wc-search-input" placeholder="Search by citizen, barangay, or waste type..." autocomplete="off">
+          </div>
+
           <div class="wc-filter">
             <svg class="lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round">
@@ -169,8 +249,6 @@
             </svg>
           </div>
 
-          <div class="wc-filter-divider" aria-hidden="true"></div>
-
           <button class="wc-date" type="button" id="wc-date-btn" aria-label="Date and time range">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
               stroke-linejoin="round">
@@ -181,10 +259,19 @@
             </svg>
             <span id="wc-date-label">All time</span>
           </button>
+
+          <button class="wc-reset-btn" type="button" id="wc-reset-btn" title="Reset filters">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <polyline points="1 4 1 10 7 10"></polyline>
+              <path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"></path>
+            </svg>
+            <span>Reset</span>
+          </button>
         </div>
 
         <!-- Classification data table -->
-        <div class="wc-table-card">
+        <div class="wc-table-card wc-reveal" style="--wc-step: 4;">
           <div class="wc-table-wrap">
             <table class="wc-table">
               <thead>
@@ -217,6 +304,7 @@
                   stroke-linejoin="round">
                   <polyline points="15 18 9 12 15 6"></polyline>
                 </svg></button>
+              <span class="wc-page-info" id="wc-page-info">Page 1 of 1</span>
               <button class="wc-page-btn" type="button" id="wc-next" title="Next page" disabled><svg viewBox="0 0 24 24"
                   fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <polyline points="9 18 15 12 9 6"></polyline>
@@ -243,7 +331,7 @@
         </div>
 
         <!-- Toast container -->
-        <div class="wc-toast-container" id="toast-container"></div>
+        <div class="toast-container wc-toast-container" id="toast-container"></div>
 
       </div>
     </main>

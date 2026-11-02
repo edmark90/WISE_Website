@@ -17,6 +17,7 @@ const paginationInfo = $id('pagination-info');
 const paginationControls = $id('pagination-controls');
 const searchInput = $id('search-input');
 const roleFilter = $id('role-filter');
+const resetFilterBtn = $id('reset-filter-btn');
 const addUserBtn = $id('add-user-btn');
 const userModal = $id('user-modal');
 const deleteModal = $id('delete-modal');
@@ -84,6 +85,17 @@ roleFilter.addEventListener('change', function () {
   fetchUsers();
 });
 
+if (resetFilterBtn) {
+  resetFilterBtn.addEventListener('click', function () {
+    searchInput.value = '';
+    roleFilter.value = '';
+    state.search = '';
+    state.role = '';
+    state.page = 1;
+    fetchUsers();
+  });
+}
+
 addUserBtn.addEventListener('click', openAddModal);
 formActive.addEventListener('change', updateStatusToggleLabel);
 modalCancel.addEventListener('click', closeUserModal);
@@ -104,7 +116,6 @@ document.addEventListener('keydown', function (e) {
 // ---------- Init ----------
 async function init() {
   if (!initBasePage()) return;
-  await loadSidebarUserFromApi();
   await fetchUsers();
 }
 init();

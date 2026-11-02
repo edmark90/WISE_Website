@@ -11,29 +11,117 @@ const TRUCK_FLEET = [
   'Truck 06', 'Truck 07', 'Truck 08', 'Truck 09', 'Truck 10'
 ];
 
-// Helper to generate 15-minute time options
-function buildTimeOptions(selectedTime) {
+/**
+ * Helper to generate 15-minute time options.
+ * Disables any time <= minTime (from previous stops) AND any time already used by another stop in the same route.
+ */
+function buildTimeOptions(selectedTime, minTime, otherUsedTimes) {
   var opts = [];
   for (let h = 5; h <= 21; h++) {
     for (let m = 0; m < 60; m += 15) {
       const val = pad(h) + ':' + pad(m);
-      const isSelected = selectedTime === val;
-      opts.push('<option value="' + val + '"' + (isSelected ? ' selected' : '') + '>' + formatTime12(val) + '</option>');
+      const isBeforeOrEqualPrev = minTime ? (val <= minTime) : false;
+      const isUsedByOtherStop = otherUsedTimes ? otherUsedTimes.has(val) : false;
+      const isDisabled = isBeforeOrEqualPrev || isUsedByOtherStop;
+      const isSelected = !isDisabled && (selectedTime === val);
+
+      opts.push(
+        '<option value="' + val + '"' +
+        (isSelected ? ' selected' : '') +
+        (isDisabled ? ' disabled="disabled" style="color:#94a3b8;background:#f1f5f9;"' : '') +
+        '>' +
+        formatTime12(val) + (isDisabled ? ' (Unavailable)' : '') +
+        '</option>'
+      );
     }
   }
   return opts.join('');
 }
 
+function getNextAvailableTime(baseTime) {
+  if (!baseTime) return '06:00';
+  var parts = baseTime.split(':');
+  var h = parseInt(parts[0], 10);
+  var m = parseInt(parts[1] || '0', 10);
+  m += 30; // Standard 30-minute progression between consecutive collection stops
+  if (m >= 60) {
+    h += Math.floor(m / 60);
+    m = m % 60;
+  }
+  m = Math.ceil(m / 15) * 15;
+  if (m >= 60) {
+    h += 1;
+    m = 0;
+  }
+  if (h > 21) {
+    h = 21;
+    m = 45;
+  }
+  return pad(h) + ':' + pad(m);
+}
+
+/**
+ * Returns a Set of truck numbers already saved in the database for the given YYYY-MM-DD date,
+ * excluding state.editingId when editing an existing assignment.
+ */
+function getSavedTrucksForDate(dateStr) {
+  var usedOnDate = new Set();
+  var targetDate = dateStr || (fDate && fDate.value) || (state.selectedDate ? formatDate(state.selectedDate) : '');
+  if (!targetDate) return usedOnDate;
+
+  var list = state.schedules || state.selectedDateSchedules || [];
+  list.forEach(function(s) {
+    var sDate = (s.collection_date || '').substring(0, 10);
+    if (sDate === targetDate && s.truck_number) {
+      if (!state.editingId || s.id !== state.editingId) {
+        usedOnDate.add(s.truck_number);
+      }
+    }
+  });
+  return usedOnDate;
+}
+
+function getAvailableTruck(currentEntryIdx, dateStr) {
+  var usedInModal = new Set();
+  (state.routeEntries || []).forEach(function(e, idx) {
+    if (idx !== currentEntryIdx && e && e.truck_number) {
+      usedInModal.add(e.truck_number);
+    }
+  });
+
+  var usedInDate = getSavedTrucksForDate(dateStr);
+
+  // 1. Choose first truck in fleet not used in modal or saved on this date
+  for (var i = 0; i < TRUCK_FLEET.length; i++) {
+    var trk = TRUCK_FLEET[i];
+    if (!usedInModal.has(trk) && !usedInDate.has(trk)) {
+      return trk;
+    }
+  }
+
+  // 2. Fallback: first truck in fleet not used in this modal session
+  for (var j = 0; j < TRUCK_FLEET.length; j++) {
+    var t = TRUCK_FLEET[j];
+    if (!usedInModal.has(t)) {
+      return t;
+    }
+  }
+
+  return TRUCK_FLEET[0];
+}
+
 // ---------- Modal ----------
 function openScheduleModalForDate(date) {
+  var dateStr = formatDate(date);
   state.editingId = null;
-  state.routeEntries = [createEmptyRoute(formatDate(date))];
-  modalTitle.textContent = 'Add Collection Assignment';
-  modalSaveText.textContent = 'Save Assignment';
+  state.routeEntries = [];
   scheduleForm.reset();
   fId.value = '';
-  fDate.value = formatDate(date);
-  modalDateLabel.textContent = new Date(date).toLocaleDateString('en-US', { weekday:'short', month:'long', day:'numeric', year:'numeric' });
+  fDate.value = dateStr;
+  state.routeEntries = [createEmptyRoute(dateStr)];
+  modalTitle.textContent = 'Add Collection Assignment';
+  modalSaveText.textContent = 'Save Assignment';
+  modalDateLabel.textContent = new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', { weekday:'short', month:'long', day:'numeric', year:'numeric' });
   renderRouteEntries();
   modalOverlay.classList.add('active');
 }
@@ -47,7 +135,7 @@ function openEditModal(id) {
   var stops = [];
   if (s.stops && s.stops.length > 0) {
     stops = s.stops.map(function(st, idx) {
-      var stopTime = st.collection_time ? st.collection_time.substring(0, 5) : (s.collection_time ? s.collection_time.substring(0, 5) : '07:00');
+      var stopTime = st.collection_time ? st.collection_time.substring(0, 5) : (s.collection_time ? s.collection_time.substring(0, 5) : '06:00');
       return {
         id: st.id,
         barangay: st.barangay,
@@ -60,10 +148,14 @@ function openEditModal(id) {
     stops = [{
       barangay: s.barangay,
       street: s.zone || '',
-      time: s.collection_time ? s.collection_time.substring(0, 5) : '07:00',
+      time: s.collection_time ? s.collection_time.substring(0, 5) : '06:00',
       sequence: 1
     }];
   }
+
+  scheduleForm.reset();
+  fId.value = s.id;
+  fDate.value = s.collection_date.substring(0, 10);
 
   state.routeEntries = [{
     truck_number: s.truck_number || 'Truck 01',
@@ -75,21 +167,15 @@ function openEditModal(id) {
   }];
   modalTitle.textContent = 'Edit Collection Assignment';
   modalSaveText.textContent = 'Update Assignment';
-  scheduleForm.reset();
-  fId.value = s.id;
-  fDate.value = s.collection_date.substring(0,10);
-  modalDateLabel.textContent = new Date(s.collection_date + 'T00:00:00').toLocaleDateString('en-US', { weekday:'short', month:'long', day:'numeric', year:'numeric' });
+  modalDateLabel.textContent = new Date(s.collection_date.substring(0, 10) + 'T00:00:00').toLocaleDateString('en-US', { weekday:'short', month:'long', day:'numeric', year:'numeric' });
   renderRouteEntries();
   modalOverlay.classList.add('active');
 }
 
 function createEmptyRoute(dateStr) {
-  var nextTruckIdx = 0;
-  if (state.selectedDateSchedules && state.selectedDateSchedules.length > 0) {
-    nextTruckIdx = state.selectedDateSchedules.length % TRUCK_FLEET.length;
-  }
+  var autoTruck = getAvailableTruck(-1, dateStr);
   return {
-    truck_number: TRUCK_FLEET[nextTruckIdx] || 'Truck 01',
+    truck_number: autoTruck,
     personnel: '',
     route_name: '',
     remarks: 'Regular Scheduled Collection',
@@ -104,10 +190,60 @@ function closeModal() { modalOverlay.classList.remove('active'); }
 
 function renderRouteEntries() {
   const entries = state.routeEntries;
+  const currentDateStr = (fDate && fDate.value) ? fDate.value : (state.selectedDate ? formatDate(state.selectedDate) : '');
+  const savedTrucksOnDate = getSavedTrucksForDate(currentDateStr);
+
+  // First pass: ensure no two entries share a truck or use an already-saved truck on this date,
+  // and ensure all stops within each entry are strictly chronological
+  var usedTrucksSoFar = new Set(savedTrucksOnDate);
+  entries.forEach(function(entry, i) {
+    if (!entry.truck_number || usedTrucksSoFar.has(entry.truck_number)) {
+      // Find first available truck
+      for (var tIdx = 0; tIdx < TRUCK_FLEET.length; tIdx++) {
+        if (!usedTrucksSoFar.has(TRUCK_FLEET[tIdx])) {
+          entry.truck_number = TRUCK_FLEET[tIdx];
+          break;
+        }
+      }
+    }
+    if (entry.truck_number) {
+      usedTrucksSoFar.add(entry.truck_number);
+    }
+
+    // Enforce chronological stop times across all stops in this route
+    if (entry.stops && entry.stops.length > 0) {
+      if (!entry.stops[0].time) entry.stops[0].time = '06:00';
+      for (var sIdx = 1; sIdx < entry.stops.length; sIdx++) {
+        var prevTime = entry.stops[sIdx - 1].time || '06:00';
+        if (!entry.stops[sIdx].time || entry.stops[sIdx].time <= prevTime) {
+          entry.stops[sIdx].time = getNextAvailableTime(prevTime);
+        }
+      }
+    }
+  });
+
   let html = '';
   entries.forEach(function(entry, i) {
     const truckOpts = TRUCK_FLEET.map(function(trk) {
-      return '<option value="' + trk + '"' + (entry.truck_number === trk ? ' selected' : '') + '>' + trk + '</option>';
+      var otherModalIdx = entries.findIndex(function(other, oIdx) {
+        return oIdx !== i && other.truck_number === trk;
+      });
+      var isChosenByOtherInModal = otherModalIdx !== -1;
+      var isAlreadySavedOnDate = savedTrucksOnDate.has(trk);
+      var isDisabled = isChosenByOtherInModal || isAlreadySavedOnDate;
+      var isSelected = !isDisabled && (entry.truck_number === trk);
+
+      var extraLabel = '';
+      if (isChosenByOtherInModal) {
+        extraLabel = ' (In Use - Assignment #' + (otherModalIdx + 1) + ')';
+      } else if (isAlreadySavedOnDate) {
+        extraLabel = ' (Already Scheduled Today)';
+      }
+
+      return '<option value="' + trk + '"' +
+        (isSelected ? ' selected' : '') +
+        (isDisabled ? ' disabled="disabled" style="color:#94a3b8;background:#f1f5f9;"' : '') +
+        '>' + trk + extraLabel + '</option>';
     }).join('');
 
     // Format times for display header
@@ -126,20 +262,34 @@ function renderRouteEntries() {
         streetOpts += '<option value="' + escapeHtml(st.street) + '" selected>' + escapeHtml(st.street) + '</option>';
       }
 
-      var timeOptionsHtml = buildTimeOptions(st.time || '06:00');
+      // Minimum allowed time for this stop is the previous stop's collection time
+      var minTime = null;
+      if (sIdx > 0 && entry.stops[sIdx - 1] && entry.stops[sIdx - 1].time) {
+        minTime = entry.stops[sIdx - 1].time;
+      }
+
+      // Also collect times used by any other stop in this same route
+      var otherUsedTimes = new Set();
+      entry.stops.forEach(function(otherStop, oStopIdx) {
+        if (oStopIdx !== sIdx && otherStop.time) {
+          otherUsedTimes.add(otherStop.time);
+        }
+      });
+
+      var timeOptionsHtml = buildTimeOptions(st.time || '06:00', minTime, otherUsedTimes);
 
       stopsHtml += '<div class="stop-row-item" data-entry-idx="' + i + '" data-stop-idx="' + sIdx + '">' +
         '<div class="stop-badge-pill">' + (sIdx + 1) + '</div>' +
-        '<select class="re-select stop-barangay-select" data-entry-idx="' + i + '" data-stop-idx="' + sIdx + '">' +
+        '<select class="re-select stop-barangay-select" data-entry-idx="' + i + '" data-stop-idx="' + sIdx + '" onchange="onStopBarangayChange(' + i + ', this)">' +
           '<option value="">Select Barangay...</option>' +
           BARANGAYS.map(function(b) {
             return '<option value="' + b + '"' + (st.barangay === b ? ' selected' : '') + '>' + b + '</option>';
           }).join('') +
         '</select>' +
-        '<select class="re-select stop-street-select" data-entry-idx="' + i + '" data-stop-idx="' + sIdx + '">' +
+        '<select class="re-select stop-street-select" data-entry-idx="' + i + '" data-stop-idx="' + sIdx + '" onchange="onStopStreetChange(' + i + ', this)">' +
           streetOpts +
         '</select>' +
-        '<select class="re-select stop-time-select" data-entry-idx="' + i + '" data-stop-idx="' + sIdx + '" title="Stop Collection Time">' +
+        '<select class="re-select stop-time-select" data-entry-idx="' + i + '" data-stop-idx="' + sIdx + '" onchange="onStopTimeChange(' + i + ', this)" title="' + (minTime ? 'Must be after ' + formatTime12(minTime) : 'Stop Collection Time') + '">' +
           timeOptionsHtml +
         '</select>' +
         (entry.stops.length > 1 ? '<button type="button" class="stop-remove-btn" onclick="removeStopFromEntry(' + i + ', ' + sIdx + ')" title="Remove Stop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>' : '<div></div>') +
@@ -155,7 +305,7 @@ function renderRouteEntries() {
       
       '<div class="route-entry-grid" style="grid-template-columns: repeat(3, 1fr);">' +
         '<div class="re-field"><label class="re-label">Truck Assignment <span class="required">*</span></label>' +
-          '<select class="re-select re-truck" data-index="' + i + '">' +
+          '<select class="re-select re-truck" data-index="' + i + '" onchange="onTruckChange(' + i + ', this)">' +
             '<option value="">Select Truck...</option>' +
             truckOpts +
             (entry.truck_number && !TRUCK_FLEET.includes(entry.truck_number) ? '<option value="' + escapeHtml(entry.truck_number) + '" selected>' + escapeHtml(entry.truck_number) + '</option>' : '') +
@@ -189,21 +339,24 @@ function renderRouteEntries() {
   routeEntriesContainer.innerHTML = html;
   updateFooterSummary();
 
-  // Attach change/input listeners
+  // Attach input listeners for text fields
   $all('.route-entry').forEach(function(card) {
     const i = parseInt(card.dataset.index);
-    card.addEventListener('change', function(e) {
-      const t = e.target;
-      if (t.classList.contains('re-truck')) syncRouteEntry(i, card);
-      if (t.classList.contains('stop-barangay-select')) onStopBarangayChange(i, t);
-      if (t.classList.contains('stop-street-select')) onStopStreetChange(i, t);
-      if (t.classList.contains('stop-time-select')) onStopTimeChange(i, t);
-    });
     card.addEventListener('input', function(e) {
       const t = e.target;
-      if (t.classList.contains('re-personnel') || t.classList.contains('re-route-name') || t.classList.contains('re-remarks')) syncRouteEntry(i, card);
+      if (t.classList.contains('re-personnel') || t.classList.contains('re-route-name') || t.classList.contains('re-remarks')) {
+        syncRouteEntry(i, card);
+      }
     });
   });
+}
+
+function onTruckChange(entryIdx, selectEl) {
+  if (!state.routeEntries[entryIdx]) return;
+  var chosenTruck = selectEl.value;
+  state.routeEntries[entryIdx].truck_number = chosenTruck;
+  syncAllEntries();
+  renderRouteEntries();
 }
 
 function onStopBarangayChange(entryIdx, selectEl) {
@@ -216,6 +369,11 @@ function onStopBarangayChange(entryIdx, selectEl) {
   // Auto populate route name if empty and first stop
   if (stopIdx === 0 && !state.routeEntries[entryIdx].route_name && bgy) {
     state.routeEntries[entryIdx].route_name = bgy + ' Route';
+    var card = selectEl.closest('.route-entry');
+    if (card) {
+      var rnInput = card.querySelector('.re-route-name');
+      if (rnInput && !rnInput.value) rnInput.value = bgy + ' Route';
+    }
   }
 
   // Update street select options
@@ -240,41 +398,42 @@ function onStopStreetChange(entryIdx, selectEl) {
 function onStopTimeChange(entryIdx, selectEl) {
   var stopIdx = parseInt(selectEl.dataset.stopIdx);
   if (isNaN(stopIdx) || !state.routeEntries[entryIdx] || !state.routeEntries[entryIdx].stops[stopIdx]) return;
-  // Update ONLY this specific stop's time
-  state.routeEntries[entryIdx].stops[stopIdx].time = selectEl.value;
-  updateFooterSummary();
+  
+  var newTime = selectEl.value;
+  syncAllEntries();
+  var stops = state.routeEntries[entryIdx].stops;
 
-  const card = selectEl.closest('.route-entry');
-  if (card) {
-    const disp = card.querySelector('.route-entry-time-display');
-    if (disp) {
-      var e = state.routeEntries[entryIdx];
-      var timeHeader = e.stops.map(function(s) { return s.time ? formatTime12(s.time) : ''; }).filter(Boolean).join(' \u2192 ');
-      disp.textContent = (e.truck_number ? escapeHtml(e.truck_number) + ' \u00B7 ' : '') + timeHeader;
+  // Guard: ensure stopIdx > 0 is strictly after previous stop
+  if (stopIdx > 0 && stops[stopIdx - 1] && newTime <= stops[stopIdx - 1].time) {
+    newTime = getNextAvailableTime(stops[stopIdx - 1].time);
+    showToast('Stop #' + (stopIdx + 1) + ' must be scheduled after Stop #' + stopIdx + '.', 'info');
+  }
+  stops[stopIdx].time = newTime;
+
+  // Enforce chronological progression for all subsequent stops
+  for (var k = stopIdx + 1; k < stops.length; k++) {
+    var prevTime = stops[k - 1].time;
+    if (!stops[k].time || stops[k].time <= prevTime) {
+      stops[k].time = getNextAvailableTime(prevTime);
     }
   }
+
+  renderRouteEntries();
 }
 
 function addStopToEntry(entryIdx) {
   if (!state.routeEntries[entryIdx]) return;
   syncAllEntries();
-  var prevStop = state.routeEntries[entryIdx].stops[state.routeEntries[entryIdx].stops.length - 1];
+  var stops = state.routeEntries[entryIdx].stops;
+  var prevStop = stops[stops.length - 1];
   var defaultBgy = prevStop ? prevStop.barangay : '';
-  
-  // Default next stop time = previous stop time + 1 hour
-  var nextTime = '07:00';
-  if (prevStop && prevStop.time) {
-    var parts = prevStop.time.split(':');
-    var h = (parseInt(parts[0], 10) + 1);
-    if (h > 21) h = 21;
-    nextTime = pad(h) + ':' + (parts[1] || '00');
-  }
+  var nextTime = prevStop && prevStop.time ? getNextAvailableTime(prevStop.time) : '06:30';
 
   state.routeEntries[entryIdx].stops.push({
     barangay: defaultBgy,
     street: '',
     time: nextTime,
-    sequence: state.routeEntries[entryIdx].stops.length + 1
+    sequence: stops.length + 1
   });
   renderRouteEntries();
 }
@@ -296,10 +455,29 @@ function syncRouteEntry(idx, card) {
   if (!card) card = document.querySelector('.route-entry[data-index="' + idx + '"]');
   if (!card) return;
 
-  entry.truck_number = card.querySelector('.re-truck') ? card.querySelector('.re-truck').value : entry.truck_number;
-  entry.personnel = card.querySelector('.re-personnel') ? card.querySelector('.re-personnel').value : entry.personnel;
-  entry.route_name = card.querySelector('.re-route-name') ? card.querySelector('.re-route-name').value : entry.route_name;
-  entry.remarks = card.querySelector('.re-remarks') ? card.querySelector('.re-remarks').value : entry.remarks;
+  var truckSelect = card.querySelector('.re-truck');
+  if (truckSelect && truckSelect.value) entry.truck_number = truckSelect.value;
+
+  var persInput = card.querySelector('.re-personnel');
+  if (persInput) entry.personnel = persInput.value;
+
+  var rnInput = card.querySelector('.re-route-name');
+  if (rnInput) entry.route_name = rnInput.value;
+
+  var remInput = card.querySelector('.re-remarks');
+  if (remInput) entry.remarks = remInput.value;
+
+  // Also sync all stop rows in this card
+  var stopRows = card.querySelectorAll('.stop-row-item');
+  stopRows.forEach(function(row, sIdx) {
+    if (!entry.stops[sIdx]) return;
+    var bgySel = row.querySelector('.stop-barangay-select');
+    var strSel = row.querySelector('.stop-street-select');
+    var tmSel = row.querySelector('.stop-time-select');
+    if (bgySel) entry.stops[sIdx].barangay = bgySel.value;
+    if (strSel) entry.stops[sIdx].street = strSel.value;
+    if (tmSel && tmSel.value) entry.stops[sIdx].time = tmSel.value;
+  });
 
   const disp = card.querySelector('.route-entry-time-display');
   if (disp) {
@@ -325,7 +503,9 @@ function updateFooterSummary() {
 
 function addRouteEntry() {
   syncAllEntries();
-  state.routeEntries.push(createEmptyRoute(fDate.value || formatDate(new Date())));
+  var dateStr = (fDate && fDate.value) ? fDate.value : formatDate(new Date());
+  var newRoute = createEmptyRoute(dateStr);
+  state.routeEntries.push(newRoute);
   renderRouteEntries();
   setTimeout(() => { routeEntriesContainer.scrollTop = routeEntriesContainer.scrollHeight; }, 50);
 }
@@ -351,13 +531,25 @@ async function handleSaveSchedule() {
   if (isDatePast(date)) { showToast('Cannot save to past dates.', 'error'); return; }
 
   var hasErr = false;
+  var seenTrucks = getSavedTrucksForDate(date);
   entries.forEach(function(e, i) {
     if (!e.truck_number) { showToast('Assignment #' + (i+1) + ': Select truck assignment.', 'error'); hasErr = true; }
+    else if (seenTrucks.has(e.truck_number)) {
+      showToast('Assignment #' + (i+1) + ': ' + e.truck_number + ' is already assigned on this date.', 'error');
+      hasErr = true;
+    } else {
+      seenTrucks.add(e.truck_number);
+    }
+
     if (!e.personnel || !e.personnel.trim()) { showToast('Assignment #' + (i+1) + ': Enter assigned personnel.', 'error'); hasErr = true; }
     if (!e.stops || e.stops.length === 0) { showToast('Assignment #' + (i+1) + ': Add at least one stop.', 'error'); hasErr = true; }
     e.stops.forEach(function(st, sIdx) {
       if (!st.barangay) { showToast('Assignment #' + (i+1) + ', Stop #' + (sIdx+1) + ': Select barangay.', 'error'); hasErr = true; }
       if (!st.time) { showToast('Assignment #' + (i+1) + ', Stop #' + (sIdx+1) + ': Select collection time.', 'error'); hasErr = true; }
+      if (sIdx > 0 && st.time <= e.stops[sIdx - 1].time) {
+        showToast('Assignment #' + (i+1) + ', Stop #' + (sIdx+1) + ': Time must be after Stop #' + sIdx + '.', 'error');
+        hasErr = true;
+      }
     });
   });
   if (hasErr) return;
@@ -430,4 +622,3 @@ async function handleSaveSchedule() {
     await renderCalendar();
   }
 }
-

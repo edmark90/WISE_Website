@@ -43,6 +43,8 @@ const deleteConfirmBtn = $id('delete-confirm-btn');
 const deleteCancelBtn = $id('delete-cancel-btn');
 const deleteText = $id('delete-text');
 const dayActions = $id('day-actions');
+const statusChangeOverlay = $id('status-change-overlay');
+const headerAddScheduleBtn = $id('header-add-schedule-btn');
 
 // ---------- Init ----------
 document.addEventListener('DOMContentLoaded', function() {
@@ -61,6 +63,17 @@ document.addEventListener('DOMContentLoaded', function() {
   $id('prev-month').addEventListener('click', function() { state.currentMonth--; if (state.currentMonth<0) { state.currentMonth=11; state.currentYear--; } renderCalendar(); });
   $id('next-month').addEventListener('click', function() { state.currentMonth++; if (state.currentMonth>11) { state.currentMonth=0; state.currentYear++; } renderCalendar(); });
   $id('today-btn').addEventListener('click', function() { state.currentMonth = new Date().getMonth(); state.currentYear = new Date().getFullYear(); state.selectedDate = new Date(); renderCalendar(); });
+
+  if (headerAddScheduleBtn) {
+    headerAddScheduleBtn.addEventListener('click', function() {
+      var target = state.selectedDate || state.today || new Date();
+      if (isDatePast(formatDate(target))) {
+        target = new Date();
+      }
+      openScheduleModalForDate(target);
+    });
+  }
+
   modalCloseBtn.addEventListener('click', closeModal);
   modalCancelBtn.addEventListener('click', closeModal);
   modalOverlay.addEventListener('click', function(e) { if (e.target === modalOverlay) closeModal(); });
@@ -69,6 +82,16 @@ document.addEventListener('DOMContentLoaded', function() {
     if (state.deletingId && await deleteSchedule(state.deletingId)) { closeDeleteModal(); renderCalendar(); }
   });
   deleteOverlay.addEventListener('click', function(e) { if (e.target === deleteOverlay) closeDeleteModal(); });
+  if (statusChangeOverlay) {
+    statusChangeOverlay.addEventListener('click', function(e) { if (e.target === statusChangeOverlay) closeStatusChangeModal(); });
+  }
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+      if (modalOverlay && modalOverlay.classList.contains('active')) closeModal();
+      if (deleteOverlay && deleteOverlay.classList.contains('active')) closeDeleteModal();
+      if (statusChangeOverlay && statusChangeOverlay.classList.contains('active')) closeStatusChangeModal();
+    }
+  });
   $id('delete-all-routes-btn').addEventListener('click', deleteAllDayRoutes);
   addRouteBtn.addEventListener('click', addRouteEntry);
   modalSaveBtn.addEventListener('click', handleSaveSchedule);

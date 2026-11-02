@@ -6,6 +6,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>WISE SYSTEM — Reports & Analytics</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
     href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800&display=swap"
     rel="stylesheet">
@@ -21,7 +22,7 @@
         <div class="badge">
           <img src="assets/images/logo wise.png" alt="WISE logo">
         </div>
-        <h1>WISE<br>SYSTEM</h1>
+        <h1>WISE<br><span class="brand-sub">SYSTEM</span></h1>
       </div>
 
       <nav class="sidebar-nav">
@@ -77,7 +78,8 @@
       <!-- Page Header -->
       <div class="page-header rp-page-header">
         <div>
-          <h2>Reports & Analytics</h2>
+          <span class="page-eyebrow">Analytics &amp; Official Exports</span>
+          <h2>Reports &amp; Analytics</h2>
           <p>Generate, review, and export official administrative reports in Excel (.xlsx) and PDF.</p>
         </div>
         <div class="rp-header-badge">
@@ -113,7 +115,12 @@
             <label for="rp-year">Select Year</label>
             <input type="number" id="rp-year" min="2000" max="2100">
           </div>
-
+          <div class="rp-quick-group">
+            <span class="rp-quick-label">Quick Presets:</span>
+            <button type="button" class="rp-quick-btn" data-quick="this-month">This Month</button>
+            <button type="button" class="rp-quick-btn" data-quick="last-month">Last Month</button>
+            <button type="button" class="rp-quick-btn" data-quick="this-year">This Year</button>
+          </div>
         </div>
       </div>
 
@@ -389,7 +396,7 @@
     </main>
   </div>
 
-  <div id="toast-container"></div>
+  <div class="toast-container" id="toast-container"></div>
 
   <!-- Shared core modules -->
   <script src="assets/js/core/config.js"></script>

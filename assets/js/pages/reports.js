@@ -325,7 +325,6 @@ function downloadReport(format) {
         throw new Error(errorMsg);
       }
 
-      // Extract filename from Content-Disposition header if present
       var filename = suggestedFilename(format);
       var disposition = res.headers.get('Content-Disposition') || '';
       var filenameMatch = disposition.match(/filename="?([^"]+)"?/);
@@ -392,4 +391,4 @@ function suggestedFilename(format) {
     : '' + RP.year;
   var ext = format === 'excel' ? 'xlsx' : 'pdf';
   return 'WISE_Report_' + period + '.' + ext;
-}
+}

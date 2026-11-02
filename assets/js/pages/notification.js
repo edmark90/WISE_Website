@@ -111,12 +111,12 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   async function loadHistory() {
-    historyBody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--nt-text-muted)">Loading notifications...</td></tr>';
+    historyBody.innerHTML = '<tr><td colspan="8" class="nt-empty-cell">Loading notifications...</td></tr>';
     try {
       const res = await apiRequest('/api/notifications/?' + filterQuery());
       if (!res) return;
       if (!res.ok) {
-        historyBody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--nt-text-muted)">Failed to load notifications.</td></tr>';
+        historyBody.innerHTML = '<tr><td colspan="8" class="nt-empty-cell">Failed to load notifications.</td></tr>';
         return;
       }
       const data = await res.json();
@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', function () {
       state.total = data.total || 0;
       renderHistory();
     } catch (e) {
-      historyBody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--nt-text-muted)">Connection error.</td></tr>';
+      historyBody.innerHTML = '<tr><td colspan="8" class="nt-empty-cell">Connection error.</td></tr>';
     }
   }
 
@@ -137,7 +137,7 @@ document.addEventListener('DOMContentLoaded', function () {
   function renderHistory() {
     historyCount.textContent = state.total + ' notification' + (state.total === 1 ? '' : 's');
     if (state.notifications.length === 0) {
-      historyBody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--nt-text-muted)">No notifications match your filters.</td></tr>';
+      historyBody.innerHTML = '<tr><td colspan="8" class="nt-empty-cell">No notifications match your filters.</td></tr>';
       renderPagination();
       return;
     }
@@ -617,6 +617,7 @@ document.addEventListener('DOMContentLoaded', function () {
   closeBtn.addEventListener('click', closeAnnouncementModal);
   $id('a-cancel-btn').addEventListener('click', closeAnnouncementModal);
   overlay.addEventListener('click', function (e) { if (e.target === overlay) closeAnnouncementModal(); });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && overlay.classList.contains('show')) closeAnnouncementModal(); });
   $id('a-send-btn').addEventListener('click', submitAnnouncement);
 
   // ---------- Init ----------
