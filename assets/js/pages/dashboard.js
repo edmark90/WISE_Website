@@ -1253,6 +1253,46 @@ var DB_WEATHER_CODES = {
   95: ['Thunderstorm', '⛈️'], 96: ['Thunderstorm Hail', '⛈️'], 99: ['Thunderstorm Hail', '⛈️']
 };
 
+function getWeatherSvg(code) {
+  if (code === 0 || code === 1) {
+    return '<svg viewBox="0 0 64 64" width="46" height="46" class="db-weather-art">' +
+      '<defs>' +
+        '<linearGradient id="dbSunGrad" x1="0%" y1="0%" x2="100%" y2="100%"><stop offset="0%" stop-color="#fde047"/><stop offset="50%" stop-color="#fbbf24"/><stop offset="100%" stop-color="#f59e0b"/></linearGradient>' +
+        '<linearGradient id="dbCloudGrad" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#e0f2fe"/></linearGradient>' +
+        '<filter id="dbSunGlow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#f59e0b" flood-opacity="0.35"/></filter>' +
+        '<filter id="dbCloudShadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="3" stdDeviation="2.5" flood-color="#0284c7" flood-opacity="0.18"/></filter>' +
+      '</defs>' +
+      '<g filter="url(#dbSunGlow)"><circle cx="28" cy="28" r="14" fill="url(#dbSunGrad)"/>' +
+      '<g stroke="#f59e0b" stroke-width="3" stroke-linecap="round">' +
+        '<line x1="28" y1="7" x2="28" y2="3"/><line x1="28" y1="53" x2="28" y2="49"/>' +
+        '<line x1="7" y1="28" x2="3" y2="28"/><line x1="53" y1="28" x2="49" y2="28"/>' +
+        '<line x1="13.15" y1="13.15" x2="10.32" y2="10.32"/><line x1="45.68" y1="45.68" x2="42.85" y2="42.85"/>' +
+        '<line x1="13.15" y1="42.85" x2="10.32" y2="45.68"/><line x1="45.68" y1="10.32" x2="42.85" y2="13.15"/>' +
+      '</g></g>' +
+      '<path d="M34 47h18a7 7 0 0 0 0-14 6.5 6.5 0 0 0-4.8 2.1 9.5 9.5 0 0 0-17.7 5.9 6.5 6.5 0 0 0 4.5 6z" fill="url(#dbCloudGrad)" filter="url(#dbCloudShadow)"/>' +
+    '</svg>';
+  } else if ((code >= 51 && code <= 82) || code >= 95) {
+    return '<svg viewBox="0 0 64 64" width="46" height="46" class="db-weather-art">' +
+      '<defs>' +
+        '<linearGradient id="dbRainCloud" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#cbd5e1"/><stop offset="100%" stop-color="#64748b"/></linearGradient>' +
+        '<filter id="dbRainShadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#0f172a" flood-opacity="0.2"/></filter>' +
+      '</defs>' +
+      '<path d="M22 36h24a8 8 0 0 0 0-16 7.5 7.5 0 0 0-5.8 2.8 11 11 0 0 0-20.4 6.9 7.5 7.5 0 0 0 2.2 6.3z" fill="url(#dbRainCloud)" filter="url(#dbRainShadow)"/>' +
+      '<g stroke="#0284c7" stroke-width="2.5" stroke-linecap="round">' +
+        '<line x1="24" y1="41" x2="21" y2="49"/><line x1="32" y1="41" x2="29" y2="49"/><line x1="40" y1="41" x2="37" y2="49"/>' +
+      '</g>' +
+    '</svg>';
+  } else {
+    return '<svg viewBox="0 0 64 64" width="46" height="46" class="db-weather-art">' +
+      '<defs>' +
+        '<linearGradient id="dbCloudOnly" x1="0%" y1="0%" x2="0%" y2="100%"><stop offset="0%" stop-color="#ffffff"/><stop offset="100%" stop-color="#bae6fd"/></linearGradient>' +
+        '<filter id="dbCloudOnlyShadow" x="-20%" y="-20%" width="140%" height="140%"><feDropShadow dx="0" dy="2" stdDeviation="2.5" flood-color="#0284c7" flood-opacity="0.2"/></filter>' +
+      '</defs>' +
+      '<path d="M20 40h26a8 8 0 0 0 0-16 7.5 7.5 0 0 0-5.8 2.8 11 11 0 0 0-20.4 6.9 7.5 7.5 0 0 0 0.2 6.3z" fill="url(#dbCloudOnly)" filter="url(#dbCloudOnlyShadow)"/>' +
+    '</svg>';
+  }
+}
+
 function loadWeather() {
   var url = 'https://api.open-meteo.com/v1/forecast' +
     '?latitude=14.4239&longitude=121.0414' +
@@ -1265,7 +1305,8 @@ function loadWeather() {
     .then(function (data) {
       var code = data.current.weather_code;
       var info = DB_WEATHER_CODES[code] || ['Unknown', '🌡️'];
-      $id('db-weather-icon').textContent = info[1];
+      var iconEl = $id('db-weather-icon');
+      if (iconEl) iconEl.innerHTML = getWeatherSvg(code);
       $id('db-weather-condition').textContent = info[0];
       $id('db-weather-temp').textContent = Math.round(data.current.temperature_2m) + '°';
       $id('db-weather-humidity').textContent = data.current.relative_humidity_2m + '%';
@@ -1285,6 +1326,7 @@ function loadWeather() {
     .catch(function () {
       $id('db-weather-updated').textContent = 'Forecast offline';
       $id('db-weather-condition').textContent = '—';
-      $id('db-weather-icon').textContent = '🌡️';
+      var iconEl = $id('db-weather-icon');
+      if (iconEl) iconEl.innerHTML = getWeatherSvg(0);
     });
 }
