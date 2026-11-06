@@ -1316,11 +1316,26 @@ function loadWeather() {
       $id('db-weather-updated').textContent = 'As of ' + upd;
 
       var iconBox = $id('db-weather-icon-box');
-      if (iconBox) {
-        iconBox.className = 'db-weather-icon-box';
-        if (code === 0 || code === 1) iconBox.classList.add('is-sunny');
-        else if ((code >= 51 && code <= 82) || code === 95 || code === 96 || code === 99) iconBox.classList.add('is-rainy');
-        else if (code >= 2 && code <= 3) iconBox.classList.add('is-cloudy');
+      var weatherCard = document.querySelector('.db-weather');
+      if (weatherCard) {
+        weatherCard.classList.remove('is-sunny', 'is-cloudy', 'is-rainy', 'is-stormy');
+      }
+
+      if (code === 0 || code === 1) {
+        if (iconBox) { iconBox.className = 'db-weather-icon-box is-sunny'; }
+        if (weatherCard) { weatherCard.classList.add('is-sunny'); }
+      } else if (code >= 2 && code <= 3) {
+        if (iconBox) { iconBox.className = 'db-weather-icon-box is-cloudy'; }
+        if (weatherCard) { weatherCard.classList.add('is-cloudy'); }
+      } else if ((code >= 51 && code <= 82)) {
+        if (iconBox) { iconBox.className = 'db-weather-icon-box is-rainy'; }
+        if (weatherCard) { weatherCard.classList.add('is-rainy'); }
+      } else if (code >= 95) {
+        if (iconBox) { iconBox.className = 'db-weather-icon-box is-rainy'; }
+        if (weatherCard) { weatherCard.classList.add('is-stormy'); }
+      } else {
+        if (iconBox) { iconBox.className = 'db-weather-icon-box is-sunny'; }
+        if (weatherCard) { weatherCard.classList.add('is-sunny'); }
       }
     })
     .catch(function () {
