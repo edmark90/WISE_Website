@@ -1040,10 +1040,34 @@
 }
 
 @media (max-width: 768px) {
-  .nt-toolbar { flex-direction: column; align-items: stretch; gap: 10px; padding: 12px; }
+  .nt-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 12px;
+  }
+  .nt-search {
+    width: 100%;
+    min-width: 100%;
+    flex: 1 1 100%;
+  }
   .nt-filter,
-  .nt-date-filter { width: 100%; }
-  .nt-modal { width: min(560px, calc(100vw - 24px)); max-height: 90vh; }
+  .nt-date-filter {
+    flex: 1 1 calc(50% - 6px);
+    width: calc(50% - 6px);
+    min-width: 130px;
+  }
+  .nt-btn-ghost#filter-reset {
+    width: 100%;
+    text-align: center;
+    justify-content: center;
+    padding: 9px;
+  }
+  .nt-modal {
+    width: min(560px, calc(100vw - 24px));
+    max-height: calc(100vh - 32px);
+    border-radius: 16px;
+  }
 }
 
 @media (max-width: 640px) {
@@ -1053,6 +1077,26 @@
   .nt-header-right button { flex: 1; justify-content: center; }
   .nt-detail-grid { grid-template-columns: 1fr; }
   .nt-pagination { flex-direction: column; gap: 10px; align-items: center; }
-  .nt-modal-footer { flex-direction: column-reverse; gap: 8px; }
+  .nt-modal-body { padding: 16px; }
+  .nt-modal-footer { flex-direction: column-reverse; gap: 8px; padding: 14px 16px; }
   .nt-modal-footer button { width: 100%; }
+}
+
+@media (max-width: 480px) {
+  .nt-header h2 {
+    font-size: 22px;
+  }
+  .nt-filter,
+  .nt-date-filter {
+    flex: 1 1 100%;
+    width: 100%;
+    min-width: 100%;
+  }
+  .nt-summary-card {
+    padding: 14px;
+  }
+  .nt-detail-card,
+  .nt-history-card {
+    border-radius: 14px;
+  }
 }

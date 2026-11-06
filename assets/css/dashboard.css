@@ -2102,74 +2102,128 @@
    Responsive Breakpoints
    ----------------------------------------------------------------------- */
 
-/* -----------------------------------------------------------------------
-   Responsive Breakpoints
-   ----------------------------------------------------------------------- */
-
 @media (max-width: 1200px) {
-  .db-stats  { grid-template-columns: repeat(2, 1fr); }
-  .db-charts { grid-template-columns: 1fr; }
-  .db-grid   { grid-template-columns: 1fr; }
+  .db-stats  { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .db-charts { grid-template-columns: 1fr; gap: 20px; }
+  .db-grid   { grid-template-columns: 1fr; gap: 20px; }
+}
+
+@media (max-width: 1024px) {
+  .db-head { flex-direction: column; align-items: flex-start; gap: 14px; }
+  .db-head-right { width: 100%; justify-content: flex-start; }
+  .db-title { font-size: 24px; }
+  .db-weather-divider { display: none; }
+  .db-weather { gap: 14px; padding: 16px 18px; }
+  .db-weather-stats { width: 100%; justify-content: space-between; gap: 12px; }
+  .db-weather-status { width: 100%; justify-content: center; }
 }
 
 @media (max-width: 900px) {
-  .db-head { flex-direction: column; align-items: flex-start; gap: 16px; }
-  .db-head-right { align-items: flex-start; flex-direction: row; flex-wrap: wrap; width: 100%; }
-  .db-title { font-size: 24px; }
-  .db-period { flex-direction: column; align-items: flex-start; width: 100%; }
-  .db-week {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 8px;
-  }
-  .db-skel-week { grid-template-columns: repeat(4, 1fr); }
-}
+  .db-period { flex-direction: column; align-items: stretch; gap: 12px; }
+  .db-period-left { width: 100%; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .db-month-stepper { flex: 1; min-width: 180px; justify-content: center; }
+  .db-period-jump-btn { flex-shrink: 0; min-height: 38px; }
+  .db-period-right { width: 100%; justify-content: center; }
 
-@media (max-width: 640px) {
-  .db-stats { grid-template-columns: 1fr; gap: 14px; }
-  .db-card, .db-rail-card { padding: 18px 16px; border-radius: 14px; }
-  .db-stat-value { font-size: 28px; }
-
-  /* 7-day strip touch scrollable on small phones */
+  /* 7-day timeline scrollable carousel */
   .db-week {
     display: flex;
     overflow-x: auto;
     scroll-snap-type: x mandatory;
     -webkit-overflow-scrolling: touch;
     padding-bottom: 8px;
-    gap: 10px;
+    gap: 8px;
     scrollbar-width: thin;
   }
   .db-day {
     flex: 0 0 130px;
     scroll-snap-align: start;
-    min-height: 108px;
+    min-height: 104px;
   }
   .db-skel-week {
     display: flex;
     overflow-x: auto;
-    gap: 10px;
+    gap: 8px;
   }
   .db-skel-day { flex: 0 0 130px; }
+}
 
-  .db-chart-head { flex-direction: column; align-items: flex-start; gap: 12px; }
+@media (max-width: 640px) {
+  .db-stats { grid-template-columns: 1fr; gap: 12px; }
+  .db-card, .db-rail-card { padding: 16px 14px; border-radius: 14px; }
+  .db-stat-value { font-size: 26px; }
+
+  /* Weather strip compact */
+  .db-weather { padding: 14px; }
+  .db-weather-primary { width: 100%; }
+  .db-weather-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: space-between;
+  }
+  .db-weather-stat {
+    flex: 1 1 85px;
+    min-width: 75px;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 5px;
+  }
+  .db-weather-stat-icon {
+    width: 32px;
+    height: 32px;
+  }
+  .db-weather-stat strong {
+    font-size: 13.5px;
+  }
+  .db-weather-stat-label {
+    font-size: 9px;
+  }
+
+  /* Rail meta wrap */
+  .db-rail-meta-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .db-rail-summary-chips {
+    width: 100%;
+    gap: 6px;
+  }
+  .db-rail-progress-wrap {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .db-rail-progress-bar {
+    flex: 1;
+    max-width: none;
+  }
+
+  .db-chart-head { flex-direction: column; align-items: stretch; gap: 10px; }
   .db-chart-controls { width: 100%; justify-content: space-between; }
-  .db-chart { height: 240px; }
-  .db-donut { width: 180px; height: 180px; }
+  .db-view-switch { flex: 1; display: flex; }
+  .db-view-btn { flex: 1; text-align: center; padding: 6px 10px; }
+  .db-chart { height: 230px; }
+  .db-chart-tip-hint { display: none; }
+  .db-donut { width: 170px; height: 170px; }
   .db-donut-center strong { font-size: 24px; }
   
-  .db-card-header-row { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .db-card-header-row { flex-direction: column; align-items: stretch; gap: 12px; }
   .db-activity-filter { width: 100%; justify-content: stretch; }
-  .db-activity-filter .db-filter-pill { flex: 1; text-align: center; }
+  .db-activity-filter .db-filter-pill { flex: 1; text-align: center; padding: 7px 10px; }
 }
 
 @media (max-width: 420px) {
-  .db-page-head { gap: 10px; }
-  .db-title { font-size: 22px; }
-  .db-day { flex: 0 0 115px; padding: 10px 8px; }
+  .db-head-info .db-title { font-size: 21px; }
+  .db-weather-temp { font-size: 28px; }
+  .db-weather-icon-box { width: 50px; height: 50px; }
+  .db-weather-art { width: 36px; height: 36px; }
+  .db-day { flex: 0 0 115px; min-height: 96px; padding: 10px 8px; }
   .db-day-date { font-size: 16px; }
-  .db-donut { width: 160px; height: 160px; }
-  .db-donut-center strong { font-size: 22px; }
+  .db-day-status-txt { font-size: 9.5px; }
+  .db-donut { width: 150px; height: 150px; }
+  .db-donut-center strong { font-size: 20px; }
 }
 
 /* -----------------------------------------------------------------------
@@ -2388,55 +2442,4 @@
   letter-spacing: 0.2px;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
-}
-
-@media (max-width: 1024px) {
-  .db-weather-divider {
-    display: none;
-  }
-}
-
-@media (max-width: 900px) {
-  .db-head {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 14px;
-  }
-  .db-head-right {
-    width: 100%;
-    justify-content: flex-start;
-  }
-  .db-weather {
-    gap: 16px;
-    padding: 16px 18px;
-  }
-  .db-weather-stats {
-    width: 100%;
-    justify-content: space-between;
-    gap: 12px;
-  }
-  .db-weather-status {
-    width: 100%;
-    justify-content: center;
-  }
-}
-
-@media (max-width: 640px) {
-  .db-weather {
-    padding: 14px;
-  }
-  .db-weather-primary {
-    width: 100%;
-  }
-  .db-weather-stats {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-  }
-  .db-weather-stat {
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 6px;
-  }
 }

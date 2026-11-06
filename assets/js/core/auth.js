@@ -116,6 +116,18 @@ function initMobileNav() {
   var sidebar = document.querySelector('.sidebar');
   if (!app || !sidebar) return;
 
+  function closeDrawer() {
+    sidebar.classList.remove('open');
+    if (backdrop) backdrop.classList.remove('active');
+    document.body.classList.remove('nav-drawer-open');
+  }
+
+  function openDrawer() {
+    sidebar.classList.add('open');
+    if (backdrop) backdrop.classList.add('active');
+    document.body.classList.add('nav-drawer-open');
+  }
+
   // Create mobile topbar if not present
   if (!document.querySelector('.mobile-topbar')) {
     var topbar = document.createElement('header');
@@ -133,7 +145,7 @@ function initMobileNav() {
         '<span class="mobile-title">WISE SYSTEM</span>' +
       '</div>' +
       '<div class="mobile-top-right">' +
-        '<span class="mobile-user-avatar" title="Administrator">' +
+        '<span class="mobile-user-avatar" id="mobile-user-avatar" title="Administrator">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4 4-6 8-6s8 2 8 6"></path></svg>' +
         '</span>' +
       '</div>';
@@ -158,8 +170,7 @@ function initMobileNav() {
     closeBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>';
     brand.appendChild(closeBtn);
     closeBtn.addEventListener('click', function () {
-      sidebar.classList.remove('open');
-      backdrop.classList.remove('active');
+      closeDrawer();
     });
   }
 
@@ -168,20 +179,35 @@ function initMobileNav() {
   if (menuBtn) {
     menuBtn.addEventListener('click', function (e) {
       e.stopPropagation();
-      var isOpen = sidebar.classList.toggle('open');
-      backdrop.classList.toggle('active', isOpen);
+      if (sidebar.classList.contains('open')) {
+        closeDrawer();
+      } else {
+        openDrawer();
+      }
     });
   }
 
   backdrop.addEventListener('click', function () {
-    sidebar.classList.remove('open');
-    backdrop.classList.remove('active');
+    closeDrawer();
   });
 
   sidebar.querySelectorAll('.nav-item').forEach(function (link) {
     link.addEventListener('click', function () {
-      sidebar.classList.remove('open');
-      backdrop.classList.remove('active');
+      closeDrawer();
     });
+  });
+
+  // Close drawer on ESC key
+  window.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape' && sidebar.classList.contains('open')) {
+      closeDrawer();
+    }
+  });
+
+  // Close drawer if window is resized past mobile/tablet breakpoint (> 1024px)
+  window.addEventListener('resize', function () {
+    if (window.innerWidth > 1024 && sidebar.classList.contains('open')) {
+      closeDrawer();
+    }
   });
 }

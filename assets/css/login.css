@@ -18,12 +18,13 @@
 
 body {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
   background: linear-gradient(135deg, #E6F0FD 0%, #F2F7FF 52%, #DCEBFC 100%);
   font-family: var(--font-sans);
-  padding: 28px;
+  padding: max(20px, env(safe-area-inset-top)) max(20px, env(safe-area-inset-right)) max(20px, env(safe-area-inset-bottom)) max(20px, env(safe-area-inset-left));
   color: var(--text-dark);
   position: relative;
   overflow-x: hidden;
@@ -340,32 +341,105 @@ body::after {
   .login-card {
     flex-direction: column;
     max-width: 440px;
+    border-radius: 20px;
   }
 
   .left-panel {
     flex: none;
-    height: 280px;
+    height: 250px;
   }
 
   .right-panel {
-    padding: 36px 28px;
+    padding: 34px 28px;
   }
 }
 
 @media (max-width: 480px) {
   body {
-    padding: 14px;
+    padding: max(12px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  }
+
+  .login-card {
+    max-width: 100%;
+    border-radius: 18px;
   }
 
   .left-panel {
-    height: 230px;
+    height: 190px;
   }
 
   .right-panel {
-    padding: 28px 22px;
+    padding: 24px 18px 28px;
+  }
+
+  .login-header {
+    margin-bottom: 22px;
   }
 
   .welcome-heading {
-    font-size: 26px;
+    font-size: 25px;
+  }
+
+  .input-container input {
+    height: 48px;
+    font-size: 16px; /* Prevents auto-zoom in iOS Safari */
+  }
+
+  .login-btn {
+    height: 48px;
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 360px) {
+  .left-panel {
+    height: 160px;
+  }
+
+  .right-panel {
+    padding: 20px 14px 24px;
+  }
+
+  .welcome-heading {
+    font-size: 22px;
+  }
+}
+
+/* Landscape mobile optimization */
+@media (max-height: 540px) and (orientation: landscape) {
+  body {
+    align-items: flex-start;
+    padding: 12px;
+  }
+
+  .login-card {
+    flex-direction: row;
+    max-width: 640px;
+    min-height: auto;
+  }
+
+  .left-panel {
+    flex: 0 0 40%;
+    height: auto;
+  }
+
+  .right-panel {
+    padding: 20px 24px;
+  }
+
+  .welcome-heading {
+    font-size: 22px;
+  }
+
+  .login-header {
+    margin-bottom: 16px;
+  }
+
+  .form-group {
+    margin-bottom: 12px;
+  }
+
+  .remember-row {
+    margin: 2px 0 16px;
   }
 }

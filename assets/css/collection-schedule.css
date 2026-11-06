@@ -2258,6 +2258,15 @@
     align-items: stretch;
   }
 
+  .schedule-header-actions {
+    width: 100%;
+  }
+
+  .schedule-header-actions #header-add-schedule-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
   .calendar-day {
     min-height: 64px;
     padding: 4px;
@@ -2308,9 +2317,62 @@
     padding: 2px 3px;
   }
 
+  .route-leaflet-map {
+    height: 270px;
+    min-height: 230px;
+  }
+
   .stop-row-item {
-    grid-template-columns: 24px 1fr 1fr;
-    gap: 6px;
+    display: grid;
+    grid-template-columns: 28px 1fr auto;
+    grid-template-rows: auto auto;
+    gap: 8px;
+    align-items: center;
+    padding: 10px;
+  }
+
+  .stop-row-item .stop-badge-pill {
+    grid-column: 1 / 2;
+    grid-row: 1 / 2;
+  }
+
+  .stop-row-item .stop-barangay-select {
+    grid-column: 2 / 3;
+    grid-row: 1 / 2;
+    width: 100%;
+  }
+
+  .stop-row-item .stop-remove-btn,
+  .stop-row-item > div:last-child {
+    grid-column: 3 / 4;
+    grid-row: 1 / 2;
+    justify-self: end;
+  }
+
+  .stop-row-item .stop-street-select {
+    grid-column: 1 / 3;
+    grid-row: 2 / 3;
+    width: 100%;
+  }
+
+  .stop-row-item .stop-time-select {
+    grid-column: 3 / 4;
+    grid-row: 2 / 3;
+    width: 100%;
+    min-width: 95px;
+  }
+
+  .schedule-modal {
+    max-width: calc(100vw - 20px);
+    max-height: calc(100vh - 24px);
+    border-radius: 16px;
+    margin: 0 auto;
+  }
+
+  .schedule-modal .modal-header,
+  .schedule-modal .modal-body,
+  .modal-footer {
+    padding: 14px 16px;
   }
 
   .modal-footer {
@@ -2327,5 +2389,51 @@
   .modal-footer-actions .btn {
     flex: 1;
     justify-content: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .schedule-header-left h2 {
+    font-size: 22px;
+  }
+
+  .calendar-day {
+    min-height: 46px;
+    padding: 2px;
+  }
+
+  .stop-row-item {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+    position: relative;
+    padding: 12px 10px 10px;
+    padding-top: 38px;
+  }
+
+  .stop-row-item .stop-badge-pill {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+  }
+
+  .stop-row-item .stop-remove-btn,
+  .stop-row-item > div:last-child {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+  }
+
+  .stop-row-item .stop-barangay-select,
+  .stop-row-item .stop-street-select,
+  .stop-row-item .stop-time-select {
+    width: 100%;
+    min-width: 100%;
+  }
+
+  .route-leaflet-map {
+    height: 240px;
+    min-height: 200px;
   }
 }

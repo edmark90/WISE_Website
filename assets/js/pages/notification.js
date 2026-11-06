@@ -471,6 +471,15 @@ document.addEventListener('DOMContentLoaded', function () {
         deleteNotification(n.id);
       });
     }
+
+    if (window.innerWidth <= 1024) {
+      setTimeout(function () {
+        var detailCol = document.querySelector('.nt-detail-col') || detailContent;
+        if (detailCol) {
+          detailCol.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }, 60);
+    }
   }
 
   // ---------- Delete notification ----------

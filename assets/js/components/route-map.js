@@ -891,6 +891,12 @@ function ensureMapInitialised() {
     // Initial fit strictly to Muntinlupa City official boundary
     _leafletMap.fitBounds(MUNTINLUPA_BOUNDS, { padding: [12, 12] });
 
+    window.addEventListener('resize', function () {
+      if (_leafletMap) {
+        _leafletMap.invalidateSize();
+      }
+    });
+
     setTimeout(function () {
       if (_leafletMap) _leafletMap.invalidateSize();
     }, 100);

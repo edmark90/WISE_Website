@@ -514,9 +514,9 @@ function renderLineChart(data) {
 
   // Exact responsive width & layout geometry
   var rect = el.getBoundingClientRect();
-  var W = Math.max(340, Math.floor(rect.width || 680));
-  var H = 280;
-  var padL = 44, padR = 20, padT = 22, padB = 36;
+  var W = Math.max(260, Math.floor(rect.width || 680));
+  var H = W < 480 ? 230 : 280;
+  var padL = W < 360 ? 32 : 44, padR = W < 360 ? 12 : 20, padT = 20, padB = 32;
   var plotW = W - padL - padR;
   var plotH = H - padT - padB;
   var step = plotW / (daysInMonth - 1 || 1);
