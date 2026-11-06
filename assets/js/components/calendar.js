@@ -36,7 +36,9 @@ function drawCalendarGrid(scheduleMap) {
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const daysInPrevMonth = new Date(year, month, 0).getDate();
   let html = '';
-  ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(d => { html += '<div class="calendar-day-header">' + d + '</div>'; });
+  ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].forEach(d => {
+    html += '<div class="calendar-day-header"><span class="day-header-full">' + d + '</span><span class="day-header-short">' + d[0] + '</span></div>';
+  });
   for (let i = firstDay - 1; i >= 0; i--) html += '<div class="calendar-day other-month"><span class="day-number">' + (daysInPrevMonth - i) + '</span></div>';
   for (let d = 1; d <= daysInMonth; d++) {
     const dateObj = new Date(year, month, d);
@@ -58,9 +60,9 @@ function drawCalendarGrid(scheduleMap) {
         const bColor = BARANGAY_COLORS[s.barangay] || BARANGAY_COLORS.default;
         const timeStr = s.collection_time ? formatTime12(s.collection_time.substring(0, 5)) : '';
         const title = s.barangay || 'Collection';
-        html += '<div class="calendar-event" data-id="' + s.id + '" style="background:' + bColor.gradient + '">';
+        html += '<div class="calendar-event" data-id="' + s.id + '" style="background:' + bColor.gradient + '" title="' + escapeHtml((timeStr ? timeStr + ' · ' : '') + title) + '">';
         if (timeStr) html += '<span class="event-time">' + timeStr + '</span>';
-        html += '<span class="event-dot"></span><span>' + escapeHtml(title) + '</span></div>';
+        html += '<span class="event-dot"></span><span class="event-title">' + escapeHtml(title) + '</span></div>';
       });
       if (remaining > 0) html += '<div class="calendar-event more">+' + remaining + ' more</div>';
       html += '</div>';
@@ -86,6 +88,13 @@ function attachCalendarListeners() {
       if (!hasSchedules) {
         if (isDatePast(dateStr)) { showToast('Cannot create schedules for past dates.', 'info'); return; }
         openScheduleModalForDate(state.selectedDate);
+      } else {
+        if (window.innerWidth <= 1024) {
+          setTimeout(function() {
+            var sidebar = document.getElementById('sidebar-details') || document.getElementById('schedule-sidebar');
+            if (sidebar) sidebar.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 80);
+        }
       }
     });
   });
@@ -95,7 +104,15 @@ function attachCalendarListeners() {
       const id = parseInt(this.dataset.id);
       if (!id) return;
       const schedule = state.schedules.find(s => s.id === id);
-      if (schedule) showScheduleInSidebar(schedule);
+      if (schedule) {
+        showScheduleInSidebar(schedule);
+        if (window.innerWidth <= 1024) {
+          setTimeout(function() {
+            var sidebar = document.getElementById('sidebar-details') || document.getElementById('schedule-sidebar');
+            if (sidebar) sidebar.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          }, 80);
+        }
+      }
     });
   });
 }
