@@ -1888,120 +1888,350 @@
 
 /* Route Info & Logistics Dashboard Layout */
 .route-map-dashboard {
-  padding: 12px 16px;
+  padding: 14px 16px;
   background: var(--sc-surface, #ffffff);
-  border-top: 1px solid var(--sc-border);
+  border-top: 1px solid var(--sc-border, #e2e8f0);
 }
 
 .rmd-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 10px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
 }
 
-.rmd-title {
+.rmd-header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rmd-count-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
   font-size: 12px;
   font-weight: 700;
-  color: var(--sc-text, #111827);
+  color: #1e3a8a;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  padding: 4px 10px;
+  border-radius: 999px;
+  letter-spacing: 0.2px;
 }
 
-.rmd-schedule-badge {
-  font-size: 10px;
+.rmd-badge-icon {
+  width: 14px;
+  height: 14px;
+  stroke: #2563eb;
+}
+
+.rmd-header-subtitle {
+  font-size: 12px;
   font-weight: 600;
-  color: #15803D;
-  background: #DCFCE7;
-  padding: 2px 7px;
-  border-radius: 4px;
+  color: #64748b;
+}
+
+.rmd-live-date {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.rmd-overview-badge {
+  font-size: 10.5px;
+  font-weight: 750;
+  color: #15803d;
+  background: #dcfce7;
+  border: 1px solid #bbf7d0;
+  padding: 3px 9px;
+  border-radius: 999px;
   white-space: nowrap;
 }
 
 .rmd-trucks-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
 }
 
 .rmd-truck-card {
-  background: #F8FAFC;
-  border-radius: 6px;
-  padding: 7px 10px;
-  transition: background 0.15s ease;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
 }
 
 .rmd-truck-card:hover {
-  background: #F1F5F9;
+  background: #ffffff;
+  border-color: #cbd5e1;
+  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
 }
 
 .rmd-tc-top {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 3px;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.rmd-tc-heading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.rmd-tc-id {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 4px;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}
+
+.rmd-tc-titles {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
 }
 
 .rmd-tc-name {
-  font-size: 11.5px;
-  font-weight: 700;
-  color: #0F172A;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 750;
+  color: #0f172a;
+  line-height: 1.25;
 }
 
-.rmd-swatch {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  display: inline-block;
+.rmd-tc-route {
+  font-size: 11px;
+  font-weight: 600;
+  color: #475569;
+  line-height: 1.25;
 }
 
 .rmd-tc-badge {
-  font-size: 9.5px;
+  font-size: 10px;
   font-weight: 700;
-  padding: 1px 6px;
-  border-radius: 3px;
+  padding: 2px 7px;
+  border-radius: 999px;
   text-transform: uppercase;
+  letter-spacing: 0.4px;
+  flex-shrink: 0;
 }
 
 .rmd-tc-badge.status-active {
   color: #047857;
-  background: #D1FAE5;
+  background: #d1fae5;
+  border: 1px solid #a7f3d0;
 }
 
 .rmd-tc-badge.status-scheduled {
-  color: #1D4ED8;
-  background: #DBEAFE;
+  color: #1d4ed8;
+  background: #dbeafe;
+  border: 1px solid #bfdbfe;
 }
 
 .rmd-tc-badge.status-completed {
   color: #475569;
-  background: #E2E8F0;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
 }
 
-.rmd-tc-meta {
-  font-size: 10.5px;
-  color: #64748B;
+.rmd-tc-metrics {
   display: flex;
-  gap: 5px;
+  align-items: center;
+  gap: 8px 14px;
   flex-wrap: wrap;
+  padding: 6px 0;
+  border-top: 1px solid #f1f5f9;
+  border-bottom: 1px solid #f1f5f9;
+  margin: 6px 0 8px;
 }
 
-.rmd-tc-desc {
+.rmd-metric-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
   font-size: 11px;
-  color: #334155;
-  margin-top: 2px;
+  color: #475569;
   font-weight: 500;
 }
 
-.rmd-warning-note {
-  margin-top: 6px;
+.rmd-metric-item svg {
+  width: 13px;
+  height: 13px;
+  stroke: #64748b;
+  flex-shrink: 0;
+}
+
+/* Stop Sequence Flow / Itinerary */
+.rmd-tc-itinerary {
+  margin-top: 4px;
+}
+
+.rmd-itinerary-header {
   font-size: 10px;
-  color: #B45309;
-  background: #FFFBEB;
-  padding: 3px 8px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #94a3b8;
+  margin-bottom: 5px;
+}
+
+.rmd-stops-flow {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.rmd-arrow-sep {
+  width: 10px;
+  height: 10px;
+  stroke: #cbd5e1;
+  flex-shrink: 0;
+}
+
+.rmd-stop-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 7px 2px 4px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  font-size: 10.5px;
+  color: #334155;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.rmd-stop-chip:hover,
+.rmd-stop-chip.is-highlighted {
+  border-color: #3b82f6;
+  background: #eff6ff;
+  color: #1d4ed8;
+  box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+  transform: translateY(-1px);
+}
+
+.rmd-stop-num {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  font-size: 9px;
+  font-weight: 800;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.rmd-stop-num.depot {
+  background: #f59e0b;
+}
+
+.rmd-stop-name {
+  font-weight: 600;
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rmd-stop-time {
+  font-size: 9.5px;
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+}
+
+.rmd-warning-note {
+  margin-top: 8px;
+  font-size: 11px;
+  color: #b45309;
+  background: #fffbeb;
+  border: 1px solid #fef3c7;
+  padding: 5px 10px;
+  border-radius: 6px;
+}
+
+.rmd-legend-note {
+  margin-top: 8px;
+  font-size: 10px;
+  line-height: 1.4;
+  color: #64748b;
+}
+
+/* Enhanced Clean Leaflet Tooltip */
+.wise-tooltip-clean {
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.12) !important;
+  padding: 8px 11px !important;
+  color: #0f172a !important;
+  font-family: inherit !important;
+}
+
+.wise-tooltip-clean:before {
+  border-top-color: #e2e8f0 !important;
+}
+
+.wise-map-tt {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.wm-tt-badge {
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 1px 6px;
   border-radius: 4px;
+  display: inline-block;
+  align-self: flex-start;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  margin-bottom: 2px;
+}
+
+.wm-tt-badge.depot-badge {
+  color: #b45309;
+  background: #fef3c7;
+}
+
+.wm-tt-title {
+  font-size: 12.5px;
+  font-weight: 750;
+  color: #0f172a;
+}
+
+.wm-tt-sub {
+  font-size: 11px;
+  font-weight: 500;
+  color: #475569;
+}
+
+.wm-tt-meta {
+  font-size: 10px;
+  color: #64748b;
+  margin-top: 2px;
 }
 
 .route-map-loading,

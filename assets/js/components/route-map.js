@@ -49,6 +49,8 @@ var _routeLayers = [];  // Dynamic route markers, lines, truck icons
 var _truckDataList = [];
 var _truckClockInterval = null;
 var _routeGeometries = {};
+var _activeMarkersMap = {};  // Lookup: truckIdx_stopIdx -> marker
+var _activeDepotMarker = null;
 var _renderChain = Promise.resolve();
 var _lastRenderContext = null;
 
@@ -974,8 +976,8 @@ function renderMuntinlupaOverview(customNote) {
   if (infoEl) {
     infoEl.innerHTML = '<div class="route-map-dashboard">' +
       '<div class="rmd-header">' +
-      '<span class="rmd-title">\ud83d\uddfa\ufe0f Muntinlupa Collection Zones</span>' +
-      '<span class="rmd-schedule-badge">\ud83d\udcc5 System Overview</span>' +
+      '<span class="rmd-title">🗺️ Muntinlupa Collection Zones</span>' +
+      '<span class="rmd-overview-badge">📅 System Overview</span>' +
       '</div>' +
       '<div style="font-size:11.5px;color:var(--sc-text-secondary);padding:4px 0">' +
       escapeHtml(customNote || 'Select an assignment or date in the calendar to view its road route & schedule.') +
@@ -999,6 +1001,8 @@ function clearMapLayers() {
   }
   _routeLayers = [];
   _truckDataList = [];
+  _activeMarkersMap = {};
+  _activeDepotMarker = null;
   _lastRenderContext = null;
   stopTruckClock();
 }
@@ -1247,33 +1251,54 @@ async function fetchRouteGeometry(waypoints) {
   // ORS Directions API expects [longitude, latitude]
   var orsCoords = waypoints.map(function (w) { return [w[1], w[0]]; });
 
-  try {
-    var res = await apiRequest('/api/routing/directions', {
-      method: 'POST',
-      body: JSON.stringify({ coordinates: orsCoords })
-    });
+  // Retry up to 2 attempts on transient 502/network hiccups
+  for (var attempt = 1; attempt <= 2; attempt++) {
+    try {
+      var res = await apiRequest('/api/routing/directions', {
+        method: 'POST',
+        body: JSON.stringify({ coordinates: orsCoords })
+      });
 
-    if (!res || !res.ok) {
-      var errDetail = 'HTTP ' + (res ? res.status : 'error');
-      try {
-        var errBody = await res.json();
-        if (errBody && errBody.detail) errDetail = errBody.detail;
-      } catch (e) { }
-      throw new Error(errDetail);
+      if (!res || !res.ok) {
+        var errDetail = 'HTTP ' + (res ? res.status : 'error');
+        try {
+          var errBody = await res.json();
+          if (errBody && errBody.detail) errDetail = errBody.detail;
+        } catch (e) { }
+        if (attempt < 2 && (res && (res.status === 502 || res.status === 503 || res.status === 504))) {
+          await new Promise(function (resolve) { setTimeout(resolve, 800); });
+          continue;
+        }
+        throw new Error(errDetail);
+      }
+
+      var geojson = await res.json();
+      var feature = geojson && (geojson.features ? geojson.features[0] : geojson);
+      if (!feature || !feature.geometry) throw new Error('No geometry in response');
+
+      var legsFromProps = feature.properties && feature.properties.legs ? feature.properties.legs : null;
+      var parsedLegs = null;
+      if (legsFromProps && Array.isArray(legsFromProps) && legsFromProps.length > 0) {
+        parsedLegs = legsFromProps.map(function (leg) {
+          return leg.map(function (pt) { return [pt[1], pt[0]]; });
+        });
+      }
+
+      return {
+        fullGeometry: feature.geometry,
+        legs: parsedLegs,
+        summary: feature.properties && feature.properties.summary
+      };
+    } catch (err) {
+      if (attempt < 2) {
+        await new Promise(function (resolve) { setTimeout(resolve, 800); });
+        continue;
+      }
+      console.warn('[WISE Route Map] ORS routing notice:', err.message);
+      return null;
     }
-
-    var geojson = await res.json();
-    var feature = geojson && (geojson.features ? geojson.features[0] : geojson);
-    if (!feature || !feature.geometry) throw new Error('No geometry in response');
-
-    return {
-      fullGeometry: feature.geometry,
-      summary: feature.properties && feature.properties.summary
-    };
-  } catch (err) {
-    console.warn('[WISE Route Map] ORS routing notice:', err.message);
-    return null;
   }
+  return null;
 }
 
 // =========================================================================
@@ -1281,7 +1306,7 @@ async function fetchRouteGeometry(waypoints) {
 // =========================================================================
 
 /**
- * Straight-line legs used only when OpenRouteService is unavailable.
+ * Straight-line legs used only when OpenRouteService is completely unavailable.
  * Always labelled in the UI - never used while real road geometry exists.
  */
 function buildStraightLegs(waypoints) {
@@ -1292,49 +1317,52 @@ function buildStraightLegs(waypoints) {
   return legs;
 }
 
-/** Index of the polyline vertex closest to a waypoint, searched forward only. */
+/** Index of the polyline vertex closest to a waypoint, searched forward with a small leeway window. */
 function findNearestVertexIndex(latlngs, target, fromIndex) {
-  var bestIdx = -1;
+  var bestIdx = Math.max(0, fromIndex);
   var bestDist = Infinity;
-  for (var i = Math.max(0, fromIndex); i < latlngs.length; i++) {
+  var startSearch = Math.max(0, fromIndex - 3);
+  for (var i = startSearch; i < latlngs.length; i++) {
     var dLat = latlngs[i][0] - target[0];
     var dLng = latlngs[i][1] - target[1];
     var dist = dLat * dLat + dLng * dLng;
     if (dist < bestDist) { bestDist = dist; bestIdx = i; }
   }
-  if (bestIdx === -1) return null;
-  // Reject matches further than roughly 1.5 km: a bad geometry must never be cut blindly.
-  if (bestDist > 0.00018) return null;
-  return bestIdx;
+  return Math.max(fromIndex, bestIdx);
 }
 
 /**
  * Splits one continuous road polyline into ordered legs between consecutive stops.
- * The ORS geometry is preserved untouched - only cut indices are computed, so every
- * leg still follows real roads (no synthetic straight lines are introduced).
+ * Real road geometry is preserved untouched - each leg follows real roads.
  *
  * @param {Array} latlngs - full road geometry as [lat, lng] pairs
  * @param {Array} waypoints - [depot, stop1, stop2, ...] as [lat, lng] pairs
- * @returns {Array|null} legs[i] = polyline from waypoint i to waypoint i + 1
+ * @returns {Array} legs[i] = polyline from waypoint i to waypoint i + 1
  */
 function splitRouteIntoLegs(latlngs, waypoints) {
-  if (!latlngs || latlngs.length < 2 || !waypoints || waypoints.length < 2) return null;
+  if (!latlngs || latlngs.length < 2) return null;
+  if (!waypoints || waypoints.length < 2) return [latlngs.slice()];
 
   var cuts = [0];
   var cursor = 0;
-  for (var w = 1; w < waypoints.length - 1; w++) {
-    // Search forward only: stops must stay in their scheduled order. Two stops that
-    // share one coordinate simply produce a zero-length leg.
+  var totalWaypoints = waypoints.length;
+  for (var w = 1; w < totalWaypoints - 1; w++) {
     var idx = findNearestVertexIndex(latlngs, waypoints[w], cursor);
-    if (idx === null || idx < cursor) return null;
-    cuts.push(idx);
-    cursor = idx;
+    var cutPoint = Math.max(cursor, Math.min(idx, latlngs.length - 1));
+    cuts.push(cutPoint);
+    cursor = cutPoint;
   }
   cuts.push(latlngs.length - 1);
 
   var legs = [];
   for (var i = 0; i < cuts.length - 1; i++) {
-    legs.push(latlngs.slice(cuts[i], cuts[i + 1] + 1));
+    var start = cuts[i];
+    var end = cuts[i + 1];
+    if (start === end) {
+      legs.push([latlngs[start], latlngs[start]]);
+    } else {
+      legs.push(latlngs.slice(start, end + 1));
+    }
   }
   return legs;
 }
@@ -1354,17 +1382,19 @@ async function getRouteGeometry(waypoints) {
 
   if (result && result.fullGeometry && result.fullGeometry.coordinates && result.fullGeometry.coordinates.length >= 2) {
     var latlngs = result.fullGeometry.coordinates.map(function (c) { return [c[1], c[0]]; });
-    var legs = splitRouteIntoLegs(latlngs, waypoints);
+    var legs = result.legs || splitRouteIntoLegs(latlngs, waypoints);
+    if (!legs || legs.length !== waypoints.length - 1) {
+      legs = splitRouteIntoLegs(latlngs, waypoints) || buildStraightLegs(waypoints);
+    }
+
     entry = {
       latlngs: latlngs,
-      legs: legs || buildStraightLegs(waypoints),
+      legs: legs,
       summary: result.summary || null,
-      isFallback: !legs,
-      // Never pass straight stop-to-stop lines off as road geometry: label them.
-      isStraightFallback: !legs
+      isFallback: false,
+      isStraightFallback: false
     };
-    // Cache only real road geometry - a failed request is retried on the next render.
-    if (legs) _routeGeometries[cacheKey] = entry;
+    _routeGeometries[cacheKey] = entry;
   } else {
     entry = {
       latlngs: waypoints.slice(),
@@ -1490,7 +1520,6 @@ function buildStopPopupHtml(td, sIdx) {
     '<div class="wmp-meta">' + escapeHtml(td.truckLabel) + ' &middot; Stop ' + (sIdx + 1) + ' of ' + total + '</div>' +
     phaseNote +
     warning +
-    '<div class="wmp-notice">Scheduled itinerary - not live GPS</div>' +
     '</div>';
 }
 
@@ -1516,7 +1545,6 @@ function buildTruckPopupHtml(td) {
     '<div class="wmp-row"><span class="wmp-row-label">Stops</span><span class="wmp-row-value">' + stopsCount + ' scheduled' + (td.routeDistance ? ' &middot; ' + escapeHtml(td.routeDistance) : '') + '</span></div>' +
     '</div>' +
     (state.detailText ? '<div class="wmp-detail">' + escapeHtml(state.detailText) + '</div>' : '') +
-    '<div class="wmp-notice">Schedule-based simulation - not a live GPS tracker</div>' +
     '</div>';
 }
 
@@ -1526,8 +1554,7 @@ function buildTruckTooltipHtml(td) {
   return '<strong>' + escapeHtml(td.truckLabel) + '</strong>' +
     (routeName ? '<br><span style="font-size:10px;opacity:.85">' + escapeHtml(routeName) + '</span>' : '') +
     '<br><span class="wmp-status-pill ' + (state.badgeClass || '') + '">' + escapeHtml(state.status || 'Scheduled') + '</span>' +
-    (state.detailText ? '<br><small style="opacity:.8;font-size:10px">' + escapeHtml(state.detailText) + '</small>' : '') +
-    '<br><small style="opacity:.7;font-size:9px">Schedule-based - no GPS</small>';
+    (state.detailText ? '<br><small style="opacity:.8;font-size:10px">' + escapeHtml(state.detailText) + '</small>' : '');
 }
 
 /**
@@ -1639,16 +1666,30 @@ function drawTruckLayers(td) {
       zIndexOffset: 200
     });
 
+    var roleLabel = sIdx === 0 ? 'Start • Stop 1' : (sIdx === td.stops.length - 1 && td.stops.length > 1 ? 'Final Destination' : ('Stop ' + (sIdx + 1) + ' of ' + td.stops.length));
+    var timeFormatted = stop.collection_time ? formatTime12((stop.collection_time + '').substring(0, 5)) : '';
+
     marker.bindPopup(buildStopPopupHtml(td, sIdx));
     marker.bindTooltip(
-      (sIdx === 0 ? 'Start: ' : (sIdx === td.stops.length - 1 && td.stops.length > 1 ? 'Final: ' : ('Stop ' + (sIdx + 1) + ': '))) +
-      escapeHtml(stopPlaceName(stop, sIdx)) +
-      (stop.collection_time ? ' - ' + formatTime12((stop.collection_time + '').substring(0, 5)) : ''),
-      { direction: 'top', offset: [0, -14] }
+      '<div class="wise-map-tt">' +
+        '<div class="wm-tt-badge" style="color:' + td.color + ';background:' + td.color + '1a">' + escapeHtml(roleLabel) + '</div>' +
+        '<div class="wm-tt-title">' + escapeHtml(stopPlaceName(stop, sIdx)) + '</div>' +
+        '<div class="wm-tt-sub">' + escapeHtml(stop.barangay || '') + (timeFormatted ? ' &bull; ' + escapeHtml(timeFormatted) : '') + '</div>' +
+        '<div class="wm-tt-meta">' + escapeHtml(td.truckLabel) + ' &bull; ' + escapeHtml((td.assignment && td.assignment.routeName) || 'Collection Route') + '</div>' +
+      '</div>',
+      { direction: 'top', offset: [0, -14], className: 'wise-tooltip-clean', opacity: 1 }
     );
+
+    marker.on('mouseover', function () {
+      highlightStopItem(td.index, sIdx, true);
+    });
+    marker.on('mouseout', function () {
+      highlightStopItem(td.index, sIdx, false);
+    });
 
     addLayer(marker);
     td.stopMarkers.push({ index: sIdx, marker: marker });
+    _activeMarkersMap[td.index + '_' + sIdx] = marker;
   });
 
   td.routeGroup = L.layerGroup();
@@ -1679,17 +1720,85 @@ function addDepotMarker() {
   });
   // Always painted above the truck markers so the depot pin never gets buried.
   var depotMarker = L.marker(DEFAULT_DEPOT.coord, { icon: depotIcon, zIndexOffset: 2600 });
-  depotMarker.bindTooltip('<strong>' + escapeHtml(DEFAULT_DEPOT.name) + '</strong><br><small>' + escapeHtml(DEFAULT_DEPOT.address) + '</small>', { direction: 'top', offset: [0, -15] });
+  _activeDepotMarker = depotMarker;
+
+  depotMarker.bindTooltip(
+    '<div class="wise-map-tt">' +
+      '<div class="wm-tt-badge depot-badge">Fleet Depot</div>' +
+      '<div class="wm-tt-title">' + escapeHtml(DEFAULT_DEPOT.name) + '</div>' +
+      '<div class="wm-tt-sub">' + escapeHtml(DEFAULT_DEPOT.address) + '</div>' +
+      '<div class="wm-tt-meta">Starting point for all collection routes</div>' +
+    '</div>',
+    { direction: 'top', offset: [0, -14], className: 'wise-tooltip-clean', opacity: 1 }
+  );
+
   depotMarker.bindPopup('<div class="wise-map-popup">' +
     '<div class="wmp-header" style="border-left:3.5px solid #F59E0B">' +
     '<span class="wmp-badge" style="background:#FEF3C7;color:#B45309">Fleet Dispatch Depot</span>' +
     '<strong>' + escapeHtml(DEFAULT_DEPOT.name) + '</strong>' +
     '<div class="wmp-street">' + escapeHtml(DEFAULT_DEPOT.address) + '</div>' +
     '</div>' +
-    '<div class="wmp-notice">Starting depot for all scheduled routes before Stop 1</div>' +
     '</div>');
+
+  depotMarker.on('mouseover', function () {
+    highlightDepotItem(true);
+  });
+  depotMarker.on('mouseout', function () {
+    highlightDepotItem(false);
+  });
+
   addLayer(depotMarker);
   return depotMarker;
+}
+
+function highlightStopItem(truckIdx, stopIdx, isHighlight) {
+  var el = document.querySelector('.rmd-stop-chip[data-truck-idx="' + truckIdx + '"][data-stop-idx="' + stopIdx + '"]');
+  if (el) {
+    if (isHighlight) {
+      el.classList.add('is-highlighted');
+    } else {
+      el.classList.remove('is-highlighted');
+    }
+  }
+}
+
+function highlightDepotItem(isHighlight) {
+  var el = document.querySelector('.rmd-depot-chip');
+  if (el) {
+    if (isHighlight) el.classList.add('is-highlighted');
+    else el.classList.remove('is-highlighted');
+  }
+}
+
+function attachStopChipInteractions() {
+  var chips = document.querySelectorAll('.rmd-stop-chip:not(.rmd-depot-chip)');
+  chips.forEach(function (chip) {
+    var tIdx = chip.getAttribute('data-truck-idx');
+    var sIdx = chip.getAttribute('data-stop-idx');
+    var markerKey = tIdx + '_' + sIdx;
+    chip.addEventListener('mouseenter', function () {
+      var m = _activeMarkersMap[markerKey];
+      if (m && m.openTooltip) m.openTooltip();
+      chip.classList.add('is-highlighted');
+    });
+    chip.addEventListener('mouseleave', function () {
+      var m = _activeMarkersMap[markerKey];
+      if (m && m.closeTooltip) m.closeTooltip();
+      chip.classList.remove('is-highlighted');
+    });
+  });
+
+  var depotChips = document.querySelectorAll('.rmd-depot-chip');
+  depotChips.forEach(function (chip) {
+    chip.addEventListener('mouseenter', function () {
+      if (_activeDepotMarker && _activeDepotMarker.openTooltip) _activeDepotMarker.openTooltip();
+      chip.classList.add('is-highlighted');
+    });
+    chip.addEventListener('mouseleave', function () {
+      if (_activeDepotMarker && _activeDepotMarker.closeTooltip) _activeDepotMarker.closeTooltip();
+      chip.classList.remove('is-highlighted');
+    });
+  });
 }
 
 function fitMapToServiceArea() {
@@ -1777,8 +1886,8 @@ async function prepareTruck(assignment, aIdx, colorInfo, now, warnings) {
     td.isStraightFallback = !!geo.isStraightFallback;
     if (geo.summary && geo.summary.distance) td.routeDistance = (geo.summary.distance / 1000).toFixed(1) + ' km';
     if (geo.summary && geo.summary.duration) td.routeDuration = Math.round(geo.summary.duration / 60) + ' min';
-    if (geo.isFallback) {
-      warnings.push(truckLabel + ': road geometry could not be matched to its scheduled stops - showing direct stop-to-stop lines.');
+    if (geo.isStraightFallback) {
+      warnings.push(truckLabel + ': road routing service unavailable - showing direct stop-to-stop lines.');
     }
   } else {
     warnings.push(truckLabel + ': no resolvable stop coordinates - route line unavailable.');
@@ -1881,11 +1990,23 @@ function renderRouteInfoBar(assignments, label, truckList, warnings, infoEl) {
     if (td) prepared[td.index] = td;
   });
 
+  var totalAssignments = assignments ? assignments.length : 0;
+  var assignmentLabel = totalAssignments + (totalAssignments === 1 ? ' Assignment' : ' Assignments');
+
   var html = '<div class="route-map-dashboard">';
 
+  // Header: Clean Assignment Count & Status
   html += '<div class="rmd-header">';
-  if (label) html += '<span class="rmd-title">' + escapeHtml(label) + '</span>';
-  html += '<span class="rmd-schedule-badge">Schedule-based - no GPS</span>';
+  html += '<div class="rmd-header-left">';
+  html += '<span class="rmd-count-badge">';
+  html += '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="rmd-badge-icon"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>';
+  html += escapeHtml(assignmentLabel);
+  html += '</span>';
+  if (label && !label.includes('Assignment')) {
+    html += '<span class="rmd-header-subtitle">' + escapeHtml(label) + '</span>';
+  }
+  html += '</div>';
+  html += '<span class="rmd-live-date">' + escapeHtml(now.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })) + '</span>';
   html += '</div>';
 
   html += '<div class="rmd-trucks-grid">';
@@ -1901,47 +2022,70 @@ function renderRouteInfoBar(assignments, label, truckList, warnings, infoEl) {
     var routeName = a.routeName || 'Collection Route';
     var statusText = state ? state.status : 'Scheduled';
     var statusClass = state ? state.badgeClass : 'status-scheduled';
+    var distance = td && td.routeDistance ? td.routeDistance : '';
+    var duration = td && td.routeDuration ? td.routeDuration : '';
 
-    var currentLine;
-    if (!state) {
-      currentLine = 'Schedule data unavailable';
-    } else if (state.isCancelled) {
-      currentLine = 'Cancelled - no active run';
-    } else if (state.isCompleted) {
-      currentLine = 'Completed at ' + (state.currentStopName || 'final stop') +
-        (state.currentStopTimeStr ? ' - ' + state.currentStopTimeStr : '');
-    } else if (state.isAtDepot) {
-      currentLine = 'At Tunasan Depot' + (state.nextStopTimeStr ? ' - departs ' + state.nextStopTimeStr : '');
-    } else {
-      currentLine = 'At ' + (state.currentStopName || 'scheduled stop') +
-        (state.currentStopTimeStr ? ' - ' + state.currentStopTimeStr : '');
+    html += '<div class="rmd-truck-card" style="border-left: 4px solid ' + color + ';">';
+
+    // Top Row: Tag, Truck Name, Route Title, Status Badge
+    html += '<div class="rmd-tc-top">';
+    html += '<div class="rmd-tc-heading">';
+    html += '<span class="rmd-tc-id" style="background:' + color + ';">' + escapeHtml(truckShortId(a, idx)) + '</span>';
+    html += '<div class="rmd-tc-titles">';
+    html += '<div class="rmd-tc-name">' + escapeHtml(truckLabel) + '</div>';
+    html += '<div class="rmd-tc-route">' + escapeHtml(routeName) + '</div>';
+    html += '</div>';
+    html += '</div>';
+    html += '<span class="rmd-tc-badge ' + statusClass + '">' + escapeHtml(statusText) + '</span>';
+    html += '</div>';
+
+    // Logistics Strip: Crew, Time, Distance, Stops
+    html += '<div class="rmd-tc-metrics">';
+    html += '<div class="rmd-metric-item" title="Assigned Personnel"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>' + escapeHtml(a.personnel || 'Crew Assigned') + '</div>';
+    if (a.timeStr) {
+      html += '<div class="rmd-metric-item" title="Collection Start Time"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>' + escapeHtml(a.timeStr) + '</div>';
+    }
+    if (distance) {
+      html += '<div class="rmd-metric-item" title="Total Estimated Road Distance"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>' + escapeHtml(distance) + (duration ? ' (' + escapeHtml(duration) + ')' : '') + '</div>';
+    }
+    html += '<div class="rmd-metric-item" title="Scheduled Stops Count"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path><circle cx="12" cy="10" r="3"></circle></svg>' + stopCount + (stopCount === 1 ? ' stop' : ' stops') + '</div>';
+    html += '</div>';
+
+    // Interactive Stop Sequence Trail
+    if (a.stops && a.stops.length > 0) {
+      html += '<div class="rmd-tc-itinerary">';
+      html += '<div class="rmd-itinerary-header">Scheduled Stops Sequence</div>';
+      html += '<div class="rmd-stops-flow">';
+
+      // Depot chip
+      html += '<span class="rmd-stop-chip rmd-depot-chip" title="Tunasan Dispatch Depot - Starting fleet hub">';
+      html += '<span class="rmd-stop-num depot">D</span>';
+      html += '<span class="rmd-stop-name">Depot</span>';
+      html += '</span>';
+
+      a.stops.forEach(function (st, sidx) {
+        var isFirst = sidx === 0;
+        var isLast = sidx === a.stops.length - 1 && a.stops.length > 1;
+        var roleClass = isFirst ? 'start' : (isLast ? 'final' : '');
+        var numLabel = isFirst ? 'S' : (isLast ? 'F' : (sidx + 1));
+        var stPlace = st.street || st.barangay || ('Stop ' + (sidx + 1));
+        var stTime = st.time ? st.time : '';
+
+        html += '<svg class="rmd-arrow-sep" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="9 18 15 12 9 6"></polyline></svg>';
+        html += '<span class="rmd-stop-chip ' + roleClass + '" data-truck-idx="' + idx + '" data-stop-idx="' + sidx + '" title="' + escapeHtml(stPlace + (stTime ? ' • ' + stTime : '')) + '">';
+        html += '<span class="rmd-stop-num" style="background:' + color + ';">' + numLabel + '</span>';
+        html += '<span class="rmd-stop-name">' + escapeHtml(stPlace) + '</span>';
+        if (stTime) {
+          html += '<span class="rmd-stop-time">' + escapeHtml(stTime) + '</span>';
+        }
+        html += '</span>';
+      });
+
+      html += '</div>';
+      html += '</div>';
     }
 
-    var nextLine = '';
-    if (state && !state.isCompleted && !state.isCancelled && state.nextStopName) {
-      nextLine = 'Next: ' + state.nextStopName + (state.nextStopTimeStr ? ' - ' + state.nextStopTimeStr : '');
-    }
-
-    var distance = td ? td.routeDistance : '';
-
-    html += '<div class="rmd-truck-card" style="border-left:4px solid ' + color + '">' +
-      '<div class="rmd-tc-top">' +
-      '<span class="rmd-tc-name">' +
-      '<span class="rmd-swatch" style="background:' + color + '"></span>' +
-      '<span class="rmd-tc-id" style="background:' + color + '">' + escapeHtml(truckShortId(a, idx)) + '</span>' +
-      escapeHtml(truckLabel) +
-      '</span>' +
-      '<span class="rmd-tc-badge ' + statusClass + '">' + escapeHtml(statusText) + '</span>' +
-      '</div>' +
-      '<div class="rmd-tc-route">' + escapeHtml(routeName) + '</div>' +
-      '<div class="rmd-tc-meta">' +
-      '<span>' + stopCount + ' stop' + (stopCount !== 1 ? 's' : '') + '</span>' +
-      (distance ? '<span> - ' + distance + '</span>' : '') +
-      '<span> - ' + escapeHtml(a.personnel || 'Crew assigned') + '</span>' +
-      '</div>' +
-      '<div class="rmd-tc-desc">' + escapeHtml(currentLine) + '</div>' +
-      (nextLine ? '<div class="rmd-tc-next">' + escapeHtml(nextLine) + '</div>' : '') +
-      '</div>';
+    html += '</div>';
   });
 
   html += '</div>';
@@ -1952,10 +2096,11 @@ function renderRouteInfoBar(assignments, label, truckList, warnings, infoEl) {
       (warnings.length > 2 ? ' (+' + (warnings.length - 2) + ' more)' : '') + '</div>';
   }
 
-  html += '<div class="rmd-legend-note">Legend: <strong>S</strong> start &middot; <strong>F</strong> final stop &middot; <strong>&#10003;</strong> completed stop. Trucks sharing a location are offset with a dashed leader - their real stop position is unchanged.</div>';
+  html += '<div class="rmd-legend-note">Interactive: hover over any stop marker or chip to highlight. <strong>D</strong> Depot &middot; <strong>S</strong> Start &middot; <strong>F</strong> Final stop</div>';
 
   html += '</div>';
   infoEl.innerHTML = html;
+  attachStopChipInteractions();
 }
 
 // =========================================================================

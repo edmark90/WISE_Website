@@ -26,7 +26,11 @@ var RP = {
   month: null,            // 1-12 when mode is month
   selectedTypes: ALL_REPORT_TYPES.slice(),
   downloading: false,
-  loadingSummary: false
+  loadingSummary: false,
+  activePreviewType: 'barangay_performance',
+  previewData: null,
+  loadingPreview: false,
+  searchQuery: ''
 };
 
 function rpPhNow() {
@@ -134,6 +138,27 @@ function wireReportsControls() {
     });
   }
 
+  // Live Report Preview Tabs
+  $all('#rp-preview-tabs .rp-preview-tab').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      $all('#rp-preview-tabs .rp-preview-tab').forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      RP.activePreviewType = btn.dataset.type;
+      loadReportPreview(RP.activePreviewType);
+    });
+  });
+
+  // Live Report Preview Search Filter
+  var previewSearch = $id('rp-preview-search');
+  if (previewSearch) {
+    previewSearch.addEventListener('input', function () {
+      RP.searchQuery = (previewSearch.value || '').trim().toLowerCase();
+      if (RP.previewData) {
+        renderPreviewTable(RP.previewData, RP.searchQuery);
+      }
+    });
+  }
+
   // Summary refresh button
   var refreshBtn = $id('rp-summary-refresh');
   if (refreshBtn) {
@@ -225,6 +250,9 @@ function loadSummary() {
   if (!RP.year) return;
   setSummaryLoading(true);
 
+  // Load live data preview concurrently
+  loadReportPreview(RP.activePreviewType);
+
   apiRequest('/api/reports/summary?' + buildParams())
     .then(function (res) {
       if (!res) return null;
@@ -275,6 +303,180 @@ function setElementText(id, value) {
   if (el) {
     el.textContent = (value !== null && value !== undefined && value !== '') ? value : '0';
   }
+}
+
+/* ==========================================================================
+   Live Report Data Preview Handlers
+   ========================================================================== */
+
+function setPreviewLoading(loading) {
+  RP.loadingPreview = loading;
+  var loader = $id('rp-table-loading');
+  var table = $id('rp-preview-table');
+  var empty = $id('rp-table-empty');
+
+  if (loader) loader.style.display = loading ? 'flex' : 'none';
+  if (loading) {
+    if (table) table.style.display = 'none';
+    if (empty) empty.style.display = 'none';
+  }
+}
+
+function loadReportPreview(type) {
+  if (!RP.year) return;
+  type = type || RP.activePreviewType || 'barangay_performance';
+  setPreviewLoading(true);
+
+  apiRequest('/api/reports/preview?' + buildParams({ type: type }))
+    .then(function (res) {
+      if (!res) return null;
+      if (!res.ok) throw new Error('HTTP ' + res.status);
+      return res.json();
+    })
+    .then(function (data) {
+      if (!data) return;
+      RP.previewData = data;
+
+      var subEl = $id('rp-preview-subtitle');
+      if (subEl) {
+        subEl.textContent = 'Verified records for ' + data.period + ' • ' + (data.total_records || 0) + ' total entries found';
+      }
+
+      renderPreviewTable(data, RP.searchQuery);
+    })
+    .catch(function (err) {
+      console.warn('Preview load error:', err);
+      RP.previewData = null;
+      var table = $id('rp-preview-table');
+      var empty = $id('rp-table-empty');
+      var counter = $id('rp-preview-counter');
+      if (table) table.style.display = 'none';
+      if (empty) {
+        empty.style.display = 'flex';
+        var p = empty.querySelector('p');
+        if (p) p.textContent = 'Unable to load preview records for this period.';
+      }
+      if (counter) counter.textContent = '0 records';
+    })
+    .finally(function () {
+      setPreviewLoading(false);
+    });
+}
+
+function getColumnAlign(header) {
+  var h = (header || '').toLowerCase();
+  if (h.includes('%') || h.includes('rate') || h.includes('stops') || h.includes('scans') || h.includes('count') || h.includes('reads') || h.includes('broadcasts') || h.includes('confidence') || h.includes('total') || h.includes('delayed') || h.includes('completed')) {
+    if (h.includes('status') || h.includes('day')) return 'text-center';
+    return 'text-right';
+  }
+  if (h.includes('status') || h.includes('date') || h.includes('time') || h.includes('id') || h.includes('day')) {
+    return 'text-center';
+  }
+  return 'text-left';
+}
+
+function formatPreviewCell(header, val) {
+  if (val === null || val === undefined || val === '') return '—';
+
+  var h = (header || '').toLowerCase();
+
+  // Status badges
+  if (h.includes('status')) {
+    var s = String(val).trim();
+    var badgeClass = 'rp-badge-neutral';
+    if (s === 'Completed' || s === 'Active' || s === 'High Engagement') {
+      badgeClass = 'rp-badge-success';
+    } else if (s === 'In Progress' || s === 'Partially Completed' || s === 'Moderate Engagement') {
+      badgeClass = 'rp-badge-warning';
+    } else if (s === 'Scheduled' || s === 'Broadcast Sent') {
+      badgeClass = 'rp-badge-info';
+    } else if (s === 'Delayed' || s === 'Cancelled' || s === 'Low Engagement' || s === 'Flagged') {
+      badgeClass = 'rp-badge-danger';
+    }
+    return '<span class="rp-badge ' + badgeClass + '">' + escapeHtml(s) + '</span>';
+  }
+
+  return escapeHtml(val);
+}
+
+function renderPreviewTable(data, query) {
+  var thead = $id('rp-table-head');
+  var tbody = $id('rp-table-body');
+  var table = $id('rp-preview-table');
+  var empty = $id('rp-table-empty');
+  var counter = $id('rp-preview-counter');
+
+  if (!data || !data.headers || !data.rows) {
+    if (table) table.style.display = 'none';
+    if (empty) empty.style.display = 'flex';
+    if (counter) counter.textContent = '0 records';
+    return;
+  }
+
+  var filteredRows = data.rows;
+  if (query) {
+    filteredRows = data.rows.filter(function (row) {
+      return row.some(function (cell) {
+        return cell !== null && cell !== undefined && String(cell).toLowerCase().includes(query);
+      });
+    });
+  }
+
+  if (counter) {
+    if (query) {
+      counter.textContent = filteredRows.length + ' of ' + data.rows.length + ' records';
+    } else {
+      counter.textContent = data.rows.length + (data.rows.length === 1 ? ' record' : ' records');
+    }
+  }
+
+  // Render thead
+  var headerHtml = '<tr>';
+  data.headers.forEach(function (h) {
+    var align = getColumnAlign(h);
+    headerHtml += '<th class="' + align + '">' + escapeHtml(h) + '</th>';
+  });
+  headerHtml += '</tr>';
+  if (thead) thead.innerHTML = headerHtml;
+
+  // Check empty
+  if (filteredRows.length === 0) {
+    if (table) table.style.display = 'none';
+    if (empty) {
+      empty.style.display = 'flex';
+      var p = empty.querySelector('p');
+      if (p) p.textContent = query ? 'No records match your search filter.' : 'No records found for the selected period.';
+    }
+    return;
+  }
+
+  // Render tbody
+  if (empty) empty.style.display = 'none';
+  if (table) table.style.display = 'table';
+
+  var bodyHtml = '';
+  filteredRows.forEach(function (row) {
+    bodyHtml += '<tr>';
+    row.forEach(function (cell, idx) {
+      var header = data.headers[idx] || '';
+      var align = getColumnAlign(header);
+      var formatted = formatPreviewCell(header, cell);
+      bodyHtml += '<td class="' + align + '">' + formatted + '</td>';
+    });
+    bodyHtml += '</tr>';
+  });
+
+  if (tbody) tbody.innerHTML = bodyHtml;
+}
+
+function escapeHtml(str) {
+  if (str === null || str === undefined) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 /**
