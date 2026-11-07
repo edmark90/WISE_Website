@@ -1582,6 +1582,18 @@ th.wc-col-actions { width: 110px; }
   border: 1px solid var(--wc-res-border);
 }
 
+.wc-diverted-chip.haz {
+  background: var(--wc-haz-bg);
+  color: var(--wc-haz-color);
+  border: 1px solid var(--wc-haz-border);
+}
+
+.wc-diverted-chip.elec {
+  background: var(--wc-ewaste-bg);
+  color: var(--wc-ewaste-color);
+  border: 1px solid var(--wc-ewaste-border);
+}
+
 /* Compliance Tier Badges */
 .wc-tier-badge {
   display: inline-flex;

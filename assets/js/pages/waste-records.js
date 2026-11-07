@@ -354,6 +354,9 @@ function renderBarangayLeaderboard(data) {
         total_scans: 0,
         recyclable_count: 0,
         biodegradable_count: 0,
+        residual_count: 0,
+        hazardous_count: 0,
+        electronic_count: 0,
         residual_special_count: 0,
         avg_confidence: 0.0,
         award_tier: 'Standard',
@@ -371,14 +374,12 @@ function renderBarangayLeaderboard(data) {
       const tier = tiers[idx] || 'bronze';
       const label = rankLabels[idx] || ('Rank ' + item.rank);
       const hasScans = item.total_scans > 0;
-      const statusTag = hasScans ? (item.badge_title || 'Top Performer') : 'No Submissions';
       const fillClass = item.proper_sorting_rate >= 80 ? 'high' : (item.proper_sorting_rate >= 50 ? 'med' : 'low');
 
       podiumHtml +=
         '<div class="wc-podium-card ' + tier + '">' +
           '<div class="wc-podium-badge-row">' +
             '<span class="wc-podium-rank-pill">' + label + '</span>' +
-            '<span class="wc-podium-tier-tag">' + escapeHtml(statusTag) + '</span>' +
           '</div>' +
           '<h4 class="wc-podium-name">' + escapeHtml(item.barangay) + '</h4>' +
           '<div class="wc-podium-rate-row">' +
@@ -390,7 +391,7 @@ function renderBarangayLeaderboard(data) {
           '</div>' +
           '<div class="wc-podium-stats-row">' +
             '<span>AI Classifications: <strong>' + item.total_scans + '</strong></span>' +
-            '<span>Accuracy: <strong>' + (item.avg_confidence > 0 ? item.avg_confidence + '%' : '—') + '</strong></span>' +
+            '<span>AI Confidence: <strong>' + (item.avg_confidence > 0 ? item.avg_confidence + '%' : '—') + '</strong></span>' +
           '</div>' +
         '</div>';
     });
@@ -403,9 +404,24 @@ function renderBarangayLeaderboard(data) {
     list.forEach(b => {
       const rankClass = b.total_scans > 0 && b.rank <= 3 ? 'rank-' + b.rank : '';
       const barClass = b.proper_sorting_rate >= 80 ? 'high' : (b.proper_sorting_rate >= 50 ? 'med' : 'low');
-      const tierClass = b.total_scans > 0
-        ? (b.rank === 1 ? 'tier-gold' : (b.rank === 2 ? 'tier-silver' : (b.rank === 3 ? 'tier-bronze' : 'tier-standard')))
-        : 'tier-standard';
+
+      // Dynamic chips for 5 waste categories - only show active categories (> 0)
+      const recyc = b.recyclable_count || 0;
+      const bio = b.biodegradable_count || 0;
+      const resid = (b.residual_count != null ? b.residual_count : b.residual_special_count) || 0;
+      const haz = b.hazardous_count || 0;
+      const elec = b.electronic_count || 0;
+
+      const chips = [];
+      if (recyc > 0) chips.push('<span class="wc-diverted-chip recyc" title="Recyclables">' + recyc + ' Recyc</span>');
+      if (bio > 0) chips.push('<span class="wc-diverted-chip bio" title="Biodegradable">' + bio + ' Bio</span>');
+      if (resid > 0) chips.push('<span class="wc-diverted-chip resid" title="Residual">' + resid + ' Resid</span>');
+      if (haz > 0) chips.push('<span class="wc-diverted-chip haz" title="Hazardous">' + haz + ' Haz</span>');
+      if (elec > 0) chips.push('<span class="wc-diverted-chip elec" title="Electronic / E-Waste">' + elec + ' E-Waste</span>');
+
+      const chipsHtml = chips.length > 0
+        ? '<div class="wc-diverted-chips">' + chips.join('') + '</div>'
+        : '<span style="color:var(--wc-muted);font-size:13px;">—</span>';
 
       tableHtml +=
         '<tr>' +
@@ -428,7 +444,6 @@ function renderBarangayLeaderboard(data) {
             '<div class="wc-sort-rate-wrap">' +
               '<div class="wc-sort-rate-header">' +
                 '<span>' + b.proper_sorting_rate + '%</span>' +
-                '<small style="color:var(--wc-muted);font-weight:500;">Accuracy</small>' +
               '</div>' +
               '<div class="wc-sort-track">' +
                 '<div class="wc-sort-fill ' + barClass + '" style="width:' + Math.min(b.proper_sorting_rate, 100) + '%;"></div>' +
@@ -436,15 +451,8 @@ function renderBarangayLeaderboard(data) {
             '</div>' +
           '</td>' +
           '<td><strong>' + b.total_scans + '</strong> <span style="font-size:12px;color:var(--wc-muted);">scans</span></td>' +
-          '<td>' +
-            '<div class="wc-diverted-chips">' +
-              '<span class="wc-diverted-chip recyc" title="Recyclables">' + b.recyclable_count + ' Recyc</span>' +
-              '<span class="wc-diverted-chip bio" title="Biodegradable">' + b.biodegradable_count + ' Bio</span>' +
-              '<span class="wc-diverted-chip resid" title="Residual">' + b.residual_special_count + ' Resid</span>' +
-            '</div>' +
-          '</td>' +
+          '<td>' + chipsHtml + '</td>' +
           '<td>' + (b.avg_confidence > 0 ? (b.avg_confidence + '%') : '—') + '</td>' +
-          '<td><span class="wc-tier-badge ' + tierClass + '">' + escapeHtml(b.badge_title || 'Compliant') + '</span></td>' +
         '</tr>';
     });
     tbody.innerHTML = tableHtml;
