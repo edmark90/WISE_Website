@@ -64,5 +64,5 @@ function getInitials(name) {
 
 /** Role -> css class used for avatar/badge coloring. */
 function getRoleClass(role) {
-  return ({ admin: 'admin', citizen: 'citizen' })[role] || 'default';
+  return ({ admin: 'admin', citizen: 'citizen', collector: 'collector' })[(role || '').toLowerCase()] || 'default';
 }

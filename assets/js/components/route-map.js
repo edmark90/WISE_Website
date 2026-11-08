@@ -629,23 +629,147 @@ function calcTruckScheduleBase(stops, collectionDate, customNow) {
     };
   }
 
-  // 1. PAST collection date -> Route completed; stationary at final stop
-  if (isPast) {
-    var lastIdx = stops.length - 1;
-    var finalStopName = stops[lastIdx].street || stops[lastIdx].barangay || ('Stop ' + (lastIdx + 1));
+  // 0. Check Collector-confirmed per-stop statuses first (never falsely mark Completed by clock alone)
+  var nonCancelledIndices = [];
+  var completedIndices = [];
+  var arrivedIdx = -1;
+  var arrivingIdx = -1;
+  var delayedIdx = -1;
+  for (var sIdx = 0; sIdx < stops.length; sIdx++) {
+    var stStatus = String(stops[sIdx].status || 'Upcoming').trim().toLowerCase();
+    if (stStatus !== 'cancelled' && stStatus !== 'canceled') {
+      nonCancelledIndices.push(sIdx);
+    }
+    if (stStatus === 'completed') completedIndices.push(sIdx);
+    else if (stStatus === 'arrived' && arrivedIdx === -1) arrivedIdx = sIdx;
+    else if (stStatus === 'arriving' && arrivingIdx === -1) arrivingIdx = sIdx;
+    else if (stStatus === 'delayed' && delayedIdx === -1) delayedIdx = sIdx;
+  }
+
+  // If all non-cancelled stops are confirmed Completed by Collector/Admin:
+  if (nonCancelledIndices.length > 0 && completedIndices.length === nonCancelledIndices.length) {
+    var lastCompIdx = completedIndices[completedIndices.length - 1];
+    var finalCompName = stops[lastCompIdx].street || stops[lastCompIdx].barangay || ('Stop ' + (lastCompIdx + 1));
     return {
       status: 'Completed',
       isAtDepot: false,
-      stopIdx: lastIdx,
+      stopIdx: lastCompIdx,
       nextStopIdx: null,
-      currentStop: stops[lastIdx],
+      currentStop: stops[lastCompIdx],
       nextStop: null,
       coord: null,
+      isToday: isToday,
+      isPast: isPast,
+      isFuture: isFuture,
+      detailText: 'Confirmed completed at ' + finalCompName,
+      badgeClass: 'status-completed'
+    };
+  }
+
+  // If Collector has confirmed Arrived at a stop:
+  if (arrivedIdx !== -1) {
+    var arrName = stops[arrivedIdx].street || stops[arrivedIdx].barangay || ('Stop ' + (arrivedIdx + 1));
+    var nxtAfterArr = arrivedIdx + 1 < stops.length ? arrivedIdx + 1 : null;
+    var nxtArrName = nxtAfterArr !== null ? (stops[nxtAfterArr].street || stops[nxtAfterArr].barangay || ('Stop ' + (nxtAfterArr + 1))) : '';
+    return {
+      status: 'At Scheduled Stop',
+      isAtDepot: false,
+      stopIdx: arrivedIdx,
+      nextStopIdx: nxtAfterArr,
+      currentStop: stops[arrivedIdx],
+      nextStop: nxtAfterArr !== null ? stops[nxtAfterArr] : null,
+      coord: null,
+      isToday: isToday,
+      isPast: isPast,
+      isFuture: isFuture,
+      detailText: 'Collector arrived at ' + arrName + (nxtArrName ? (' \u2192 Next: ' + nxtArrName) : ' (Final Stop)'),
+      badgeClass: 'status-active'
+    };
+  }
+
+  // If some stops are Completed and route is in progress toward next stop:
+  if (completedIndices.length > 0) {
+    var latestComp = completedIndices[completedIndices.length - 1];
+    var nextPending = null;
+    for (var pIdx = latestComp + 1; pIdx < stops.length; pIdx++) {
+      var pSt = String(stops[pIdx].status || 'Upcoming').trim().toLowerCase();
+      if (pSt !== 'cancelled' && pSt !== 'canceled' && pSt !== 'completed') {
+        nextPending = pIdx;
+        break;
+      }
+    }
+    var curCompName = stops[latestComp].street || stops[latestComp].barangay || ('Stop ' + (latestComp + 1));
+    var nxtPendName = nextPending !== null ? (stops[nextPending].street || stops[nextPending].barangay || ('Stop ' + (nextPending + 1))) : '';
+    var isNextDelayed = nextPending !== null && String(stops[nextPending].status || '').toLowerCase() === 'delayed';
+    return {
+      status: isNextDelayed ? 'Delayed' : 'At Scheduled Stop',
+      isAtDepot: false,
+      stopIdx: latestComp,
+      nextStopIdx: nextPending,
+      currentStop: stops[latestComp],
+      nextStop: nextPending !== null ? stops[nextPending] : null,
+      coord: null,
+      isToday: isToday,
+      isPast: isPast,
+      isFuture: isFuture,
+      detailText: 'Completed ' + curCompName + (nxtPendName ? (' \u2192 Next: ' + nxtPendName + (isNextDelayed ? ' (Delayed)' : '')) : ''),
+      badgeClass: isNextDelayed ? 'status-delayed' : 'status-active'
+    };
+  }
+
+  // If any stop is Delayed and none are Arrived/Completed yet:
+  if (delayedIdx !== -1) {
+    var delStopName = stops[delayedIdx].street || stops[delayedIdx].barangay || ('Stop ' + (delayedIdx + 1));
+    return {
+      status: 'Delayed',
+      isAtDepot: true,
+      stopIdx: null,
+      nextStopIdx: delayedIdx,
+      currentStop: null,
+      nextStop: stops[delayedIdx],
+      coord: DEFAULT_DEPOT.coord,
+      isToday: isToday,
+      isPast: isPast,
+      isFuture: isFuture,
+      detailText: 'Delayed \u2014 Awaiting collector arrival confirmation at ' + delStopName,
+      badgeClass: 'status-delayed'
+    };
+  }
+
+  // If Collector marked Stop 1 as Arriving:
+  if (arrivingIdx !== -1) {
+    var arrivingStopName = stops[arrivingIdx].street || stops[arrivingIdx].barangay || ('Stop ' + (arrivingIdx + 1));
+    return {
+      status: 'Arriving',
+      isAtDepot: true,
+      stopIdx: null,
+      nextStopIdx: arrivingIdx,
+      currentStop: null,
+      nextStop: stops[arrivingIdx],
+      coord: DEFAULT_DEPOT.coord,
+      isToday: isToday,
+      isPast: isPast,
+      isFuture: isFuture,
+      detailText: 'Collector arriving at ' + arrivingStopName,
+      badgeClass: 'status-active'
+    };
+  }
+
+  // 1. PAST collection date without collector completion -> Delayed (never falsely Completed!)
+  if (isPast) {
+    return {
+      status: 'Delayed',
+      isAtDepot: true,
+      stopIdx: null,
+      nextStopIdx: 0,
+      currentStop: null,
+      nextStop: stops[0],
+      coord: DEFAULT_DEPOT.coord,
       isToday: false,
       isPast: true,
       isFuture: false,
-      detailText: 'Route completed on ' + schedDateStr + ' at ' + finalStopName,
-      badgeClass: 'status-completed'
+      detailText: 'Pending collector confirmation for ' + schedDateStr + ' (' + firstStopName + ')',
+      badgeClass: 'status-delayed'
     };
   }
 
@@ -668,13 +792,11 @@ function calcTruckScheduleBase(stops, collectionDate, customNow) {
     };
   }
 
-  // 3. TODAY: Compare current Manila time to scheduled stop times
+  // 3. TODAY (before collector confirms Arrived):
   var currentMinutes = manilaNow.getHours() * 60 + manilaNow.getMinutes();
-
-  // Before first scheduled stop time: Truck remains stationary at the configured depot
-  if (parsedTimes[0] !== null && currentMinutes < parsedTimes[0]) {
+  if (parsedTimes[0] !== null && currentMinutes >= parsedTimes[0] + 60) {
     return {
-      status: 'At Depot',
+      status: 'Delayed',
       isAtDepot: true,
       stopIdx: null,
       nextStopIdx: 0,
@@ -684,76 +806,24 @@ function calcTruckScheduleBase(stops, collectionDate, customNow) {
       isToday: true,
       isPast: false,
       isFuture: false,
-      detailText: 'At Tunasan Depot \u2014 Departs at ' + formatMinutes12(parsedTimes[0]) + ' for ' + firstStopName,
-      badgeClass: 'status-scheduled'
+      detailText: 'Delayed \u2014 Arrival not confirmed within 1 hr of ' + formatMinutes12(parsedTimes[0]) + ' (' + firstStopName + ')',
+      badgeClass: 'status-delayed'
     };
   }
-
-  // If first stop has no valid time: stay safely at depot
-  if (parsedTimes[0] === null) {
-    return {
-      status: 'At Depot',
-      isAtDepot: true,
-      stopIdx: null,
-      nextStopIdx: 0,
-      currentStop: null,
-      nextStop: stops[0],
-      coord: DEFAULT_DEPOT.coord,
-      isToday: true,
-      isPast: false,
-      isFuture: false,
-      detailText: 'At Tunasan Depot \u2014 Departure time pending for ' + firstStopName,
-      badgeClass: 'status-scheduled'
-    };
-  }
-
-  // At or after first stop's scheduled time:
-  // Select the latest stop whose scheduled time has been reached
-  var activeStopIdx = 0;
-  for (var i = 0; i < stops.length; i++) {
-    if (parsedTimes[i] !== null && currentMinutes >= parsedTimes[i]) {
-      activeStopIdx = i;
-    }
-  }
-
-  // If latest reached stop is the final stop:
-  if (activeStopIdx === stops.length - 1) {
-    var lastStopPlace = stops[activeStopIdx].street || stops[activeStopIdx].barangay || ('Stop ' + (activeStopIdx + 1));
-    return {
-      status: 'Completed',
-      isAtDepot: false,
-      stopIdx: activeStopIdx,
-      nextStopIdx: null,
-      currentStop: stops[activeStopIdx],
-      nextStop: null,
-      coord: null,
-      isToday: true,
-      isPast: false,
-      isFuture: false,
-      detailText: 'Completed route at ' + lastStopPlace + ' (' + formatMinutes12(parsedTimes[activeStopIdx]) + ')',
-      badgeClass: 'status-completed'
-    };
-  }
-
-  // Stationary at the active scheduled stop; next stop pending arrival time
-  var nextIdx = activeStopIdx + 1;
-  var nextTimeStr = parsedTimes[nextIdx] !== null ? (' at ' + formatMinutes12(parsedTimes[nextIdx])) : '';
-  var currentName = stops[activeStopIdx].street || stops[activeStopIdx].barangay || ('Stop ' + (activeStopIdx + 1));
-  var nextName = stops[nextIdx].street || stops[nextIdx].barangay || ('Stop ' + (nextIdx + 1));
 
   return {
-    status: 'At Scheduled Stop',
-    isAtDepot: false,
-    stopIdx: activeStopIdx,
-    nextStopIdx: nextIdx,
-    currentStop: stops[activeStopIdx],
-    nextStop: stops[nextIdx],
-    coord: null,
+    status: 'At Depot',
+    isAtDepot: true,
+    stopIdx: null,
+    nextStopIdx: 0,
+    currentStop: null,
+    nextStop: stops[0],
+    coord: DEFAULT_DEPOT.coord,
     isToday: true,
     isPast: false,
     isFuture: false,
-    detailText: 'At ' + currentName + ' \u2192 Next: ' + nextName + nextTimeStr,
-    badgeClass: 'status-active'
+    detailText: 'At Tunasan Depot \u2014 Scheduled ' + (parsedTimes[0] !== null ? formatMinutes12(parsedTimes[0]) : '') + ' for ' + firstStopName + ' (Awaiting collector)',
+    badgeClass: 'status-scheduled'
   };
 }
 

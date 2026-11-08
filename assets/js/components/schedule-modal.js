@@ -11,6 +11,39 @@ const TRUCK_FLEET = [
   'Truck 06', 'Truck 07', 'Truck 08', 'Truck 09', 'Truck 10'
 ];
 
+// Cached active collector accounts from /api/users/collectors
+var _cachedCollectors = [];
+
+async function ensureCollectorsLoaded() {
+  try {
+    var res = await apiRequest('/api/users/collectors');
+    if (res && res.ok) {
+      var data = await res.json();
+      _cachedCollectors = data.collectors || [];
+      state.collectors = _cachedCollectors;
+    }
+  } catch (e) {
+    console.warn('Could not fetch active collectors:', e);
+  }
+}
+
+function getSavedCollectorsForDate(dateStr) {
+  var usedOnDate = new Set();
+  var targetDate = dateStr || (fDate && fDate.value) || (state.selectedDate ? formatDate(state.selectedDate) : '');
+  if (!targetDate) return usedOnDate;
+
+  var list = state.schedules || state.selectedDateSchedules || [];
+  list.forEach(function(s) {
+    var sDate = (s.collection_date || '').substring(0, 10);
+    if (sDate === targetDate && s.status !== 'Cancelled') {
+      if (!state.editingId || s.id !== state.editingId) {
+        if (s.assigned_personnel) usedOnDate.add(s.assigned_personnel.trim().toLowerCase());
+      }
+    }
+  });
+  return usedOnDate;
+}
+
 /**
  * Helper to generate 15-minute time options.
  * Disables any time <= minTime (from previous stops) AND any time already used by another stop in the same route.
@@ -111,13 +144,14 @@ function getAvailableTruck(currentEntryIdx, dateStr) {
 }
 
 // ---------- Modal ----------
-function openScheduleModalForDate(date) {
+async function openScheduleModalForDate(date) {
   var dateStr = formatDate(date);
   state.editingId = null;
   state.routeEntries = [];
   scheduleForm.reset();
   fId.value = '';
   fDate.value = dateStr;
+  await ensureCollectorsLoaded();
   state.routeEntries = [createEmptyRoute(dateStr)];
   modalTitle.textContent = 'Add Collection Assignment';
   modalSaveText.textContent = 'Save Assignment';
@@ -126,11 +160,12 @@ function openScheduleModalForDate(date) {
   modalOverlay.classList.add('active');
 }
 
-function openEditModal(id) {
+async function openEditModal(id) {
   const s = state.schedules.find(sch => sch.id === id);
   if (!s) return;
   if (isDatePast(s.collection_date)) { showToast('Cannot edit past dates.', 'info'); return; }
   state.editingId = id;
+  await ensureCollectorsLoaded();
   
   var stops = [];
   if (s.stops && s.stops.length > 0) {
@@ -160,6 +195,7 @@ function openEditModal(id) {
   state.routeEntries = [{
     truck_number: s.truck_number || 'Truck 01',
     personnel: s.assigned_personnel || '',
+    assigned_collector_id: s.assigned_collector_id || null,
     route_name: s.route_name || '',
     remarks: s.remarks || '',
     status: s.status || 'Upcoming',
@@ -177,6 +213,7 @@ function createEmptyRoute(dateStr) {
   return {
     truck_number: autoTruck,
     personnel: '',
+    assigned_collector_id: null,
     route_name: '',
     remarks: 'Regular Scheduled Collection',
     status: 'Upcoming',
@@ -311,8 +348,8 @@ function renderRouteEntries() {
             (entry.truck_number && !TRUCK_FLEET.includes(entry.truck_number) ? '<option value="' + escapeHtml(entry.truck_number) + '" selected>' + escapeHtml(entry.truck_number) + '</option>' : '') +
           '</select>' +
         '</div>' +
-        '<div class="re-field"><label class="re-label">Assigned Personnel <span class="required">*</span></label>' +
-          '<input type="text" class="re-input re-personnel" data-index="' + i + '" placeholder="e.g. Juan Dela Cruz" value="' + escapeHtml(entry.personnel) + '">' +
+        '<div class="re-field"><label class="re-label">Assigned Collector <span class="required">*</span></label>' +
+          buildCollectorFieldHtml(entry, i, entries, currentDateStr) +
         '</div>' +
         '<div class="re-field"><label class="re-label">Route Name</label>' +
           '<input type="text" class="re-input re-route-name" data-index="' + i + '" placeholder="e.g. Putatan Morning Route" value="' + escapeHtml(entry.route_name) + '">' +
@@ -349,6 +386,45 @@ function renderRouteEntries() {
       }
     });
   });
+}
+
+function buildCollectorFieldHtml(entry, entryIdx, allEntries, dateStr) {
+  var collectors = _cachedCollectors || [];
+  if (!collectors.length) {
+    return '<input type="text" class="re-input re-personnel" data-index="' + entryIdx + '" placeholder="Create Collector in User Management or type name" value="' + escapeHtml(entry.personnel || '') + '">';
+  }
+  var hasMatched = false;
+  var opts = '<option value="">Select Collector...</option>';
+  collectors.forEach(function(c) {
+    var isSelected = (entry.assigned_collector_id && Number(entry.assigned_collector_id) === Number(c.id)) ||
+                     (!entry.assigned_collector_id && entry.personnel && entry.personnel.trim().toLowerCase() === (c.fullname || '').trim().toLowerCase());
+    if (isSelected) {
+      hasMatched = true;
+      entry.assigned_collector_id = c.id;
+      entry.personnel = c.fullname;
+    }
+    var otherModalIdx = allEntries.findIndex(function(other, oIdx) {
+      return oIdx !== entryIdx && ((other.assigned_collector_id && Number(other.assigned_collector_id) === Number(c.id)) ||
+        (other.personnel && other.personnel.trim().toLowerCase() === (c.fullname || '').trim().toLowerCase()));
+    });
+    var suffix = otherModalIdx !== -1 ? ' (Assigned to #' + (otherModalIdx + 1) + ')' : '';
+    opts += '<option value="' + escapeHtml(c.fullname) + '" data-collector-id="' + c.id + '"' + (isSelected ? ' selected' : '') + '>' +
+      escapeHtml(c.fullname) + (c.barangay ? ' — ' + escapeHtml(c.barangay) : '') + suffix + '</option>';
+  });
+  if (entry.personnel && !hasMatched) {
+    opts += '<option value="' + escapeHtml(entry.personnel) + '" data-collector-id="" selected>' + escapeHtml(entry.personnel) + ' (Legacy)</option>';
+  }
+  return '<select class="re-select re-personnel" data-index="' + entryIdx + '" onchange="onCollectorChange(' + entryIdx + ', this)">' + opts + '</select>';
+}
+
+function onCollectorChange(entryIdx, selectEl) {
+  if (!state.routeEntries[entryIdx]) return;
+  var selectedOpt = selectEl.options[selectEl.selectedIndex];
+  var colId = selectedOpt ? selectedOpt.getAttribute('data-collector-id') : null;
+  state.routeEntries[entryIdx].personnel = selectEl.value || '';
+  state.routeEntries[entryIdx].assigned_collector_id = colId ? parseInt(colId, 10) : null;
+  syncAllEntries();
+  updateFooterSummary();
 }
 
 function onTruckChange(entryIdx, selectEl) {
@@ -459,7 +535,14 @@ function syncRouteEntry(idx, card) {
   if (truckSelect && truckSelect.value) entry.truck_number = truckSelect.value;
 
   var persInput = card.querySelector('.re-personnel');
-  if (persInput) entry.personnel = persInput.value;
+  if (persInput) {
+    entry.personnel = persInput.value;
+    if (persInput.tagName === 'SELECT' && persInput.selectedIndex >= 0) {
+      var opt = persInput.options[persInput.selectedIndex];
+      var cid = opt ? opt.getAttribute('data-collector-id') : null;
+      entry.assigned_collector_id = cid ? parseInt(cid, 10) : null;
+    }
+  }
 
   var rnInput = card.querySelector('.re-route-name');
   if (rnInput) entry.route_name = rnInput.value;
@@ -570,6 +653,7 @@ async function handleSaveSchedule() {
       collection_date: date,
       collection_time: firstStopTime.length === 5 ? firstStopTime + ':00' : firstStopTime,
       assigned_personnel: e.personnel || '',
+      assigned_collector_id: e.assigned_collector_id || null,
       remarks: e.remarks || 'Regular Scheduled Collection',
       stops: e.stops.map(function(st, sIdx) {
         var sTime = st.time || firstStopTime;
@@ -594,6 +678,7 @@ async function handleSaveSchedule() {
         collection_date: date,
         collection_time: firstStopTime.length === 5 ? firstStopTime + ':00' : firstStopTime,
         assigned_personnel: e.personnel || '',
+        assigned_collector_id: e.assigned_collector_id || null,
         remarks: e.remarks || 'Regular Scheduled Collection',
         stops: e.stops.map(function(st, sIdx) {
           var sTime = st.time || firstStopTime;

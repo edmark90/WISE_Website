@@ -23,7 +23,8 @@ async function postLoginRequest(email, password) {
     },
     body: JSON.stringify({
       email: email,
-      password: password
+      password: password,
+      role: 'admin'
     })
   };
 
@@ -61,6 +62,12 @@ $id('login-form').addEventListener('submit', async function(e) {
     const data = await response.json().catch(() => ({}));
 
     if (response.ok) {
+      // Check if user is admin before saving session
+      if (!data.user || data.user.role !== 'admin') {
+        showError('Admin account only.');
+        return;
+      }
+
       // Save JWT token to localStorage
       localStorage.setItem('access_token', data.access_token);
       localStorage.setItem('token_type', data.token_type);
@@ -75,12 +82,7 @@ $id('login-form').addEventListener('submit', async function(e) {
         localStorage.removeItem('wise_remembered_email');
       }
 
-      // Check if user is admin
-      if (data.user.role === 'admin') {
-        window.location.href = 'dashboard.html';
-      } else {
-        showError('Admin account only.');
-      }
+      window.location.href = 'dashboard.html';
     } else {
       showError(data.detail || 'Invalid email or password.');
     }

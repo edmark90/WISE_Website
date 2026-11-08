@@ -73,15 +73,18 @@ function showDayRouteMap(schedules, dateFormatted) {
     const routeLabel = s.route_name || (s.barangay + ' Route');
     const personnelLabel = s.assigned_personnel || 'Unassigned';
 
-    var stopsList = (s.stops && s.stops.length > 0) ? s.stops : [{ barangay: s.barangay, street: s.zone || '', collection_time: s.collection_time }];
+    var stopsList = (s.stops && s.stops.length > 0) ? s.stops : [{ id: null, barangay: s.barangay, street: s.zone || '', collection_time: s.collection_time, status: s.status }];
     var stopsPreviewHtml = '<div class="assignment-stops-preview">';
     stopsList.forEach(function(st, sidx) {
       var place = escapeHtml(st.barangay + (st.street ? ' \u2014 ' + st.street : ''));
       var stTime = st.collection_time ? formatTime12(st.collection_time.substring(0, 5)) : time12;
+      var stStatus = st.status || s.status || 'Upcoming';
+      var stColor = (STATUS_COLORS && STATUS_COLORS[stStatus]) ? STATUS_COLORS[stStatus] : (STATUS_COLORS.Upcoming || { bg: '#EFF6FF', color: '#2563EB' });
       stopsPreviewHtml += '<div class="assignment-stop-item">' +
         '<span class="stop-seq-dot">' + (sidx + 1) + '</span>' +
         '<span class="stop-place-label">' + place + '</span>' +
         (stTime ? '<span class="stop-time-chip">' + stTime + '</span>' : '') +
+        '<span class="status-badge" style="background:' + stColor.bg + ';color:' + stColor.color + ';font-size:9.5px;padding:1px 6px;margin-left:4px">' + escapeHtml(stStatus) + '</span>' +
       '</div>';
     });
     stopsPreviewHtml += '</div>';
@@ -158,16 +161,62 @@ function showScheduleInSidebar(schedule) {
       '<div class="details-status"><span class="status-badge" style="background:' + sc.bg + ';color:' + sc.color + '"><span class="status-dot" style="background:' + sc.color + '"></span>' + schedule.status + '</span></div>' +
       '<div class="details-grid">' +
         '<div class="detail-item"><span class="detail-label">Truck</span><span class="detail-value detail-value-truck">' + escapeHtml(truckLabel) + '</span></div>' +
-        '<div class="detail-item"><span class="detail-label">Personnel</span><span class="detail-value detail-value-personnel">' + escapeHtml(schedule.assigned_personnel || '-') + '</span></div>' +
+        '<div class="detail-item"><span class="detail-label">Assigned Collector</span><span class="detail-value detail-value-personnel">' + escapeHtml(schedule.assigned_personnel || '-') + '</span></div>' +
         '<div class="detail-item"><span class="detail-label">Barangay</span><span class="detail-value" style="color:' + bColor.bg + '">' + escapeHtml(schedule.barangay) + '</span></div>' +
         '<div class="detail-item"><span class="detail-label">Street / Area</span><span class="detail-value">' + escapeHtml(schedule.zone || '-') + '</span></div>' +
         '<div class="detail-item"><span class="detail-label">Date</span><span class="detail-value">' + dateFormatted + '</span></div>' +
         '<div class="detail-item"><span class="detail-label">Time</span><span class="detail-value">' + time12 + '</span></div>' +
         (schedule.remarks ? '<div class="detail-item full-width"><span class="detail-label">Remarks</span><span class="detail-value">' + escapeHtml(schedule.remarks) + '</span></div>' : '') +
       '</div>' +
+      renderDetailedStopsList(schedule) +
       getStatusActions(schedule) +
       '<button class="btn btn-sm day-route-back-btn" onclick="updateSidebarForDate(new Date(state.selectedDate || state.today))"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg> Back to All ' + dateFormatted + ' Assignments</button>' +
     '</div></div>';
 
   renderRouteDiagram([schedule], dateFormatted + ' \u00B7 ' + truckLabel);
+}
+
+function formatStopTimestamp(isoStr) {
+  if (!isoStr) return '';
+  try {
+    var d = new Date(isoStr);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  } catch (e) { return ''; }
+}
+
+function renderDetailedStopsList(schedule) {
+  var stops = (schedule.stops && schedule.stops.length > 0) ? schedule.stops : [];
+  if (!stops.length) return '';
+  var html = '<div style="margin-top:12px;border-top:1px solid #E2E8F0;padding-top:10px;">' +
+    '<div style="font-size:11.5px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;">Collection Stops (' + stops.length + ')</div>';
+  stops.forEach(function(st, idx) {
+    var stStatus = st.status || 'Upcoming';
+    var sc = (STATUS_COLORS && STATUS_COLORS[stStatus]) ? STATUS_COLORS[stStatus] : { bg: '#EFF6FF', color: '#2563EB' };
+    var stTime = st.collection_time ? formatTime12(st.collection_time.substring(0, 5)) : '';
+    var arrivedStr = formatStopTimestamp(st.arrived_at);
+    var completedStr = formatStopTimestamp(st.completed_at);
+    var reasonStr = st.delay_reason || st.cancellation_reason || '';
+
+    html += '<div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:9px 10px;margin-bottom:7px;">' +
+      '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">' +
+        '<div style="font-size:12.5px;font-weight:600;color:#0F172A;">#' + (st.sequence || (idx + 1)) + ' ' + escapeHtml(st.barangay + (st.street ? ' — ' + st.street : '')) + '</div>' +
+        '<span class="status-badge" style="background:' + sc.bg + ';color:' + sc.color + ';font-size:10px;padding:2px 7px;">' + escapeHtml(stStatus) + '</span>' +
+      '</div>' +
+      '<div style="font-size:11px;color:#64748B;margin-top:4px;display:flex;flex-wrap:wrap;gap:8px;">' +
+        (stTime ? '<span>Sched: <strong>' + stTime + '</strong></span>' : '') +
+        (arrivedStr ? '<span style="color:#0284C7;">Arrived: <strong>' + arrivedStr + '</strong></span>' : '') +
+        (completedStr ? '<span style="color:#16A34A;">Completed: <strong>' + completedStr + '</strong></span>' : '') +
+      '</div>' +
+      (reasonStr ? '<div style="font-size:11px;color:#DC2626;margin-top:3px;">Reason: ' + escapeHtml(reasonStr) + '</div>' : '') +
+      (st.id ? '<div style="display:flex;gap:5px;margin-top:6px;flex-wrap:wrap;">' +
+        (stStatus !== 'Arrived' && stStatus !== 'Completed' && stStatus !== 'Cancelled' ? '<button type="button" class="btn btn-sm" style="font-size:10.5px;padding:2px 7px;background:#E0F2FE;color:#0369A1;border:1px solid #BAE6FD;" onclick="adminUpdateStopStatus(' + st.id + ',' + schedule.id + ',\'Arrived\')">Mark Arrived</button>' : '') +
+        (stStatus !== 'Completed' && stStatus !== 'Cancelled' ? '<button type="button" class="btn btn-sm" style="font-size:10.5px;padding:2px 7px;background:#DCFCE7;color:#15803D;border:1px solid #BBF7D0;" onclick="adminUpdateStopStatus(' + st.id + ',' + schedule.id + ',\'Completed\')">Complete</button>' : '') +
+        (stStatus !== 'Completed' && stStatus !== 'Cancelled' && stStatus !== 'Delayed' ? '<button type="button" class="btn btn-sm" style="font-size:10.5px;padding:2px 7px;background:#FEF3C7;color:#B45309;border:1px solid #FDE68A;" onclick="adminUpdateStopStatus(' + st.id + ',' + schedule.id + ',\'Delayed\')">Delay</button>' : '') +
+        (stStatus !== 'Completed' && stStatus !== 'Cancelled' ? '<button type="button" class="btn btn-sm" style="font-size:10.5px;padding:2px 7px;background:#FEE2E2;color:#B91C1C;border:1px solid #FECACA;" onclick="adminUpdateStopStatus(' + st.id + ',' + schedule.id + ',\'Cancelled\')">Cancel</button>' : '') +
+      '</div>' : '') +
+    '</div>';
+  });
+  html += '</div>';
+  return html;
 }

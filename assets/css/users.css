@@ -6,7 +6,7 @@
 /* --- Stats Cards --- */
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 16px;
   margin-bottom: 22px;
 }
@@ -38,6 +38,7 @@
 .stat-card.blue::before   { background: linear-gradient(90deg, #2563EB, #60A5FA); }
 .stat-card.green::before  { background: linear-gradient(90deg, #16A34A, #34D399); }
 .stat-card.orange::before { background: linear-gradient(90deg, #F59E0B, #FBBF24); }
+.stat-card.purple::before { background: linear-gradient(90deg, #7C3AED, #A78BFA); }
 
 .stat-card:hover {
   transform: translateY(-2px);
@@ -315,9 +316,10 @@
   box-shadow: var(--shadow-xs);
 }
 
-.user-avatar-sm.admin   { background: linear-gradient(135deg, #2563EB, #1D4ED8); }
-.user-avatar-sm.citizen { background: linear-gradient(135deg, #16A34A, #15803D); }
-.user-avatar-sm.default { background: linear-gradient(135deg, #64748B, #475569); }
+.user-avatar-sm.admin     { background: linear-gradient(135deg, #2563EB, #1D4ED8); }
+.user-avatar-sm.citizen   { background: linear-gradient(135deg, #16A34A, #15803D); }
+.user-avatar-sm.collector { background: linear-gradient(135deg, #7C3AED, #6D28D9); }
+.user-avatar-sm.default   { background: linear-gradient(135deg, #64748B, #475569); }
 
 .user-avatar-img {
   width: 100%;
@@ -346,8 +348,9 @@
   letter-spacing: 0.2px;
 }
 
-.role-badge.admin   { background: var(--blue-soft);  color: var(--blue-dark); border: 1px solid var(--blue-border); }
-.role-badge.citizen { background: var(--green-soft); color: var(--green-dark); border: 1px solid var(--green-border); }
+.role-badge.admin     { background: var(--blue-soft);  color: var(--blue-dark); border: 1px solid var(--blue-border); }
+.role-badge.citizen   { background: var(--green-soft); color: var(--green-dark); border: 1px solid var(--green-border); }
+.role-badge.collector { background: #F3E8FF; color: #6D28D9; border: 1px solid #DDD6FE; }
 
 .user-status-badge {
   display: inline-flex;

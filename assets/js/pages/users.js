@@ -59,7 +59,7 @@ async function fetchUsers() {
     const data = await res.json();
     state.users = data.users || [];
     state.total = data.total || 0;
-    updateStats(data.users || []);
+    updateStats(data.users || [], data.role_counts);
     renderTable();
   } catch (err) {
     console.error('Failed to fetch users:', err);
@@ -106,10 +106,18 @@ document.getElementById('user-form').addEventListener('keydown', function (e) { 
 deleteCancel.addEventListener('click', closeDeleteModal);
 deleteConfirm.addEventListener('click', deleteUser);
 deleteModal.addEventListener('click', function (e) { if (e.target === deleteModal) closeDeleteModal(); });
+if ($id('collector-modal-close')) $id('collector-modal-close').addEventListener('click', closeCollectorAssignmentsModal);
+if ($id('collector-modal-close-btn')) $id('collector-modal-close-btn').addEventListener('click', closeCollectorAssignmentsModal);
+if ($id('collector-assignments-modal')) {
+  $id('collector-assignments-modal').addEventListener('click', function (e) {
+    if (e.target === $id('collector-assignments-modal')) closeCollectorAssignmentsModal();
+  });
+}
 document.addEventListener('keydown', function (e) {
   if (e.key === 'Escape') {
     if (userModal.classList.contains('active')) closeUserModal();
     if (deleteModal.classList.contains('active')) closeDeleteModal();
+    if ($id('collector-assignments-modal') && $id('collector-assignments-modal').classList.contains('active')) closeCollectorAssignmentsModal();
   }
 });
 

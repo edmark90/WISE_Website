@@ -33,8 +33,9 @@ function openEditModal(id) {
   formRole.value = user.role;
   formPassword.value = ''; formConfirm.value = '';
   formPassword.required = false;
+  formPassword.placeholder = 'Leave blank to keep current password';
   passwordRequired.style.display = 'none';
-  passwordFields.style.display = 'none';
+  passwordFields.style.display = '';
   accountStatusFields.style.display = '';
   formActive.checked = user.is_active !== false;
   updateStatusToggleLabel();
@@ -69,9 +70,12 @@ async function saveUser() {
   if (!isEdit) {
     if (!formPassword.value || formPassword.value.length < 8) { showToast('Password must be at least 8 characters.', 'error'); formPassword.focus(); return; }
     if (formPassword.value !== formConfirm.value) { showToast('Passwords do not match.', 'error'); formConfirm.focus(); return; }
+  } else if (formPassword.value) {
+    if (formPassword.value.length < 8) { showToast('New password must be at least 8 characters.', 'error'); formPassword.focus(); return; }
+    if (formPassword.value !== formConfirm.value) { showToast('Passwords do not match.', 'error'); formConfirm.focus(); return; }
   }
   var payload = { fullname: formFullname.value.trim(), email: formEmail.value.trim(), phone: formPhone.value.trim() || null, role: formRole.value };
-  if (!isEdit && formPassword.value) { payload.password = formPassword.value; }
+  if (formPassword.value) { payload.password = formPassword.value; }
   if (isEdit) { payload.is_active = formActive.checked; }
   modalSave.disabled = true;
   modalSaveText.textContent = isEdit ? 'Updating...' : 'Saving...';
@@ -125,4 +129,47 @@ async function deleteUser() {
     deleteConfirm.disabled = false;
     deleteConfirm.innerHTML = 'Delete';
   }
+}
+
+// ---------- Collector Assignments Modal ----------
+async function openCollectorAssignmentsModal(userId) {
+  var modal = $id('collector-assignments-modal');
+  var body = $id('collector-assignments-body');
+  var title = $id('collector-modal-title');
+  if (!modal || !body) return;
+  title.textContent = 'Collector Assignments';
+  body.innerHTML = '<div class="loading-state" style="padding:28px;text-align:center;"><div class="spinner"></div><p>Loading assigned schedules...</p></div>';
+  modal.classList.add('active');
+  try {
+    var res = await apiRequest('/api/users/' + userId + '/assignments');
+    if (!res || !res.ok) throw new Error('Failed to load assignments');
+    var data = await res.json();
+    var col = data.collector || {};
+    var list = data.assignments || [];
+    title.textContent = (col.fullname || 'Collector') + ' — Assigned Schedules';
+    if (!list.length) {
+      body.innerHTML = '<div class="empty-state" style="padding:28px;text-align:center;"><h4>No assigned routes yet</h4><p>Assign this collector to a route in the Collection Schedule module.</p></div>';
+      return;
+    }
+    var html = '<table class="user-table" style="min-width:100%;"><thead><tr><th>Date</th><th>Time</th><th>Route</th><th>Truck</th><th>Status</th></tr></thead><tbody>';
+    for (var i = 0; i < list.length; i++) {
+      var a = list[i];
+      html += '<tr>';
+      html += '<td>' + escapeHtml(a.collection_date || '—') + '</td>';
+      html += '<td class="td-muted">' + escapeHtml(a.collection_time || '—') + '</td>';
+      html += '<td><strong>' + escapeHtml(a.route_name || a.barangay || '—') + '</strong></td>';
+      html += '<td class="td-muted">' + escapeHtml(a.truck_number || '—') + '</td>';
+      html += '<td><span class="role-badge collector">' + escapeHtml(a.status || 'Upcoming') + '</span></td>';
+      html += '</tr>';
+    }
+    html += '</tbody></table>';
+    body.innerHTML = html;
+  } catch (e) {
+    body.innerHTML = '<div class="empty-state" style="padding:28px;text-align:center;"><h4>Error loading assignments</h4><p>Could not load schedules for this collector.</p></div>';
+  }
+}
+
+function closeCollectorAssignmentsModal() {
+  var modal = $id('collector-assignments-modal');
+  if (modal) modal.classList.remove('active');
 }

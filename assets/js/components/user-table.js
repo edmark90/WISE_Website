@@ -36,6 +36,9 @@ function renderTable() {
     html += '<td><span class="user-status-badge ' + (u.is_active === false ? 'disabled' : 'active') + '"><span class="status-dot"></span>' + (u.is_active === false ? 'Disabled' : 'Active') + '</span></td>';
     html += '<td class="td-muted">' + created + '</td>';
     html += '<td><div class="actions-cell">';
+    if ((u.role || '').toLowerCase() === 'collector') {
+      html += '<button class="btn-icon" onclick="openCollectorAssignmentsModal(' + u.id + ')" title="View collector assignments"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button>';
+    }
     html += '<button class="btn-icon" onclick="openEditModal(' + u.id + ')" title="Edit user"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>';
     html += '<button class="btn-icon danger" onclick="openDeleteModal(' + u.id + ')" title="Delete user"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>';
     html += '</div></td></tr>';
@@ -83,13 +86,23 @@ function updateUserCount() {
 }
 
 // ---------- Stats ----------
-function updateStats(users) {
+function updateStats(users, roleCounts) {
+  if (roleCounts) {
+    $id('stat-total').textContent = roleCounts.total !== undefined ? roleCounts.total : state.total;
+    $id('stat-citizens').textContent = roleCounts.citizen || 0;
+    if ($id('stat-collectors')) $id('stat-collectors').textContent = roleCounts.collector || 0;
+    $id('stat-admins').textContent = roleCounts.admin || 0;
+    return;
+  }
   $id('stat-total').textContent = state.total;
-  var c = 0, a = 0;
+  var c = 0, a = 0, col = 0;
   for (var i = 0; i < users.length; i++) {
-    if (users[i].role === 'citizen') c++;
-    else if (users[i].role === 'admin') a++;
+    var r = (users[i].role || '').toLowerCase();
+    if (r === 'citizen') c++;
+    else if (r === 'collector') col++;
+    else if (r === 'admin') a++;
   }
   $id('stat-citizens').textContent = c;
+  if ($id('stat-collectors')) $id('stat-collectors').textContent = col;
   $id('stat-admins').textContent = a;
 }

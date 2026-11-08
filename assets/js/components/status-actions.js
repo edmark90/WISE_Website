@@ -20,3 +20,35 @@ function getStatusActions(schedule) {
   }
   return buttons;
 }
+
+async function adminUpdateStopStatus(stopId, scheduleId, newStatus) {
+  var reason = null;
+  if (newStatus === 'Delayed' || newStatus === 'Cancelled') {
+    reason = window.prompt('Enter reason for marking this stop as ' + newStatus + ':', newStatus === 'Delayed' ? 'Heavy Traffic' : 'Road Closure');
+    if (reason === null) return;
+    if (!reason.trim()) {
+      showToast('A reason is required for ' + newStatus + '.', 'error');
+      return;
+    }
+    reason = reason.trim();
+  }
+  try {
+    var res = await apiRequest('/api/collection-schedules/stops/' + stopId + '/status', {
+      method: 'POST',
+      body: JSON.stringify({ status: newStatus, reason: reason })
+    });
+    if (!res) return;
+    var data = await res.json().catch(function() { return {}; });
+    if (!res.ok) {
+      showToast(data.detail || 'Failed to update stop status.', 'error');
+      return;
+    }
+    showToast('Stop marked as ' + newStatus + '!', 'success');
+    await renderCalendar();
+    var updated = getScheduleById(scheduleId);
+    if (updated) showScheduleInSidebar(updated);
+  } catch (e) {
+    console.error('Stop status update error:', e);
+    showToast('Error updating stop status.', 'error');
+  }
+}

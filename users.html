@@ -120,9 +120,26 @@
             </svg>
           </div>
           <div class="stat-info">
-            <p class="stat-label">Citizens (Current View)</p>
+            <p class="stat-label">Citizens</p>
             <p class="stat-number" id="stat-citizens">—</p>
             <p class="stat-foot">Mobile app &amp; community accounts</p>
+          </div>
+        </div>
+
+        <div class="stat-card purple">
+          <div class="stat-icon purple">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
+              stroke-linejoin="round">
+              <rect x="1" y="3" width="15" height="13"></rect>
+              <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
+              <circle cx="5.5" cy="18.5" r="2.5"></circle>
+              <circle cx="18.5" cy="18.5" r="2.5"></circle>
+            </svg>
+          </div>
+          <div class="stat-info">
+            <p class="stat-label">Collectors</p>
+            <p class="stat-number" id="stat-collectors">—</p>
+            <p class="stat-foot">Field waste collection personnel</p>
           </div>
         </div>
 
@@ -135,7 +152,7 @@
             </svg>
           </div>
           <div class="stat-info">
-            <p class="stat-label">Administrators (Current View)</p>
+            <p class="stat-label">Administrators</p>
             <p class="stat-number" id="stat-admins">—</p>
             <p class="stat-foot">System operators &amp; dispatchers</p>
           </div>
@@ -156,6 +173,7 @@
           <select class="filter-select" id="role-filter" aria-label="Filter by role">
             <option value="">All Roles</option>
             <option value="admin">Admin</option>
+            <option value="collector">Collector</option>
             <option value="citizen">Citizen</option>
           </select>
           <button class="btn btn-secondary" id="reset-filter-btn" type="button" title="Reset search and filters">
@@ -246,6 +264,7 @@
               <select class="form-select" id="form-role" required>
                 <option value="">Select role...</option>
                 <option value="admin">Admin</option>
+                <option value="collector">Collector</option>
                 <option value="citizen">Citizen</option>
               </select>
             </div>
@@ -318,6 +337,27 @@
           </svg>
           <span>Delete</span>
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Collector Assignments Modal -->
+  <div class="modal-overlay" id="collector-assignments-modal">
+    <div class="modal" style="max-width: 640px;">
+      <div class="modal-header">
+        <h3 id="collector-modal-title">Collector Assignments</h3>
+        <button class="modal-close" id="collector-modal-close" type="button" aria-label="Close modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body" id="collector-assignments-body" style="max-height: 65vh; overflow-y: auto;">
+        <!-- Populated by JS -->
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" id="collector-modal-close-btn" type="button">Close</button>
       </div>
     </div>
   </div>
