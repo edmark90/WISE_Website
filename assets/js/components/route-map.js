@@ -646,9 +646,13 @@ function calcTruckScheduleBase(stops, collectionDate, customNow) {
     else if (stStatus === 'delayed' && delayedIdx === -1) delayedIdx = sIdx;
   }
 
-  // If all non-cancelled stops are confirmed Completed by Collector/Admin:
-  if (nonCancelledIndices.length > 0 && completedIndices.length === nonCancelledIndices.length) {
-    var lastCompIdx = completedIndices[completedIndices.length - 1];
+  // If all non-cancelled stops are confirmed Arrived/Completed by Collector/Admin:
+  var confirmedDoneCount = nonCancelledIndices.filter(function (idx) {
+    var st = String(stops[idx].status || '').trim().toLowerCase();
+    return st === 'completed' || st === 'arrived';
+  }).length;
+  if (nonCancelledIndices.length > 0 && confirmedDoneCount === nonCancelledIndices.length) {
+    var lastCompIdx = nonCancelledIndices[nonCancelledIndices.length - 1];
     var finalCompName = stops[lastCompIdx].street || stops[lastCompIdx].barangay || ('Stop ' + (lastCompIdx + 1));
     return {
       status: 'Completed',

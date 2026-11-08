@@ -188,6 +188,8 @@ function formatStopTimestamp(isoStr) {
 function renderDetailedStopsList(schedule) {
   var stops = (schedule.stops && schedule.stops.length > 0) ? schedule.stops : [];
   if (!stops.length) return '';
+  var todayStr = typeof formatDateStr === 'function' ? formatDateStr(state.today || new Date()) : '';
+  var isFutureDate = todayStr && schedule.collection_date && schedule.collection_date > todayStr;
   var html = '<div style="margin-top:12px;border-top:1px solid #E2E8F0;padding-top:10px;">' +
     '<div style="font-size:11.5px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;">Collection Stops (' + stops.length + ')</div>';
   stops.forEach(function(st, idx) {
@@ -210,8 +212,7 @@ function renderDetailedStopsList(schedule) {
       '</div>' +
       (reasonStr ? '<div style="font-size:11px;color:#DC2626;margin-top:3px;">Reason: ' + escapeHtml(reasonStr) + '</div>' : '') +
       (st.id ? '<div style="display:flex;gap:5px;margin-top:6px;flex-wrap:wrap;">' +
-        (stStatus !== 'Arrived' && stStatus !== 'Completed' && stStatus !== 'Cancelled' ? '<button type="button" class="btn btn-sm" style="font-size:10.5px;padding:2px 7px;background:#E0F2FE;color:#0369A1;border:1px solid #BAE6FD;" onclick="adminUpdateStopStatus(' + st.id + ',' + schedule.id + ',\'Arrived\')">Mark Arrived</button>' : '') +
-        (stStatus !== 'Completed' && stStatus !== 'Cancelled' ? '<button type="button" class="btn btn-sm" style="font-size:10.5px;padding:2px 7px;background:#DCFCE7;color:#15803D;border:1px solid #BBF7D0;" onclick="adminUpdateStopStatus(' + st.id + ',' + schedule.id + ',\'Completed\')">Complete</button>' : '') +
+        (!isFutureDate && stStatus !== 'Arrived' && stStatus !== 'Completed' && stStatus !== 'Cancelled' ? '<button type="button" class="btn btn-sm" style="font-size:10.5px;padding:2px 7px;background:#E0F2FE;color:#0369A1;border:1px solid #BAE6FD;" onclick="adminUpdateStopStatus(' + st.id + ',' + schedule.id + ',\'Arrived\')">Confirm Arrived</button>' : '') +
         (stStatus !== 'Completed' && stStatus !== 'Cancelled' && stStatus !== 'Delayed' ? '<button type="button" class="btn btn-sm" style="font-size:10.5px;padding:2px 7px;background:#FEF3C7;color:#B45309;border:1px solid #FDE68A;" onclick="adminUpdateStopStatus(' + st.id + ',' + schedule.id + ',\'Delayed\')">Delay</button>' : '') +
         (stStatus !== 'Completed' && stStatus !== 'Cancelled' ? '<button type="button" class="btn btn-sm" style="font-size:10.5px;padding:2px 7px;background:#FEE2E2;color:#B91C1C;border:1px solid #FECACA;" onclick="adminUpdateStopStatus(' + st.id + ',' + schedule.id + ',\'Cancelled\')">Cancel</button>' : '') +
       '</div>' : '') +
