@@ -1195,15 +1195,14 @@
   flex: 1;
 }
 
-.db-chart-container.db-line-dark {
-  background: linear-gradient(180deg, #1b1e24 0%, #15181e 100%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
+.db-chart-container.db-line-surface {
+  background: var(--db-surface);
+  border: 1px solid var(--db-line-soft);
+  border-radius: 14px;
   padding: 14px 12px 24px 8px;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04), 0 14px 30px -14px rgba(15, 23, 42, 0.35);
 }
 
-.db-chart-container.db-line-dark::after {
+.db-chart-container.db-line-surface::after {
   content: "";
   position: absolute;
   left: 50%;
@@ -1212,7 +1211,7 @@
   width: 48px;
   height: 2.5px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.55);
+  background: #cbd5e1;
   pointer-events: none;
 }
 
@@ -1230,34 +1229,34 @@
 }
 
 /* -----------------------------------------------------------------------
-   Line Chart Engine Styles (Dark Wave Aesthetic + Tie-Safe Multi-Series)
+   Line Chart Engine Styles (Clean White Wave Aesthetic + Tie-Safe Series)
    ----------------------------------------------------------------------- */
 
 .db-line-yaxis {
-  stroke: rgba(255, 255, 255, 0.22);
+  stroke: #cbd5e1;
   stroke-width: 1.15;
 }
 
 .db-line-ytick {
-  stroke: rgba(255, 255, 255, 0.24);
+  stroke: #cbd5e1;
   stroke-width: 1.1;
 }
 
 .db-line-xmark {
-  stroke: rgba(255, 255, 255, 0.14);
+  stroke: #e2e8f0;
   stroke-width: 1;
 }
 
 .db-line-today-line {
-  stroke: #38bdf8;
-  stroke-width: 1.2;
+  stroke: var(--db-blue);
+  stroke-width: 1.25;
   stroke-dasharray: 3 3;
-  opacity: 0.65;
+  opacity: 0.55;
 }
 
 .db-line-today-pill {
-  fill: rgba(56, 189, 248, 0.16);
-  stroke: rgba(56, 189, 248, 0.45);
+  fill: var(--db-blue-soft);
+  stroke: #bfdbfe;
   stroke-width: 1;
 }
 
@@ -1265,13 +1264,13 @@
   font-size: 8px;
   font-weight: 800;
   letter-spacing: 0.5px;
-  fill: #7dd3fc;
+  fill: var(--db-blue-deep);
 }
 
 .db-line-label {
   font-size: 10.5px;
   font-weight: 600;
-  fill: rgba(203, 213, 225, 0.78);
+  fill: var(--db-muted);
   font-family: inherit;
   font-variant-numeric: tabular-nums;
   user-select: none;
@@ -1280,17 +1279,17 @@
 .db-line-label.x {
   font-size: 9.5px;
   font-weight: 650;
-  fill: rgba(226, 232, 240, 0.72);
+  fill: var(--db-muted);
   letter-spacing: 0.4px;
 }
 
 .db-line-label.y {
   font-size: 10px;
   font-weight: 600;
-  fill: rgba(203, 213, 225, 0.72);
+  fill: var(--db-faint);
 }
 
-/* Luminous gradient aura under every curve + brighter on spotlight */
+/* Soft luminous area gradient fill under curves + stronger on spotlight */
 .db-line-area {
   opacity: 0;
   pointer-events: none;
@@ -1302,24 +1301,24 @@
   opacity: 1;
 }
 
-/* Muted zero-baseline trace keeps 0 segments clean on dark plot */
+/* Muted zero-baseline trace keeps 0 segments clean on white background */
 .db-line-baseline {
   fill: none;
   stroke-width: 1.25;
   stroke-linecap: round;
-  opacity: 0.22;
+  opacity: 0.2;
   pointer-events: none;
   transition: opacity 0.2s ease;
 }
 
-/* Dark canvas casing separates crossing splines smoothly without white halos */
+/* Crisp white casing cleanly separates crossing splines without halos */
 .db-line-casing {
   fill: none;
-  stroke: #181b21;
-  stroke-width: 4.2;
+  stroke: var(--db-surface);
+  stroke-width: 3.8;
   stroke-linecap: round;
   stroke-linejoin: round;
-  opacity: 0.92;
+  opacity: 0.94;
   pointer-events: none;
   transition: opacity 0.2s ease;
 }
@@ -1331,23 +1330,23 @@
   stroke-linecap: round;
   stroke-linejoin: round;
   pointer-events: none;
-  filter: drop-shadow(0 0 6px rgba(255, 255, 255, 0.14));
+  filter: drop-shadow(0 2px 5px rgba(15, 23, 42, 0.1));
   transition: opacity 0.2s ease, stroke-width 0.2s ease;
 }
 
 .db-line-series.is-spotlight .db-line-path {
-  stroke-width: 3.15;
-  filter: drop-shadow(0 0 11px rgba(255, 255, 255, 0.28));
+  stroke-width: 3.1;
+  filter: drop-shadow(0 4px 10px rgba(15, 23, 42, 0.18));
 }
 
 .db-line-dot {
   pointer-events: none;
-  filter: drop-shadow(0 0 5px rgba(0, 0, 0, 0.45));
+  filter: drop-shadow(0 1px 3px rgba(15, 23, 42, 0.16));
   transition: opacity 0.2s ease, r 0.16s var(--db-ease);
 }
 
 .db-line-dot.is-end {
-  filter: drop-shadow(0 0 7px rgba(255, 255, 255, 0.22));
+  filter: drop-shadow(0 2px 5px rgba(15, 23, 42, 0.22));
 }
 
 .db-line-series.is-spotlight .db-line-dot {
@@ -1394,8 +1393,8 @@
 }
 
 .db-crosshair {
-  stroke: rgba(255, 255, 255, 0.55);
-  stroke-width: 1.3;
+  stroke: var(--db-blue);
+  stroke-width: 1.4;
   stroke-dasharray: 4 4;
   opacity: 0;
   pointer-events: none;
@@ -1407,11 +1406,11 @@
 }
 
 .db-focus-dot {
-  stroke: #181b21;
+  stroke: var(--db-surface);
   stroke-width: 2.3;
   opacity: 0;
   pointer-events: none;
-  filter: drop-shadow(0 0 6px rgba(0, 0, 0, 0.55));
+  filter: drop-shadow(0 2px 5px rgba(15, 23, 42, 0.25));
   transition: opacity 0.14s ease;
 }
 
@@ -1561,48 +1560,6 @@
   font-size: 11.5px;
   font-weight: 750;
   color: var(--db-ink);
-}
-
-/* Dark tooltip theme inside dark wave line chart */
-.db-line-dark .db-tip {
-  background: rgba(21, 24, 31, 0.96);
-  border-color: rgba(255, 255, 255, 0.14);
-  box-shadow: 0 18px 40px -10px rgba(0, 0, 0, 0.65);
-  color: #e2e8f0;
-}
-
-.db-line-dark .db-tip-head {
-  color: #f8fafc;
-  border-bottom-color: rgba(255, 255, 255, 0.1);
-}
-
-.db-line-dark .db-tip-today {
-  background: rgba(56, 189, 248, 0.18);
-  color: #7dd3fc;
-}
-
-.db-line-dark .db-tip-row {
-  color: #cbd5e1;
-}
-
-.db-line-dark .db-tip-tie {
-  background: rgba(56, 189, 248, 0.14);
-  border-color: rgba(56, 189, 248, 0.35);
-  color: #7dd3fc;
-}
-
-.db-line-dark .db-tip-pct,
-.db-line-dark .db-tip-empty {
-  color: #94a3b8;
-}
-
-.db-line-dark .db-tip-val,
-.db-line-dark .db-tip-total {
-  color: #f8fafc;
-}
-
-.db-line-dark .db-tip-total {
-  border-top-color: rgba(255, 255, 255, 0.12);
 }
 
 /* Legend & Tip Hint */
@@ -2205,23 +2162,6 @@
   font-weight: 700;
 }
 
-.db-line-dark .db-chart-empty svg {
-  color: rgba(203, 213, 225, 0.35);
-}
-
-.db-line-dark .db-chart-empty p {
-  color: #94a3b8;
-}
-
-.db-line-dark .db-chart-empty p strong {
-  color: #f1f5f9;
-}
-
-.db-line-dark .db-spinner {
-  border-color: rgba(255, 255, 255, 0.14);
-  border-top-color: #38bdf8;
-}
-
 .db-spinner {
   width: 28px;
   height: 28px;
@@ -2466,7 +2406,7 @@
   .db-chart-controls { width: 100%; justify-content: space-between; }
   .db-view-switch { flex: 1; display: flex; min-width: 145px; }
   .db-view-btn { flex: 1; text-align: center; padding: 6px 10px; }
-  .db-chart-container.db-line-dark { padding: 12px 10px 22px 6px; }
+  .db-chart-container.db-line-surface { padding: 12px 10px 22px 6px; }
   .db-chart { height: 245px; }
   .db-chart-tip-hint { display: none; }
   .db-donut { width: 170px; height: 170px; }

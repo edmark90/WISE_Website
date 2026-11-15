@@ -32,14 +32,6 @@ var DB_CLASS_COLORS = {
   Residual: '#64748b'       // Slate
 };
 
-var DB_LINE_DARK_COLORS = {
-  Biodegradable: '#10b981',
-  Recyclable: '#38bdf8',
-  Electronic: '#8b5cf6',
-  Hazardous: '#ef4444',
-  Residual: '#94a3b8'
-};
-
 var DB_CLASS_ORDER = ['Biodegradable', 'Recyclable', 'Electronic', 'Hazardous', 'Residual'];
 
 function initDashboard() {
@@ -559,10 +551,7 @@ function getCategoryColor(name, idx) {
 }
 
 function getLineCategoryColor(name, idx) {
-  if (DB_LINE_DARK_COLORS[name]) return DB_LINE_DARK_COLORS[name];
-  if (DB_CLASS_COLORS[name]) return DB_CLASS_COLORS[name];
-  var fallback = ['#38bdf8', '#f59e0b', '#ec4899', '#14b8a6'];
-  return fallback[idx % fallback.length];
+  return getCategoryColor(name, idx);
 }
 
 function formatHourShort(hour) {
@@ -634,7 +623,7 @@ function renderLineChart(data) {
       fbSum += fbv;
     }
     if (fbSum > 0) {
-      allSeries.push({ name: 'Classified Waste', color: '#38bdf8', values: fbVals, total: fbSum });
+      allSeries.push({ name: 'Classified Waste', color: '#2563eb', values: fbVals, total: fbSum });
       classes = ['Classified Waste'];
     }
   }
@@ -686,7 +675,7 @@ function renderLineChart(data) {
 
   if (totalRecordsAll === 0) {
     el.innerHTML =
-      '<div class="db-chart-empty db-chart-empty-dark">' +
+      '<div class="db-chart-empty">' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>' +
         '<p><strong>No classifications for this period.</strong><br>Records will appear as citizens sort waste using the AI scanner.</p>' +
       '</div>';
@@ -736,7 +725,7 @@ function renderLineChart(data) {
       ' L ' + totalPts[0][0].toFixed(1) + ' ' + baseY.toFixed(1) + ' Z';
     renderedSeries.push({
       name: 'Total Volume',
-      color: '#38bdf8',
+      color: '#2563eb',
       values: visibleTotals,
       total: visibleTotalRecords,
       pts: totalPts,
@@ -878,16 +867,16 @@ function renderLineChart(data) {
       '<text class="db-line-today-txt" x="' + tx.toFixed(1) + '" y="13.5" text-anchor="middle">' + currentMarkerLabel + '</text>';
   }
 
-  // SVG Linear Gradients (Luminous vertical aura under waves + dark hover band)
+  // SVG Linear Gradients (Soft luminous aura under waves + subtle blue hover band)
   var defs = '<defs>' +
     '<linearGradient id="db-band-grad" x1="0" y1="0" x2="0" y2="1">' +
-      '<stop offset="0%" stop-color="#ffffff" stop-opacity="0.09"/>' +
-      '<stop offset="100%" stop-color="#ffffff" stop-opacity="0.01"/>' +
+      '<stop offset="0%" stop-color="#2563eb" stop-opacity="0.08"/>' +
+      '<stop offset="100%" stop-color="#2563eb" stop-opacity="0.01"/>' +
     '</linearGradient>' +
     renderedSeries.map(function (s, idx) {
       var gradId = 'db-line-grad-' + idx;
-      var topOp = DB.lineChartMode === 'total' ? '0.32' : '0.21';
-      var midOp = DB.lineChartMode === 'total' ? '0.09' : '0.06';
+      var topOp = DB.lineChartMode === 'total' ? '0.24' : '0.15';
+      var midOp = DB.lineChartMode === 'total' ? '0.07' : '0.04';
       return '<linearGradient id="' + gradId + '" x1="0" y1="0" x2="0" y2="1">' +
         '<stop offset="0%" stop-color="' + s.color + '" stop-opacity="' + topOp + '"/>' +
         '<stop offset="65%" stop-color="' + s.color + '" stop-opacity="' + midOp + '"/>' +
@@ -942,7 +931,7 @@ function renderLineChart(data) {
       var rSize = isEndpoint ? '4.2' : (isTied ? '3.3' : '3.6');
       return '<circle class="db-line-dot' + (isTied ? ' is-tied' : '') + (isEndpoint ? ' is-end' : '') + '" ' +
         'cx="' + pt[0].toFixed(1) + '" cy="' + pt[1].toFixed(1) + '" r="' + rSize + '" ' +
-        'fill="' + s.color + '" stroke="#181b21" stroke-width="1.5"/>';
+        'fill="' + s.color + '" stroke="#ffffff" stroke-width="1.6"/>';
     }).join('');
 
     return '<g class="db-line-series show-area" data-series="' + escapeHtml(s.name) + '">' +
@@ -974,7 +963,7 @@ function renderLineChart(data) {
       var pillY = Math.max(2, pkPt[1] - 24);
       peakTagSvg =
         '<g class="db-line-peak-tag">' +
-          '<rect x="' + pillX.toFixed(1) + '" y="' + pillY.toFixed(1) + '" width="' + pillW + '" height="17" rx="8.5" fill="#1e222b" stroke="' + soloSeries.color + '" stroke-width="1.2"/>' +
+          '<rect x="' + pillX.toFixed(1) + '" y="' + pillY.toFixed(1) + '" width="' + pillW + '" height="17" rx="8.5" fill="#ffffff" stroke="' + soloSeries.color + '" stroke-width="1.2"/>' +
           '<text x="' + (pillX + pillW / 2).toFixed(1) + '" y="' + (pillY + 11.5).toFixed(1) + '" text-anchor="middle" fill="' + soloSeries.color + '">Peak: ' + soloPeakMax + '</text>' +
         '</g>';
     }
@@ -1088,7 +1077,7 @@ function wireLineChartInteraction(container, seriesList, allSeries, geo) {
       var val = seriesList[0].values[binIndex] || 0;
       totalBinVisible = val;
       rowsHtml = '<div class="db-tip-row">' +
-        '<span class="db-tip-swatch" style="background:#38bdf8"></span>' +
+        '<span class="db-tip-swatch" style="background:#2563eb"></span>' +
         '<span class="db-tip-name">Total Scans</span>' +
         '<span class="db-tip-val">' + val.toLocaleString() + '</span>' +
       '</div>';
@@ -1187,7 +1176,7 @@ function renderLineLegend(classes, allSeries, chartContainer, isFiltered) {
     var grandTotal = allSeries.reduce(function (acc, s) { return acc + (s.total || 0); }, 0);
     legend.innerHTML =
       '<span class="db-legend-btn active">' +
-        '<span class="db-legend-swatch" style="background:#38bdf8"></span>' +
+        '<span class="db-legend-swatch" style="background:#2563eb"></span>' +
         '<span>Total Classification Volume</span>' +
         '<span class="db-legend-count">' + grandTotal.toLocaleString() + '</span>' +
       '</span>';
