@@ -6,13 +6,6 @@
 /** Pad a number to 2 digits (5 -> "05"). */
 function pad(n) { return n < 10 ? '0' + n : '' + n; }
 
-/** "HH:MM" -> minutes since midnight; -1 if empty. */
-function timeToMinutes(t) {
-  if (!t) return -1;
-  var p = t.split(':');
-  return parseInt(p[0]) * 60 + parseInt(p[1]);
-}
-
 /** Date -> "YYYY-MM-DD" (used for API payloads and date inputs). */
 function formatDate(d) {
   const dt = new Date(d);
@@ -32,10 +25,13 @@ function formatTime12(t) {
 
 /** Escape HTML special characters to prevent XSS in innerHTML templates. */
 function escapeHtml(s) {
-  if (!s) return '';
-  const d = document.createElement('div');
-  d.textContent = s;
-  return d.innerHTML;
+  if (s === null || s === undefined) return '';
+  return String(s)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
 }
 
 /** True when the given "YYYY-MM-DD" date is before today. */

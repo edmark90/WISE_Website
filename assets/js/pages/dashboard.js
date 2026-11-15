@@ -502,10 +502,6 @@ function buildMonotoneCubicSplineParts(pts, values, clampBaseY, clampTopY) {
   };
 }
 
-function buildMonotoneCubicSpline(pts, clampBaseY) {
-  return buildMonotoneCubicSplineParts(pts, null, clampBaseY, null).fullPath;
-}
-
 /**
  * Computes clean, non-duplicate integer Y-axis ticks & ceiling with breathing room.
  */

@@ -17,7 +17,7 @@ assets/js/
 ├── data/         # Static reference data
 │   ├── barangays.js            # BARANGAYS, BARANGAY_STREETS, BARANGAY_COLORS
 │   ├── muntinlupa-boundary.js  # MUNTINLUPA_BOUNDARY_GEOJSON polygon coordinates
-│   └── statuses.js             # STATUSES, STATUS_COLORS
+│   └── statuses.js             # STATUS_COLORS
 ├── components/   # Reusable UI pieces, one concern per file
 │   ├── schedule-api.js         # collection-schedule CRUD calls
 │   ├── calendar.js             # month grid + day/event click handling
@@ -30,8 +30,7 @@ assets/js/
 │   ├── delete-modal.js         # delete confirmation modal
 │   ├── user-table.js           # users table + pagination + stats
 │   ├── user-modal.js           # add/edit/delete user modals
-│   ├── waste-record-table.js   # waste classification table + pagination
-│   └── mobile-update-modal.js  # mobile app version & update broadcast modal
+│   └── waste-record-table.js   # waste classification table + pagination
 └── pages/        # One entry point per HTML page
     ├── login.js               # index.html
     ├── dashboard.js           # dashboard.html

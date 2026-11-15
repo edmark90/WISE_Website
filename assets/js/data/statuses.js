@@ -7,9 +7,6 @@
  * Cancelled are set manually (via the status-change modal).
  */
 
-// Allowed statuses
-const STATUSES = ['Upcoming', 'Arriving', 'Arrived', 'Delayed', 'Completed', 'Cancelled'];
-
 // Colors per status
 const STATUS_COLORS = {
   'Upcoming':   { bg: '#EFF6FF', color: '#1E40AF' },

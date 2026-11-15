@@ -469,16 +469,6 @@ function renderPreviewTable(data, query) {
   if (tbody) tbody.innerHTML = bodyHtml;
 }
 
-function escapeHtml(str) {
-  if (str === null || str === undefined) return '';
-  return String(str)
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
-}
-
 /**
  * Download handler for Excel (.xlsx) and PDF (.pdf) reports.
  * Uses auth headers, binary blob streams, and accurate Content-Disposition filenames.

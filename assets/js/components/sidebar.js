@@ -188,7 +188,7 @@ function formatStopTimestamp(isoStr) {
 function renderDetailedStopsList(schedule) {
   var stops = (schedule.stops && schedule.stops.length > 0) ? schedule.stops : [];
   if (!stops.length) return '';
-  var todayStr = typeof formatDateStr === 'function' ? formatDateStr(state.today || new Date()) : '';
+  var todayStr = typeof formatDate === 'function' ? formatDate(state.today || new Date()) : '';
   var isFutureDate = todayStr && schedule.collection_date && schedule.collection_date > todayStr;
   var html = '<div style="margin-top:12px;border-top:1px solid #E2E8F0;padding-top:10px;">' +
     '<div style="font-size:11.5px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;">Collection Stops (' + stops.length + ')</div>';

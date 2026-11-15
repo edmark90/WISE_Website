@@ -27,23 +27,6 @@ async function ensureCollectorsLoaded() {
   }
 }
 
-function getSavedCollectorsForDate(dateStr) {
-  var usedOnDate = new Set();
-  var targetDate = dateStr || (fDate && fDate.value) || (state.selectedDate ? formatDate(state.selectedDate) : '');
-  if (!targetDate) return usedOnDate;
-
-  var list = state.schedules || state.selectedDateSchedules || [];
-  list.forEach(function(s) {
-    var sDate = (s.collection_date || '').substring(0, 10);
-    if (sDate === targetDate && s.status !== 'Cancelled') {
-      if (!state.editingId || s.id !== state.editingId) {
-        if (s.assigned_personnel) usedOnDate.add(s.assigned_personnel.trim().toLowerCase());
-      }
-    }
-  });
-  return usedOnDate;
-}
-
 /**
  * Helper to generate 15-minute time options.
  * Disables any time <= minTime (from previous stops) AND any time already used by another stop in the same route.
@@ -349,7 +332,7 @@ function renderRouteEntries() {
           '</select>' +
         '</div>' +
         '<div class="re-field"><label class="re-label">Assigned Collector <span class="required">*</span></label>' +
-          buildCollectorFieldHtml(entry, i, entries, currentDateStr) +
+          buildCollectorFieldHtml(entry, i, entries) +
         '</div>' +
         '<div class="re-field"><label class="re-label">Route Name</label>' +
           '<input type="text" class="re-input re-route-name" data-index="' + i + '" placeholder="e.g. Putatan Morning Route" value="' + escapeHtml(entry.route_name) + '">' +
@@ -388,7 +371,7 @@ function renderRouteEntries() {
   });
 }
 
-function buildCollectorFieldHtml(entry, entryIdx, allEntries, dateStr) {
+function buildCollectorFieldHtml(entry, entryIdx, allEntries) {
   var collectors = _cachedCollectors || [];
   if (!collectors.length) {
     return '<input type="text" class="re-input re-personnel" data-index="' + entryIdx + '" placeholder="Create Collector in User Management or type name" value="' + escapeHtml(entry.personnel || '') + '">';

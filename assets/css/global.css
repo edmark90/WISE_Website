@@ -533,11 +533,6 @@ body.nav-drawer-open {
   margin-bottom: 24px;
 }
 
-.page-header-left {
-  flex: 1;
-  min-width: 220px;
-}
-
 .page-eyebrow {
   display: inline-flex;
   align-items: center;
@@ -651,18 +646,6 @@ body.nav-drawer-open {
   background: var(--surface-subtle);
   border-color: #cbd5e1;
   color: var(--text-main);
-}
-
-.btn-ghost {
-  background: transparent;
-  color: var(--text-muted);
-  border-color: var(--border);
-}
-
-.btn-ghost:hover:not(:disabled) {
-  background: var(--surface-subtle);
-  color: var(--text-main);
-  border-color: #cbd5e1;
 }
 
 .btn-danger {
