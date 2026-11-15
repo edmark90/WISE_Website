@@ -16,6 +16,7 @@ var DB = {
   year: 2026,
   month: 8,
   monthlyData: null,
+  lineGranularity: 'daily',  // 'daily' | 'hourly'
   lineChartMode: 'category', // 'category' | 'total'
   activeClassFilters: {},    // { 'Biodegradable': true, ... }
   activityFilter: 'all',     // 'all' | 'complete' | 'classify'
@@ -29,6 +30,14 @@ var DB_CLASS_COLORS = {
   Electronic: '#8b5cf6',    // Violet
   Hazardous: '#ef4444',     // Crimson
   Residual: '#64748b'       // Slate
+};
+
+var DB_LINE_DARK_COLORS = {
+  Biodegradable: '#10b981',
+  Recyclable: '#38bdf8',
+  Electronic: '#8b5cf6',
+  Hazardous: '#ef4444',
+  Residual: '#94a3b8'
 };
 
 var DB_CLASS_ORDER = ['Biodegradable', 'Recyclable', 'Electronic', 'Hazardous', 'Residual'];
@@ -106,7 +115,11 @@ function renderPeriodLabel() {
   if (monthLabel) monthLabel.textContent = label;
 
   var lineSub = $id('db-line-sub');
-  if (lineSub) lineSub.textContent = 'Daily classification trends \u00b7 ' + label;
+  if (lineSub) {
+    lineSub.textContent = (DB.lineGranularity === 'hourly'
+      ? 'Hourly classification activity (PH Time) \u00b7 '
+      : 'Daily classification trends \u00b7 ') + label;
+  }
 
   var donutSub = $id('db-donut-sub');
   if (donutSub) donutSub.textContent = 'Share of classified records \u00b7 ' + label;
@@ -163,6 +176,20 @@ function wireControls() {
       Promise.all([loadDashboard(), loadMonthly()]).finally(function () {
         setTimeout(function () { refreshBtn.classList.remove('is-syncing'); }, 600);
       });
+    });
+  }
+
+  // Line chart time granularity switchers (Daily vs By Hour)
+  var granularityContainer = $id('db-line-granularity');
+  if (granularityContainer) {
+    granularityContainer.addEventListener('click', function (e) {
+      var btn = e.target.closest('.db-view-btn');
+      if (!btn) return;
+      granularityContainer.querySelectorAll('.db-view-btn').forEach(function (b) { b.classList.remove('active'); });
+      btn.classList.add('active');
+      DB.lineGranularity = btn.dataset.granularity === 'hourly' ? 'hourly' : 'daily';
+      renderPeriodLabel();
+      if (DB.monthlyData) renderLineChart(DB.monthlyData);
     });
   }
 
@@ -292,10 +319,8 @@ function dateOffset(baseIso, days) {
 
 function loadMonthly() {
   var url = '/api/dashboard/monthly?year=' + DB.year + '&month=' + DB.month;
-  $id('db-line').innerHTML = '<div class="db-chart-empty"><div class="db-spinner"></div><p>Aggregating daily trends…</p></div>';
+  $id('db-line').innerHTML = '<div class="db-chart-empty"><div class="db-spinner"></div><p>Aggregating classification trends…</p></div>';
   $id('db-donut').innerHTML = '<div class="db-chart-empty"><div class="db-spinner"></div><p>Calculating waste mix…</p></div>';
-  var insightsEl = $id('db-line-insights');
-  if (insightsEl) { insightsEl.innerHTML = ''; insightsEl.style.display = 'none'; }
 
   return apiRequest(url).then(okJson).then(function (data) {
     DB.monthlyData = data;
@@ -533,17 +558,47 @@ function getCategoryColor(name, idx) {
   return fallback[idx % fallback.length];
 }
 
-/* ---------------- Line Chart Engine (Overlap-Free Multi-Series Redesign) ---------------- */
+function getLineCategoryColor(name, idx) {
+  if (DB_LINE_DARK_COLORS[name]) return DB_LINE_DARK_COLORS[name];
+  if (DB_CLASS_COLORS[name]) return DB_CLASS_COLORS[name];
+  var fallback = ['#38bdf8', '#f59e0b', '#ec4899', '#14b8a6'];
+  return fallback[idx % fallback.length];
+}
+
+function formatHourShort(hour) {
+  var h = Number(hour) || 0;
+  if (h === 0) return '12 AM';
+  if (h < 12) return h + ' AM';
+  if (h === 12) return '12 PM';
+  return (h - 12) + ' PM';
+}
+
+function formatHourWindow(hour) {
+  var h = Number(hour) || 0;
+  var suffix = h < 12 ? 'AM' : 'PM';
+  var h12 = h % 12 === 0 ? 12 : (h % 12);
+  return h12 + ':00 ' + suffix + ' \u2013 ' + h12 + ':59 ' + suffix;
+}
+
+/* ---------------- Line Chart Engine (Dark Wave Aesthetic + Daily/Hourly + Tie-Safe) ---------------- */
 
 function renderLineChart(data) {
   var el = $id('db-line');
   if (!el) return;
 
-  var byClass = data.records_by_class_by_day || {};
+  var isHourly = DB.lineGranularity === 'hourly';
+  var byClass = isHourly ? (data.records_by_class_by_hour || {}) : (data.records_by_class_by_day || {});
+  var fallbackTotalsByBin = isHourly ? (data.records_by_hour || {}) : (data.records_by_day || {});
   var year = DB.year, month = DB.month;
   var daysInMonth = new Date(year, month, 0).getDate();
+  var binCount = isHourly ? 24 : daysInMonth;
   var monthNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   var monthAbbr = monthNames[month - 1];
+
+  var binKeys = [];
+  for (var bk = 0; bk < binCount; bk++) {
+    binKeys.push(isHourly ? bk : (bk + 1));
+  }
 
   // Active categories present this month (ordered cleanly)
   var classes = DB_CLASS_ORDER.filter(function (k) {
@@ -555,17 +610,34 @@ function renderLineChart(data) {
     }
   });
 
-  // Build full series list with totals
+  // Build full series list with totals across selected bins (Days or Hours)
   var allSeries = classes.map(function (k, idx) {
     var vals = [];
     var sum = 0;
-    for (var d = 1; d <= daysInMonth; d++) {
-      var v = (byClass[k] && byClass[k][d]) ? Number(byClass[k][d]) : 0;
+    for (var i = 0; i < binCount; i++) {
+      var binKey = binKeys[i];
+      var v = (byClass[k] && byClass[k][binKey] !== undefined) ? Number(byClass[k][binKey]) : 0;
       vals.push(v);
       sum += v;
     }
-    return { name: k, color: getCategoryColor(k, idx), values: vals, total: sum };
+    return { name: k, color: getLineCategoryColor(k, idx), values: vals, total: sum };
   });
+
+  // Defensive fallback if class-by-bin map is absent while aggregate totals exist
+  if (allSeries.length === 0 && Object.keys(fallbackTotalsByBin).length > 0) {
+    var fbVals = [];
+    var fbSum = 0;
+    for (var fbi = 0; fbi < binCount; fbi++) {
+      var fbk = binKeys[fbi];
+      var fbv = fallbackTotalsByBin[fbk] !== undefined ? Number(fallbackTotalsByBin[fbk]) : 0;
+      fbVals.push(fbv);
+      fbSum += fbv;
+    }
+    if (fbSum > 0) {
+      allSeries.push({ name: 'Classified Waste', color: '#38bdf8', values: fbVals, total: fbSum });
+      classes = ['Classified Waste'];
+    }
+  }
 
   var totalRecordsAll = allSeries.reduce(function (acc, s) { return acc + s.total; }, 0);
 
@@ -582,51 +654,39 @@ function renderLineChart(data) {
     ? allSeries
     : allSeries.filter(function (s) { return DB.activeClassFilters[s.name] !== false; });
 
-  // Visible daily totals & peak day calculation
+  // Visible bin totals & peak bin calculation
   var visibleTotals = [];
   var visibleTotalRecords = 0;
-  var peakDay = 1;
+  var peakBinIdx = 0;
   var peakVal = 0;
-  var activeDaysCount = 0;
 
-  for (var dIdx = 0; dIdx < daysInMonth; dIdx++) {
-    var daySum = 0;
+  for (var bIdx = 0; bIdx < binCount; bIdx++) {
+    var binSum = 0;
     visibleBaseSeries.forEach(function (s) {
-      daySum += (s.values[dIdx] || 0);
+      binSum += (s.values[bIdx] || 0);
     });
-    visibleTotals.push(daySum);
-    visibleTotalRecords += daySum;
-    if (daySum > 0) activeDaysCount++;
-    if (daySum > peakVal) {
-      peakVal = daySum;
-      peakDay = dIdx + 1;
+    visibleTotals.push(binSum);
+    visibleTotalRecords += binSum;
+    if (binSum > peakVal) {
+      peakVal = binSum;
+      peakBinIdx = bIdx;
     }
   }
 
   var badgeEl = $id('db-line-badge');
   if (badgeEl) {
     var shownCount = DB.lineChartMode === 'total' ? totalRecordsAll : visibleTotalRecords;
+    var peakBadgeTxt = isHourly
+      ? formatHourShort(peakBinIdx)
+      : (monthAbbr + ' ' + (peakBinIdx + 1));
     badgeEl.textContent = shownCount.toLocaleString() + ' records' +
-      (peakVal > 0 ? ' · Peak: ' + monthAbbr + ' ' + peakDay : '');
+      (peakVal > 0 ? ' \u00b7 Peak: ' + peakBadgeTxt : '');
     badgeEl.className = 'db-chart-badge' + (totalRecordsAll === 0 ? ' slate' : '');
   }
 
-  // Render Insights Strip
-  renderLineInsights({
-    totalRecordsAll: totalRecordsAll,
-    visibleTotalRecords: visibleTotalRecords,
-    peakDay: peakDay,
-    peakVal: peakVal,
-    activeDaysCount: activeDaysCount,
-    daysInMonth: daysInMonth,
-    monthAbbr: monthAbbr,
-    visibleSeries: visibleBaseSeries,
-    isFiltered: isFiltered
-  });
-
   if (totalRecordsAll === 0) {
     el.innerHTML =
-      '<div class="db-chart-empty">' +
+      '<div class="db-chart-empty db-chart-empty-dark">' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>' +
         '<p><strong>No classifications for this period.</strong><br>Records will appear as citizens sort waste using the AI scanner.</p>' +
       '</div>';
@@ -638,14 +698,14 @@ function renderLineChart(data) {
   // Exact responsive container geometry (1:1 SVG scaling avoids oval dot distortion)
   var rect = el.getBoundingClientRect();
   var W = Math.max(280, Math.floor(rect.width || 680));
-  var H = Math.max(220, Math.floor(rect.height || (W < 480 ? 240 : 295)));
-  var padL = W < 360 ? 32 : 42;
-  var padR = W < 360 ? 18 : 24;
+  var H = Math.max(220, Math.floor(rect.height || (W < 480 ? 245 : 300)));
+  var padL = W < 360 ? 34 : 46;
+  var padR = W < 360 ? 20 : 28;
   var padT = 26;
-  var padB = 34;
+  var padB = 38;
   var plotW = W - padL - padR;
   var plotH = H - padT - padB;
-  var step = plotW / (daysInMonth - 1 || 1);
+  var step = plotW / (binCount - 1 || 1);
 
   // Max value & crisp integer Y ticks
   var maxVal = 0;
@@ -667,8 +727,8 @@ function renderLineChart(data) {
   var renderedSeries = [];
   if (DB.lineChartMode === 'total') {
     var totalPts = [];
-    for (var i = 0; i < daysInMonth; i++) {
-      totalPts.push([padL + i * step, yFor(visibleTotals[i])]);
+    for (var ti = 0; ti < binCount; ti++) {
+      totalPts.push([padL + ti * step, yFor(visibleTotals[ti])]);
     }
     var totalParts = buildMonotoneCubicSplineParts(totalPts, visibleTotals, baseY, padT + 2);
     var totalAreaD = totalParts.fullPath +
@@ -676,7 +736,7 @@ function renderLineChart(data) {
       ' L ' + totalPts[0][0].toFixed(1) + ' ' + baseY.toFixed(1) + ' Z';
     renderedSeries.push({
       name: 'Total Volume',
-      color: '#2563eb',
+      color: '#38bdf8',
       values: visibleTotals,
       total: visibleTotalRecords,
       pts: totalPts,
@@ -688,23 +748,22 @@ function renderLineChart(data) {
       ties: []
     });
   } else {
-    // Initialize raw coordinates
     var ptsMatrix = visibleBaseSeries.map(function (s) {
       var arr = [];
-      for (var i = 0; i < daysInMonth; i++) {
+      for (var i = 0; i < binCount; i++) {
         arr.push([padL + i * step, yFor(s.values[i])]);
       }
       return arr;
     });
-    var tiesMatrix = visibleBaseSeries.map(function () { return new Array(daysInMonth).fill(false); });
+    var tiesMatrix = visibleBaseSeries.map(function () { return new Array(binCount).fill(false); });
     var dashOverlapSeries = visibleBaseSeries.map(function () { return false; });
 
-    // Apply deterministic tie-aware micro-lane separation (dx, dy) whenever >=2 series share the same value > 0 on a day
+    // Apply deterministic tie-aware micro-lane separation (dx, dy) whenever >=2 series share the same value > 0
     if (visibleBaseSeries.length > 1) {
-      for (var d = 0; d < daysInMonth; d++) {
+      for (var bi = 0; bi < binCount; bi++) {
         var groupsByVal = {};
         for (var sIdx = 0; sIdx < visibleBaseSeries.length; sIdx++) {
-          var val = visibleBaseSeries[sIdx].values[d];
+          var val = visibleBaseSeries[sIdx].values[bi];
           if (val > 0) {
             if (!groupsByVal[val]) groupsByVal[val] = [];
             groupsByVal[val].push(sIdx);
@@ -716,14 +775,14 @@ function renderLineChart(data) {
           if (grp.length < 2) return;
 
           var k = grp.length;
-          var baseDayX = padL + d * step;
+          var baseBinX = padL + bi * step;
           var rawY = yFor(Number(valKey));
 
-          // Horizontal bead fan stays comfortably inside the day slot & plot bounds
+          // Horizontal bead fan stays cleanly inside bin slot & plot bounds
           var maxHalfX = Math.min(7.2, step * 0.25);
           var dxStep = Math.min(5.2, (maxHalfX * 2) / (k - 1));
 
-          // Vertical lane spread stays strictly within <=28% of 1 unit so numerical level remains unmistakable
+          // Vertical lane spread stays within <=28% of 1 unit so numerical level remains clear
           var maxHalfY = Math.min(8.0, Math.max(0.8, pxPerUnit * 0.28));
           var dyStep = Math.min(4.1, (maxHalfY * 2) / (k - 1));
           var crampedVertically = dyStep < 2.5;
@@ -733,20 +792,19 @@ function renderLineChart(data) {
             var dx = centerOff * dxStep;
             var dy = centerOff * dyStep;
 
-            // Keep Day 1 right of Y-axis and Last Day left of right edge
-            if (d === 0) {
+            if (bi === 0) {
               var edgeStep = Math.min(dxStep, (step * 0.45) / Math.max(1, k - 1));
               dx = pos * edgeStep;
-            } else if (d === daysInMonth - 1) {
+            } else if (bi === binCount - 1) {
               var edgeStepLast = Math.min(dxStep, (step * 0.45) / Math.max(1, k - 1));
               dx = -((k - 1 - pos) * edgeStepLast);
             }
 
-            var finalX = Math.max(padL, Math.min(padL + plotW, baseDayX + dx));
+            var finalX = Math.max(padL, Math.min(padL + plotW, baseBinX + dx));
             var finalY = Math.max(padT + 4, Math.min(baseY - 4, rawY + dy));
 
-            ptsMatrix[sIndex][d] = [finalX, finalY];
-            tiesMatrix[sIndex][d] = true;
+            ptsMatrix[sIndex][bi] = [finalX, finalY];
+            tiesMatrix[sIndex][bi] = true;
             if (crampedVertically && pos > 0) {
               dashOverlapSeries[sIndex] = true;
             }
@@ -778,79 +836,116 @@ function renderLineChart(data) {
     });
   }
 
-  // X date labels — clean evenly spaced ticks
-  var xLabelDays = [1];
-  var dayStep = daysInMonth > 28 ? 5 : 4;
-  for (var ld = 1 + dayStep; ld < daysInMonth; ld += dayStep) xLabelDays.push(ld);
-  if (xLabelDays[xLabelDays.length - 1] !== daysInMonth) xLabelDays.push(daysInMonth);
+  // X column ticks & labels (7 clean evenly spaced columns matching reference aesthetic)
+  var xLabelBins = [];
+  if (isHourly) {
+    xLabelBins = W < 380 ? [0, 6, 12, 18, 23] : [0, 4, 8, 12, 16, 20, 23];
+  } else {
+    var xDayNums = [1];
+    var dayStep = daysInMonth > 28 ? 5 : 4;
+    for (var ld = 1 + dayStep; ld < daysInMonth; ld += dayStep) xDayNums.push(ld);
+    if (xDayNums[xDayNums.length - 1] !== daysInMonth) xDayNums.push(daysInMonth);
+    xLabelBins = xDayNums.map(function (d) { return d - 1; });
+  }
 
-  // Today marker (when viewing current PH month)
+  // Current PH time marker (Today day in Daily mode; Current PH hour in Hourly mode)
+  var nowPh = phNow();
   var todayIso = phToday();
   var todayParts = todayIso.split('-');
   var isCurrentMonth = Number(todayParts[0]) === year && Number(todayParts[1]) === month;
   var todayDayNum = Number(todayParts[2]);
-  var todayMarkerSvg = '';
-  if (isCurrentMonth && todayDayNum >= 1 && todayDayNum <= daysInMonth) {
-    var tx = padL + (todayDayNum - 1) * step;
-    todayMarkerSvg =
-      '<line class="db-line-today-line" x1="' + tx.toFixed(1) + '" y1="' + (padT - 4) + '" x2="' + tx.toFixed(1) + '" y2="' + baseY + '"/>' +
-      '<rect class="db-line-today-pill" x="' + (tx - 16).toFixed(1) + '" y="4" width="32" height="14" rx="7"/>' +
-      '<text class="db-line-today-txt" x="' + tx.toFixed(1) + '" y="13.5" text-anchor="middle">TODAY</text>';
+  var currentHourNum = nowPh.getHours();
+  var currentMarkerBin = -1;
+  var currentMarkerLabel = '';
+
+  if (isCurrentMonth) {
+    if (isHourly) {
+      currentMarkerBin = currentHourNum;
+      currentMarkerLabel = 'NOW';
+    } else if (todayDayNum >= 1 && todayDayNum <= daysInMonth) {
+      currentMarkerBin = todayDayNum - 1;
+      currentMarkerLabel = 'TODAY';
+    }
   }
 
-  // SVG Linear Gradients (Area fill + Hover highlight band)
+  var todayMarkerSvg = '';
+  if (currentMarkerBin >= 0 && currentMarkerBin < binCount) {
+    var tx = padL + currentMarkerBin * step;
+    var pillWNow = currentMarkerLabel === 'TODAY' ? 38 : 32;
+    todayMarkerSvg =
+      '<line class="db-line-today-line" x1="' + tx.toFixed(1) + '" y1="' + (padT - 4) + '" x2="' + tx.toFixed(1) + '" y2="' + baseY + '"/>' +
+      '<rect class="db-line-today-pill" x="' + (tx - pillWNow / 2).toFixed(1) + '" y="4" width="' + pillWNow + '" height="14" rx="7"/>' +
+      '<text class="db-line-today-txt" x="' + tx.toFixed(1) + '" y="13.5" text-anchor="middle">' + currentMarkerLabel + '</text>';
+  }
+
+  // SVG Linear Gradients (Luminous vertical aura under waves + dark hover band)
   var defs = '<defs>' +
     '<linearGradient id="db-band-grad" x1="0" y1="0" x2="0" y2="1">' +
-      '<stop offset="0%" stop-color="#2563eb" stop-opacity="0.09"/>' +
-      '<stop offset="100%" stop-color="#2563eb" stop-opacity="0.01"/>' +
+      '<stop offset="0%" stop-color="#ffffff" stop-opacity="0.09"/>' +
+      '<stop offset="100%" stop-color="#ffffff" stop-opacity="0.01"/>' +
     '</linearGradient>' +
     renderedSeries.map(function (s, idx) {
       var gradId = 'db-line-grad-' + idx;
-      var topOp = DB.lineChartMode === 'total' ? '0.26' : '0.22';
+      var topOp = DB.lineChartMode === 'total' ? '0.32' : '0.21';
+      var midOp = DB.lineChartMode === 'total' ? '0.09' : '0.06';
       return '<linearGradient id="' + gradId + '" x1="0" y1="0" x2="0" y2="1">' +
         '<stop offset="0%" stop-color="' + s.color + '" stop-opacity="' + topOp + '"/>' +
-        '<stop offset="65%" stop-color="' + s.color + '" stop-opacity="0.05"/>' +
+        '<stop offset="65%" stop-color="' + s.color + '" stop-opacity="' + midOp + '"/>' +
         '<stop offset="100%" stop-color="' + s.color + '" stop-opacity="0.0"/>' +
       '</linearGradient>';
     }).join('') +
   '</defs>';
 
-  // Horizontal Gridlines & Clean Integer Y Labels
-  var gridSvg = yTicks.map(function (yv, idx) {
-    var y = yFor(yv);
-    var isBase = (idx === 0);
-    return '<line class="db-line-grid' + (isBase ? ' base' : '') + '" x1="' + padL + '" y1="' + y.toFixed(1) + '" x2="' + (W - padR) + '" y2="' + y.toFixed(1) + '"/>' +
-      '<text class="db-line-label y" x="' + (padL - 8) + '" y="' + (y + 3.5).toFixed(1) + '" text-anchor="end">' + yv.toLocaleString() + '</text>';
+  // Left Vertical Y-Axis Spine + Short Horizontal Cross-Ticks (no cluttered horizontal lines)
+  var yAxisSvg =
+    '<line class="db-line-yaxis" x1="' + padL + '" y1="' + (padT - 6) + '" x2="' + padL + '" y2="' + baseY + '"/>' +
+    yTicks.map(function (yv) {
+      var y = yFor(yv);
+      return '<line class="db-line-ytick" x1="' + (padL - 5) + '" y1="' + y.toFixed(1) + '" x2="' + (padL + 5) + '" y2="' + y.toFixed(1) + '"/>' +
+        '<text class="db-line-label y" x="' + (padL - 10) + '" y="' + (y + 3.5).toFixed(1) + '" text-anchor="end">' + yv.toLocaleString() + '</text>';
+    }).join('');
+
+  // Crisp Vertical Column Dividers + Uppercase X Labels (Image 1 column aesthetic)
+  var xMarkersSvg = xLabelBins.map(function (b) {
+    if (b === 0) return '';
+    var x = padL + b * step;
+    return '<line class="db-line-xmark" x1="' + x.toFixed(1) + '" y1="' + (padT - 6) + '" x2="' + x.toFixed(1) + '" y2="' + baseY + '"/>';
   }).join('');
 
-  // Subtle vertical tick guides + X Date Labels
-  var xMarkersSvg = xLabelDays.map(function (d) {
-    var x = padL + (d - 1) * step;
-    return '<line class="db-line-xmark" x1="' + x.toFixed(1) + '" y1="' + padT + '" x2="' + x.toFixed(1) + '" y2="' + baseY + '"/>';
+  var xLabelsSvg = xLabelBins.map(function (b) {
+    var x = padL + b * step;
+    var labelTxt = isHourly
+      ? formatHourShort(b)
+      : (monthAbbr + ' ' + (b + 1)).toUpperCase();
+    return '<text class="db-line-label x" x="' + x.toFixed(1) + '" y="' + (H - 12) + '" text-anchor="middle">' + labelTxt + '</text>';
   }).join('');
 
-  var xLabelsSvg = xLabelDays.map(function (d) {
-    var x = padL + (d - 1) * step;
-    return '<text class="db-line-label x" x="' + x.toFixed(1) + '" y="' + (H - 8) + '" text-anchor="middle">' + monthAbbr + ' ' + d + '</text>';
-  }).join('');
-
-  var showAreaByDefault = (DB.lineChartMode === 'total' || renderedSeries.length === 1);
-
-  // Series Curves & De-collided Markers
+  // Series Curves, Luminous Area Fills & Glowing Data Nodes
   var pathsSvg = renderedSeries.map(function (s, idx) {
     var gradId = 'db-line-grad-' + idx;
     var dashAttr = s.needsDash ? ' stroke-dasharray="7 4" stroke-dashoffset="' + s.dashOffset + '"' : '';
-    var dotsHtml = s.pts.map(function (pt, dIdx) {
-      var v = s.values[dIdx];
+
+    var firstPos = -1;
+    var lastPos = -1;
+    for (var pi = 0; pi < s.values.length; pi++) {
+      if (s.values[pi] > 0) {
+        if (firstPos === -1) firstPos = pi;
+        lastPos = pi;
+      }
+    }
+
+    var dotsHtml = s.pts.map(function (pt, bIdx) {
+      var v = s.values[bIdx];
       if (!v || v <= 0) return '';
-      var isTied = s.ties && s.ties[dIdx];
-      var rSize = isTied ? '3.3' : '3.6';
-      return '<circle class="db-line-dot' + (isTied ? ' is-tied' : '') + '" ' +
+      var isTied = s.ties && s.ties[bIdx];
+      var isEndpoint = (bIdx === firstPos || bIdx === lastPos);
+      var rSize = isEndpoint ? '4.2' : (isTied ? '3.3' : '3.6');
+      return '<circle class="db-line-dot' + (isTied ? ' is-tied' : '') + (isEndpoint ? ' is-end' : '') + '" ' +
         'cx="' + pt[0].toFixed(1) + '" cy="' + pt[1].toFixed(1) + '" r="' + rSize + '" ' +
-        'fill="' + s.color + '" stroke="#ffffff" stroke-width="1.6"/>';
+        'fill="' + s.color + '" stroke="#181b21" stroke-width="1.5"/>';
     }).join('');
 
-    return '<g class="db-line-series' + (showAreaByDefault ? ' show-area' : '') + '" data-series="' + escapeHtml(s.name) + '">' +
+    return '<g class="db-line-series show-area" data-series="' + escapeHtml(s.name) + '">' +
       '<path class="db-line-area" d="' + s.areaPath + '" fill="url(#' + gradId + ')"/>' +
       (s.baselinePath
         ? '<path class="db-line-baseline" d="' + s.baselinePath + '" stroke="' + s.color + '"/>'
@@ -863,7 +958,7 @@ function renderLineChart(data) {
     '</g>';
   }).join('');
 
-  // Peak Day Pill Annotation (shown in Total Volume or isolated single category when clean headroom exists)
+  // Peak Pill Annotation (shown in Total Volume or isolated single category)
   var peakTagSvg = '';
   if ((DB.lineChartMode === 'total' || renderedSeries.length === 1) && peakVal > 0) {
     var soloSeries = renderedSeries[0];
@@ -874,19 +969,19 @@ function renderLineChart(data) {
     });
     if (soloPeakMax > 0 && soloSeries.pts[soloPeakIdx]) {
       var pkPt = soloSeries.pts[soloPeakIdx];
-      var pillW = 60;
-      var pillX = Math.max(padL + 4, Math.min(W - padR - pillW, pkPt[0] - pillW / 2));
+      var pillW = 64;
+      var pillX = Math.max(padL + 6, Math.min(W - padR - pillW, pkPt[0] - pillW / 2));
       var pillY = Math.max(2, pkPt[1] - 24);
       peakTagSvg =
         '<g class="db-line-peak-tag">' +
-          '<rect x="' + pillX.toFixed(1) + '" y="' + pillY.toFixed(1) + '" width="' + pillW + '" height="16" rx="8" fill="#ffffff" stroke="' + soloSeries.color + '" stroke-width="1.2"/>' +
-          '<text x="' + (pillX + pillW / 2).toFixed(1) + '" y="' + (pillY + 11).toFixed(1) + '" text-anchor="middle" fill="' + soloSeries.color + '">Peak: ' + soloPeakMax + '</text>' +
+          '<rect x="' + pillX.toFixed(1) + '" y="' + pillY.toFixed(1) + '" width="' + pillW + '" height="17" rx="8.5" fill="#1e222b" stroke="' + soloSeries.color + '" stroke-width="1.2"/>' +
+          '<text x="' + (pillX + pillW / 2).toFixed(1) + '" y="' + (pillY + 11.5).toFixed(1) + '" text-anchor="middle" fill="' + soloSeries.color + '">Peak: ' + soloPeakMax + '</text>' +
         '</g>';
     }
   }
 
-  // Interactive Day Band, Crosshair & De-collided Focus Rings
-  var bandW = Math.max(14, Math.min(32, step * 0.85));
+  // Interactive Bin Band, Crosshair & De-collided Focus Rings
+  var bandW = Math.max(14, Math.min(34, step * 0.85));
   var overlaySvg =
     '<rect class="db-focus-band" id="db-focus-band" x="0" y="' + padT + '" width="' + bandW.toFixed(1) + '" height="' + plotH + '" rx="4" fill="url(#db-band-grad)"/>' +
     '<line class="db-crosshair" id="db-crosshair" x1="0" y1="' + padT + '" x2="0" y2="' + baseY + '"/>' +
@@ -897,7 +992,7 @@ function renderLineChart(data) {
 
   el.innerHTML =
     '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Classification trend chart">' +
-      defs + gridSvg + xMarkersSvg + todayMarkerSvg + xLabelsSvg + pathsSvg + peakTagSvg + overlaySvg +
+      defs + xMarkersSvg + yAxisSvg + todayMarkerSvg + xLabelsSvg + pathsSvg + peakTagSvg + overlaySvg +
     '</svg>';
 
   wireLineChartInteraction(el, renderedSeries, allSeries, {
@@ -907,77 +1002,15 @@ function renderLineChart(data) {
     padT: padT,
     step: step,
     bandW: bandW,
-    daysInMonth: daysInMonth,
+    binCount: binCount,
+    isHourly: isHourly,
     year: year,
     month: month,
     isCurrentMonth: isCurrentMonth,
-    todayDayNum: todayDayNum
+    currentMarkerBin: currentMarkerBin
   });
 
   renderLineLegend(classes, allSeries, el, isFiltered);
-}
-
-function renderLineInsights(meta) {
-  var wrap = $id('db-line-insights');
-  if (!wrap) return;
-
-  if (!meta || meta.totalRecordsAll === 0) {
-    wrap.innerHTML = '';
-    wrap.style.display = 'none';
-    return;
-  }
-  wrap.style.display = 'flex';
-
-  var avgPerDay = meta.daysInMonth > 0
-    ? (meta.visibleTotalRecords / meta.daysInMonth).toFixed(1)
-    : '0.0';
-
-  // Determine top category or tied leaders
-  var topChipHtml = '';
-  if (DB.lineChartMode === 'total') {
-    topChipHtml =
-      '<div class="db-insight-chip">' +
-        '<span class="db-insight-dot" style="background:#2563eb"></span>' +
-        '<span>Active Days: <strong>' + meta.activeDaysCount + '</strong> / ' + meta.daysInMonth + '</span>' +
-      '</div>';
-  } else if (meta.visibleSeries.length > 0) {
-    var maxCatTotal = 0;
-    meta.visibleSeries.forEach(function (s) {
-      if (s.total > maxCatTotal) maxCatTotal = s.total;
-    });
-    var leaders = meta.visibleSeries.filter(function (s) { return s.total === maxCatTotal && maxCatTotal > 0; });
-    if (leaders.length > 1) {
-      var names = leaders.map(function (l) { return escapeHtml(l.name); }).join(' &amp; ');
-      var dots = leaders.map(function (l) {
-        return '<span class="db-insight-dot" style="background:' + l.color + '"></span>';
-      }).join('');
-      topChipHtml =
-        '<div class="db-insight-chip">' +
-          '<span class="db-insight-dots">' + dots + '</span>' +
-          '<span>Tied Top: <strong>' + names + '</strong> (' + maxCatTotal.toLocaleString() + ' each)</span>' +
-        '</div>';
-    } else if (leaders.length === 1) {
-      var sharePct = meta.visibleTotalRecords > 0
-        ? Math.round((leaders[0].total / meta.visibleTotalRecords) * 100)
-        : 0;
-      topChipHtml =
-        '<div class="db-insight-chip">' +
-          '<span class="db-insight-dot" style="background:' + leaders[0].color + '"></span>' +
-          '<span>Top: <strong>' + escapeHtml(leaders[0].name) + '</strong> (' + leaders[0].total.toLocaleString() + ' · ' + sharePct + '%)</span>' +
-        '</div>';
-    }
-  }
-
-  wrap.innerHTML =
-    '<div class="db-insight-chip peak">' +
-      '<span class="db-insight-dot" style="background:#2563eb"></span>' +
-      '<span>Peak Day: <strong>' + escapeHtml(meta.monthAbbr) + ' ' + meta.peakDay + '</strong> (' + meta.peakVal.toLocaleString() + ' scans)</span>' +
-    '</div>' +
-    '<div class="db-insight-chip">' +
-      '<span>Daily Avg: <strong>' + avgPerDay + '</strong> / day · <strong>' + meta.activeDaysCount + '</strong> active</span>' +
-    '</div>' +
-    topChipHtml +
-    (meta.isFiltered ? '<span class="db-insight-filter-tag">Filtered View</span>' : '');
 }
 
 function wireLineChartInteraction(container, seriesList, allSeries, geo) {
@@ -999,29 +1032,28 @@ function wireLineChartInteraction(container, seriesList, allSeries, geo) {
     if (!svgRect.width) return;
 
     var xInSvg = ((clientX - svgRect.left) / svgRect.width) * geo.W;
-    var dayIndex = Math.round((xInSvg - geo.padL) / geo.step);
-    if (dayIndex < 0) dayIndex = 0;
-    if (dayIndex >= geo.daysInMonth) dayIndex = geo.daysInMonth - 1;
+    var binIndex = Math.round((xInSvg - geo.padL) / geo.step);
+    if (binIndex < 0) binIndex = 0;
+    if (binIndex >= geo.binCount) binIndex = geo.binCount - 1;
 
-    var actualDay = dayIndex + 1;
-    var dayX = geo.padL + dayIndex * geo.step;
+    var binX = geo.padL + binIndex * geo.step;
 
-    // Move crosshair + day highlight column
-    crosshair.setAttribute('x1', dayX.toFixed(1));
-    crosshair.setAttribute('x2', dayX.toFixed(1));
+    // Move crosshair + column highlight band
+    crosshair.setAttribute('x1', binX.toFixed(1));
+    crosshair.setAttribute('x2', binX.toFixed(1));
     crosshair.classList.add('on');
 
     if (focusBand) {
-      focusBand.setAttribute('x', (dayX - geo.bandW / 2).toFixed(1));
+      focusBand.setAttribute('x', (binX - geo.bandW / 2).toFixed(1));
       focusBand.classList.add('on');
     }
 
-    // Move each focus dot to its collision-separated coordinate (not piled!)
+    // Move each focus dot to its collision-separated coordinate
     seriesList.forEach(function (s, idx) {
       var dot = focusDots[idx];
-      if (!dot || !s.pts[dayIndex]) return;
-      var pt = s.pts[dayIndex];
-      var val = s.values[dayIndex] || 0;
+      if (!dot || !s.pts[binIndex]) return;
+      var pt = s.pts[binIndex];
+      var val = s.values[binIndex] || 0;
       dot.setAttribute('cx', pt[0].toFixed(1));
       dot.setAttribute('cy', pt[1].toFixed(1));
       dot.setAttribute('r', val > 0 ? '6' : '3');
@@ -1029,52 +1061,61 @@ function wireLineChartInteraction(container, seriesList, allSeries, geo) {
       dot.classList.add('on');
     });
 
-    // Populate Tooltip with clear hierarchy & shared-tie badge
-    var dateLabel = new Date(geo.year, geo.month - 1, actualDay)
-      .toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
-    var isTodayDay = geo.isCurrentMonth && actualDay === geo.todayDayNum;
+    // Tooltip header labels for Daily vs By Hour mode
+    var headLeft = '';
+    var headRight = '';
+    var isCurrentBin = geo.isCurrentMonth && binIndex === geo.currentMarkerBin;
 
-    var totalDayVisible = 0;
-    var totalDayAll = 0;
+    if (geo.isHourly) {
+      headLeft = formatHourWindow(binIndex);
+      headRight = String(binIndex).padStart(2, '0') + ':00 PH';
+    } else {
+      var actualDay = binIndex + 1;
+      headLeft = new Date(geo.year, geo.month - 1, actualDay)
+        .toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+      headRight = 'Day ' + actualDay;
+    }
+
+    var totalBinVisible = 0;
+    var totalBinAll = 0;
     var rowsHtml = '';
 
     allSeries.forEach(function (s) {
-      totalDayAll += (s.values[dayIndex] || 0);
+      totalBinAll += (s.values[binIndex] || 0);
     });
 
     if (DB.lineChartMode === 'total') {
-      var val = seriesList[0].values[dayIndex] || 0;
-      totalDayVisible = val;
+      var val = seriesList[0].values[binIndex] || 0;
+      totalBinVisible = val;
       rowsHtml = '<div class="db-tip-row">' +
-        '<span class="db-tip-swatch" style="background:#2563eb"></span>' +
+        '<span class="db-tip-swatch" style="background:#38bdf8"></span>' +
         '<span class="db-tip-name">Total Scans</span>' +
         '<span class="db-tip-val">' + val.toLocaleString() + '</span>' +
       '</div>';
     } else {
-      // Count ties among positive values on this day
       var valFreq = {};
       seriesList.forEach(function (s) {
-        var v = s.values[dayIndex] || 0;
-        totalDayVisible += v;
+        var v = s.values[binIndex] || 0;
+        totalBinVisible += v;
         if (v > 0) valFreq[v] = (valFreq[v] || 0) + 1;
       });
 
-      // Active non-zero categories sorted highest-first (tie-break by series order), then 0 categories muted
       var ordered = seriesList.map(function (s, idx) {
-        return { series: s, val: s.values[dayIndex] || 0, idx: idx };
+        return { series: s, val: s.values[binIndex] || 0, idx: idx };
       }).sort(function (a, b) {
         if ((a.val > 0) !== (b.val > 0)) return a.val > 0 ? -1 : 1;
         if (b.val !== a.val) return b.val - a.val;
         return a.idx - b.idx;
       });
 
-      if (totalDayVisible === 0) {
-        rowsHtml = '<div class="db-tip-empty">No scans recorded on this day</div>';
+      if (totalBinVisible === 0) {
+        rowsHtml = '<div class="db-tip-empty">No scans recorded ' +
+          (geo.isHourly ? 'in this hour' : 'on this day') + '</div>';
       } else {
         rowsHtml = ordered.map(function (item) {
           var v = item.val;
           var isTied = v > 0 && (valFreq[v] || 0) > 1;
-          var pct = totalDayVisible > 0 && v > 0 ? Math.round((v / totalDayVisible) * 100) : 0;
+          var pct = totalBinVisible > 0 && v > 0 ? Math.round((v / totalBinVisible) * 100) : 0;
           return '<div class="db-tip-row' + (v === 0 ? ' is-zero' : '') + '">' +
             '<span class="db-tip-swatch" style="background:' + item.series.color + '"></span>' +
             '<span class="db-tip-name">' + escapeHtml(item.series.name) + '</span>' +
@@ -1086,31 +1127,31 @@ function wireLineChartInteraction(container, seriesList, allSeries, geo) {
       }
     }
 
-    var totalLabel = (DB.lineChartMode === 'category' && totalDayVisible !== totalDayAll)
-      ? '<span>Shown Total <small style="color:var(--db-muted);font-weight:600">(All: ' + totalDayAll + ')</small></span>'
-      : '<span>Day Total</span>';
+    var totalLabel = (DB.lineChartMode === 'category' && totalBinVisible !== totalBinAll)
+      ? '<span>Shown Total <small style="opacity:0.7;font-weight:600">(All: ' + totalBinAll + ')</small></span>'
+      : '<span>' + (geo.isHourly ? 'Hour Total' : 'Day Total') + '</span>';
 
     tooltip.innerHTML =
       '<div class="db-tip-head">' +
-        '<span>' + escapeHtml(dateLabel) + (isTodayDay ? ' <span class="db-tip-today">Today</span>' : '') + '</span>' +
-        '<span>Day ' + actualDay + '</span>' +
+        '<span>' + escapeHtml(headLeft) + (isCurrentBin ? ' <span class="db-tip-today">' + (geo.isHourly ? 'Now' : 'Today') + '</span>' : '') + '</span>' +
+        '<span>' + escapeHtml(headRight) + '</span>' +
       '</div>' +
       '<div class="db-tip-rows">' + rowsHtml + '</div>' +
       '<div class="db-tip-total">' +
         totalLabel +
-        '<span>' + totalDayVisible.toLocaleString() + '</span>' +
+        '<span>' + totalBinVisible.toLocaleString() + '</span>' +
       '</div>';
 
-    // Measure & clamp tooltip cleanly inside chart container (never clip at Day 1 / Day 31 / Top Peak!)
+    // Measure & clamp tooltip cleanly inside chart container
     tooltip.classList.add('on');
     var tipW = tooltip.offsetWidth || 195;
     var tipH = tooltip.offsetHeight || 110;
-    var dayCenterPx = svgRect.left - contRect.left + (dayX / geo.W) * svgRect.width;
+    var binCenterPx = svgRect.left - contRect.left + (binX / geo.W) * svgRect.width;
     var pointerY = clientY - contRect.top;
 
     var minLeft = tipW / 2 + 8;
     var maxLeft = Math.max(minLeft, contRect.width - tipW / 2 - 8);
-    var clampedLeft = Math.max(minLeft, Math.min(maxLeft, dayCenterPx));
+    var clampedLeft = Math.max(minLeft, Math.min(maxLeft, binCenterPx));
 
     var flipBelow = pointerY < (tipH + 22);
     tooltip.classList.toggle('is-below', flipBelow);
@@ -1146,7 +1187,7 @@ function renderLineLegend(classes, allSeries, chartContainer, isFiltered) {
     var grandTotal = allSeries.reduce(function (acc, s) { return acc + (s.total || 0); }, 0);
     legend.innerHTML =
       '<span class="db-legend-btn active">' +
-        '<span class="db-legend-swatch" style="background:#2563eb"></span>' +
+        '<span class="db-legend-swatch" style="background:#38bdf8"></span>' +
         '<span>Total Classification Volume</span>' +
         '<span class="db-legend-count">' + grandTotal.toLocaleString() + '</span>' +
       '</span>';
@@ -1154,10 +1195,10 @@ function renderLineLegend(classes, allSeries, chartContainer, isFiltered) {
   }
 
   var pillsHtml = classes.map(function (k, idx) {
-    var color = getCategoryColor(k, idx);
+    var color = getLineCategoryColor(k, idx);
     var isOff = DB.activeClassFilters[k] === false;
     var count = totalByClass[k] || 0;
-    return '<button type="button" class="db-legend-btn' + (isOff ? ' is-off' : '') + '" data-class="' + escapeHtml(k) + '" title="Hover to spotlight · Click to filter">' +
+    return '<button type="button" class="db-legend-btn' + (isOff ? ' is-off' : '') + '" data-class="' + escapeHtml(k) + '" title="Hover to spotlight \u00b7 Click to filter">' +
       '<span class="db-legend-swatch" style="background:' + color + '"></span>' +
       '<span>' + escapeHtml(k) + '</span>' +
       '<span class="db-legend-count">' + count.toLocaleString() + '</span>' +
@@ -1655,10 +1696,6 @@ function showSectionError(id, msg) {
 function showChartError(id, msg) {
   var el = $id(id);
   if (!el) return;
-  if (id === 'db-line') {
-    var insightsEl = $id('db-line-insights');
-    if (insightsEl) { insightsEl.innerHTML = ''; insightsEl.style.display = 'none'; }
-  }
   el.innerHTML =
     '<div class="db-chart-empty">' +
       '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>' +

@@ -427,7 +427,11 @@
                 </div>
               </div>
               <div class="db-chart-controls">
-                <div class="db-view-switch" id="db-line-view-mode">
+                <div class="db-view-switch" id="db-line-granularity" role="group" aria-label="Time granularity">
+                  <button type="button" class="db-view-btn active" data-granularity="daily">Daily</button>
+                  <button type="button" class="db-view-btn" data-granularity="hourly">By Hour</button>
+                </div>
+                <div class="db-view-switch" id="db-line-view-mode" role="group" aria-label="Series display mode">
                   <button type="button" class="db-view-btn active" data-mode="category">By Category</button>
                   <button type="button" class="db-view-btn" data-mode="total">Total Volume</button>
                 </div>
@@ -435,9 +439,7 @@
               </div>
             </div>
 
-            <div class="db-line-insights" id="db-line-insights" aria-live="polite"></div>
-
-            <div class="db-chart-container">
+            <div class="db-chart-container db-line-dark">
               <div class="db-chart" id="db-line"></div>
               <!-- Floating interactive Glassmorphic Tooltip -->
               <div class="db-tip" id="db-chart-tip"></div>
@@ -452,7 +454,7 @@
                   <line x1="12" y1="16" x2="12" y2="12"></line>
                   <line x1="12" y1="8" x2="12.01" y2="8"></line>
                 </svg>
-                <span>Hover chart to inspect daily counts; tied categories separate cleanly. Hover or click legend pills to spotlight or filter.</span>
+                <span>Switch Daily or By Hour to inspect trends; tied categories separate cleanly. Hover or click legend pills to spotlight or filter.</span>
               </div>
             </div>
           </section>
