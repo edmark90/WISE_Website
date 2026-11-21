@@ -173,7 +173,7 @@ function viewWasteRecord(recordId) {
   var confLevel = wcConfLevel(r.confidence);
   var barW = r.confidence != null ? Math.min(r.confidence, 100) : 0;
   var imageBlock = (r.image_url)
-    ? '<div class="wc-detail-image-wrap"><img src="' + escapeHtml(CONFIG.API_BASE_URL + '/' + r.image_url) + '" alt="Classification Photo" class="wc-detail-img" onerror="this.parentElement.style.display=\'none\'"></div>'
+    ? '<div class="wc-detail-image-wrap"><img src="' + escapeHtml(resolveMediaUrl(r.image_url)) + '" alt="Classification Photo" class="wc-detail-img" onerror="this.parentElement.style.display=\'none\'"></div>'
     : '';
 
   var rows = [

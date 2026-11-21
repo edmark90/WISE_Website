@@ -52,7 +52,7 @@ function renderWasteRows(records) {
     var sourceSub = (r.barangay ? escapeHtml(r.barangay) : '') + (r.zone ? ' · Zone ' + escapeHtml(r.zone) : '');
     var thumb;
     if (WC_SHOW_IMAGES && r.image_url) {
-      thumb = '<span class="wc-thumb" onclick="viewWasteRecord(' + r.id + ')" title="View photo preview"><img src="' + escapeHtml(CONFIG.API_BASE_URL + '/' + r.image_url) + '" alt="Waste scan" onerror="this.parentElement.innerHTML=\'' + WC_PLACEHOLDER.replace(/"/g, '&quot;') + '\'"></span>';
+      thumb = '<span class="wc-thumb" onclick="viewWasteRecord(' + r.id + ')" title="View photo preview"><img src="' + escapeHtml(resolveMediaUrl(r.image_url)) + '" alt="Waste scan" onerror="this.parentElement.innerHTML=\'' + WC_PLACEHOLDER.replace(/"/g, '&quot;') + '\'"></span>';
     } else {
       thumb = '<span class="wc-thumb" onclick="viewWasteRecord(' + r.id + ')" title="View record details" aria-label="No image available">' + WC_PLACEHOLDER + '</span>';
     }

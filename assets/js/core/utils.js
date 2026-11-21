@@ -62,3 +62,13 @@ function getInitials(name) {
 function getRoleClass(role) {
   return ({ admin: 'admin', citizen: 'citizen', collector: 'collector' })[(role || '').toLowerCase()] || 'default';
 }
+
+/** Resolve a stored media path (full http/https URL or relative uploads/... path) to a loadable URL. */
+function resolveMediaUrl(path) {
+  if (!path) return '';
+  var s = String(path).trim();
+  if (/^https?:\/\//i.test(s) || s.indexOf('data:') === 0 || s.indexOf('blob:') === 0) {
+    return s;
+  }
+  return CONFIG.API_BASE_URL + '/' + s.replace(/^\/+/, '');
+}
