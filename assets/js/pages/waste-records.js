@@ -7,7 +7,7 @@
 // ---------- State ----------
 let state = {
   records: [], total: 0, page: 1, pageSize: 10,
-  wasteType: '', startDate: '', endDate: '',
+  wasteType: '', isFlagged: '', startDate: '', endDate: '',
   search: '',
 };
 
@@ -19,6 +19,7 @@ const prevBtn = $id('wc-prev');
 const nextBtn = $id('wc-next');
 const searchInput = $id('wc-search-input');
 const typeFilter = $id('wc-type-filter');
+const flagFilter = $id('wc-flag-filter');
 const dateBtn = $id('wc-date-btn');
 const dateLabel = $id('wc-date-label');
 const resetBtn = $id('wc-reset-btn');
@@ -59,6 +60,18 @@ function renderStats(s) {
     tag.className = 'wc-pill res';
     tag.textContent = 'No data';
   }
+
+  // Flagged summary report panel
+  if ($id('wc-rpt-total')) $id('wc-rpt-total').textContent = s.total_records != null ? s.total_records.toLocaleString() : '0';
+  if ($id('wc-rpt-verified')) $id('wc-rpt-verified').textContent = s.verified_records != null ? s.verified_records.toLocaleString() : '0';
+  if ($id('wc-rpt-flagged')) $id('wc-rpt-flagged').textContent = s.flagged_records != null ? s.flagged_records.toLocaleString() : '0';
+  if ($id('wc-rpt-flagged-pct')) $id('wc-rpt-flagged-pct').textContent = s.flagged_rate_pct != null ? s.flagged_rate_pct.toFixed(1) + '% of total' : '0.0% of total';
+  if ($id('wc-rpt-breakdown')) {
+    var thresh = s.low_confidence_threshold != null ? Number(s.low_confidence_threshold).toFixed(0) : '60';
+    var lowCnt = s.low_confidence_flagged != null ? s.low_confidence_flagged.toLocaleString() : '0';
+    var manCnt = s.manual_flagged != null ? s.manual_flagged.toLocaleString() : '0';
+    $id('wc-rpt-breakdown').textContent = 'Auto-flagged (<' + thresh + '% confidence): ' + lowCnt + ' · Manual admin flags: ' + manCnt;
+  }
 }
 
 function trendHtml(pct) {
@@ -86,6 +99,7 @@ async function fetchRecords() {
   const p = new URLSearchParams({ page: state.page, page_size: state.pageSize });
   if (state.search) p.set('search', state.search);
   if (state.wasteType) p.set('disposal_category', state.wasteType);
+  if (state.isFlagged !== '') p.set('is_flagged', state.isFlagged);
   if (state.startDate) p.set('start_date', state.startDate);
   if (state.endDate) p.set('end_date', state.endDate);
 
@@ -220,6 +234,14 @@ typeFilter.addEventListener('change', function () {
   fetchRecords();
 });
 
+if (flagFilter) {
+  flagFilter.addEventListener('change', function () {
+    state.isFlagged = flagFilter.value;
+    state.page = 1;
+    fetchRecords();
+  });
+}
+
 dateBtn.addEventListener('click', function () {
   if (state.startDate) {
     state.startDate = ''; state.endDate = '';
@@ -240,6 +262,8 @@ if (resetBtn) {
     state.search = '';
     typeFilter.value = '';
     state.wasteType = '';
+    if (flagFilter) flagFilter.value = '';
+    state.isFlagged = '';
     state.startDate = '';
     state.endDate = '';
     dateLabel.textContent = 'All time';

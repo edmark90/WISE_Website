@@ -216,6 +216,51 @@
           </div>
         </div>
 
+        <!-- AI Classification & Flagged Items Summary Report -->
+        <div class="wc-flagged-report wc-reveal" style="--wc-step: 2.5;">
+          <div class="wc-flagged-report-top">
+            <div class="wc-flagged-report-head">
+              <div class="wc-flagged-report-title-wrap">
+                <span class="wc-flagged-report-icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+                    <line x1="4" y1="22" x2="4" y2="15"></line>
+                  </svg>
+                </span>
+                <div>
+                  <h3 class="wc-flagged-report-title">AI Classification &amp; Flagged Items Report</h3>
+                  <p class="wc-flagged-report-sub">Live quality audit across all classified waste submissions in the database.</p>
+                </div>
+              </div>
+              <div class="wc-flagged-metrics">
+                <div class="wc-flg-metric">
+                  <span class="wc-flg-lbl">Total Classified</span>
+                  <strong class="wc-flg-val" id="wc-rpt-total">—</strong>
+                </div>
+                <div class="wc-flg-metric is-verified">
+                  <span class="wc-flg-lbl">Verified Scans</span>
+                  <strong class="wc-flg-val" id="wc-rpt-verified">—</strong>
+                </div>
+                <div class="wc-flg-metric is-flagged">
+                  <span class="wc-flg-lbl">Flagged Items</span>
+                  <strong class="wc-flg-val" id="wc-rpt-flagged">—</strong>
+                  <span class="wc-flg-pct" id="wc-rpt-flagged-pct">—</span>
+                </div>
+              </div>
+            </div>
+            <div class="wc-flagged-meaning">
+              <div class="wc-flagged-meaning-title">What does &ldquo;Flagged&rdquo; mean?</div>
+              <p class="wc-flagged-meaning-text">
+                A waste classification record is marked as <strong>Flagged</strong> when either:
+                <strong>(1) Auto-Flagged Low Confidence (&lt; 60%)</strong> — the AI model&rsquo;s confidence score fell below the 60.0% reliability threshold due to blurry, dark, or unclear photos; or
+                <strong>(2) Manual Admin Flag</strong> — an administrator marked the scan for quality review or dataset retraining.
+                Use the status filter below to inspect flagged items, verify the photo, or unflag confirmed records.
+              </p>
+              <p class="wc-flagged-breakdown" id="wc-rpt-breakdown">Auto-flagged (&lt;60% confidence): — · Manual admin flags: —</p>
+            </div>
+          </div>
+        </div>
+
         <!-- Filter bar -->
         <div class="wc-filters wc-reveal" style="--wc-step: 3;">
           <div class="wc-search-box">
@@ -241,6 +286,23 @@
               <option value="Electronic">Electronic</option>
               <option value="Hazardous">Hazardous</option>
               <option value="Residual">Residual</option>
+            </select>
+            <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </div>
+
+          <div class="wc-filter">
+            <svg class="lead" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path>
+              <line x1="4" y1="22" x2="4" y2="15"></line>
+            </svg>
+            <select id="wc-flag-filter" aria-label="Flag status filter">
+              <option value="" selected>All Status</option>
+              <option value="true">Flagged Only</option>
+              <option value="false">Verified Only</option>
             </select>
             <svg class="chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round">

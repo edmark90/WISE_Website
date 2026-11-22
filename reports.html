@@ -222,6 +222,7 @@
             <div class="rp-chip-content">
               <div class="rp-chip-num" id="rp-waste-classifications">—</div>
               <div class="rp-chip-label">AI Waste Scans</div>
+              <div class="rp-chip-sub" id="rp-waste-flagged-sub">—</div>
             </div>
           </div>
 
@@ -401,6 +402,26 @@
           <button type="button" class="rp-preview-tab" data-type="schedule">
             <span class="rp-tab-dot rp-dot-cyan"></span> Collection Schedule
           </button>
+        </div>
+
+        <!-- Dynamic Report Description & Period Findings -->
+        <div class="rp-preview-brief" id="rp-preview-brief" style="display: none;">
+          <div class="rp-brief-row">
+            <span class="rp-brief-tag">About This Report</span>
+            <p class="rp-brief-text" id="rp-preview-about"></p>
+          </div>
+          <div class="rp-brief-row">
+            <span class="rp-brief-tag rp-brief-tag-insight">Period Findings</span>
+            <p class="rp-brief-text" id="rp-preview-insight"></p>
+          </div>
+          <div class="rp-preview-legend" id="rp-preview-legend-wrap" style="display: none;">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12.01" y2="8"></line>
+            </svg>
+            <p id="rp-preview-legend"></p>
+          </div>
         </div>
 
         <!-- Preview Table Wrapper -->

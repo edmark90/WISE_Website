@@ -271,6 +271,12 @@ function loadSummary() {
 
       // Waste Classification
       setElementText('rp-waste-classifications', data.waste_classifications);
+      var wasteSubEl = $id('rp-waste-flagged-sub');
+      if (wasteSubEl) {
+        var verCnt = data.verified_count != null ? data.verified_count : 0;
+        var flgCnt = data.flagged_count != null ? data.flagged_count : 0;
+        wasteSubEl.textContent = verCnt + ' verified · ' + flgCnt + ' flagged';
+      }
       setElementText('rp-recycling-rate', (data.recycling_rate !== null && data.recycling_rate !== undefined)
         ? data.recycling_rate + '%' : '0%');
       setElementText('rp-avg-confidence', (data.avg_confidence !== null && data.avg_confidence !== undefined)
@@ -340,6 +346,29 @@ function loadReportPreview(type) {
       var subEl = $id('rp-preview-subtitle');
       if (subEl) {
         subEl.textContent = 'Verified records for ' + data.period + ' • ' + (data.total_records || 0) + ' total entries found';
+      }
+
+      var briefEl = $id('rp-preview-brief');
+      var aboutEl = $id('rp-preview-about');
+      var insightEl = $id('rp-preview-insight');
+      var legendWrapEl = $id('rp-preview-legend-wrap');
+      var legendEl = $id('rp-preview-legend');
+      if (briefEl && aboutEl && insightEl) {
+        if (data.description || data.insight) {
+          aboutEl.textContent = data.description || '';
+          insightEl.textContent = data.insight || '';
+          briefEl.style.display = 'flex';
+        } else {
+          briefEl.style.display = 'none';
+        }
+      }
+      if (legendWrapEl && legendEl) {
+        if (data.legend) {
+          legendEl.textContent = data.legend;
+          legendWrapEl.style.display = 'flex';
+        } else {
+          legendWrapEl.style.display = 'none';
+        }
       }
 
       renderPreviewTable(data, RP.searchQuery);
