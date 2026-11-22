@@ -65,7 +65,7 @@ function renderStats(s) {
   if ($id('wc-rpt-total')) $id('wc-rpt-total').textContent = s.total_records != null ? s.total_records.toLocaleString() : '0';
   if ($id('wc-rpt-verified')) $id('wc-rpt-verified').textContent = s.verified_records != null ? s.verified_records.toLocaleString() : '0';
   if ($id('wc-rpt-flagged')) $id('wc-rpt-flagged').textContent = s.flagged_records != null ? s.flagged_records.toLocaleString() : '0';
-  if ($id('wc-rpt-flagged-pct')) $id('wc-rpt-flagged-pct').textContent = s.flagged_rate_pct != null ? s.flagged_rate_pct.toFixed(1) + '% of total' : '0.0% of total';
+  if ($id('wc-rpt-flagged-pct')) $id('wc-rpt-flagged-pct').textContent = s.flagged_rate_pct != null ? '(' + s.flagged_rate_pct.toFixed(1) + '%)' : '(0.0%)';
   if ($id('wc-rpt-breakdown')) {
     var thresh = s.low_confidence_threshold != null ? Number(s.low_confidence_threshold).toFixed(0) : '60';
     var lowCnt = s.low_confidence_flagged != null ? s.low_confidence_flagged.toLocaleString() : '0';
