@@ -17,19 +17,29 @@ var DB = {
   month: 8,
   monthlyData: null,
   lineGranularity: 'daily',  // 'daily' | 'hourly'
-  lineChartMode: 'category', // 'category' | 'total'
+  lineChartMode: 'category', // 'category' | 'stacked' | 'total'
+  lineSmooth: true,          // Soften jagged dense swings while preserving exact hover counts
   activeClassFilters: {},    // { 'Biodegradable': true, ... }
   activityFilter: 'all',     // 'all' | 'complete' | 'classify'
   rawActivities: []
 };
 
-/* Modern, vibrant category colors */
+/* Modern, vibrant category colors + refined 2-tone line stroke gradients */
 var DB_CLASS_COLORS = {
   Biodegradable: '#10b981', // Emerald
   Recyclable: '#3b82f6',    // Electric Blue
   Electronic: '#8b5cf6',    // Violet
   Hazardous: '#ef4444',     // Crimson
   Residual: '#64748b'       // Slate
+};
+
+var DB_CLASS_STROKE_GRADIENTS = {
+  Biodegradable: ['#34d399', '#059669'],
+  Recyclable: ['#60a5fa', '#2563eb'],
+  Electronic: ['#a78bfa', '#7c3aed'],
+  Hazardous: ['#fb7185', '#dc2626'],
+  Residual: ['#94a3b8', '#475569'],
+  'Total Volume': ['#60a5fa', '#1d4ed8']
 };
 
 var DB_CLASS_ORDER = ['Biodegradable', 'Recyclable', 'Electronic', 'Hazardous', 'Residual'];
@@ -185,7 +195,7 @@ function wireControls() {
     });
   }
 
-  // Line chart view mode switchers (By Category vs Total Volume)
+  // Line chart view mode switchers (By Category vs Stacked vs Total)
   var viewModeContainer = $id('db-line-view-mode');
   if (viewModeContainer) {
     viewModeContainer.addEventListener('click', function (e) {
@@ -194,6 +204,17 @@ function wireControls() {
       viewModeContainer.querySelectorAll('.db-view-btn').forEach(function (b) { b.classList.remove('active'); });
       btn.classList.add('active');
       DB.lineChartMode = btn.dataset.mode || 'category';
+      if (DB.monthlyData) renderLineChart(DB.monthlyData);
+    });
+  }
+
+  // Smooth curve toggle (softens jagged dense swings while keeping exact tooltip values)
+  var smoothBtn = $id('db-line-smooth');
+  if (smoothBtn) {
+    smoothBtn.addEventListener('click', function () {
+      DB.lineSmooth = !DB.lineSmooth;
+      smoothBtn.classList.toggle('active', DB.lineSmooth);
+      smoothBtn.setAttribute('aria-pressed', DB.lineSmooth ? 'true' : 'false');
       if (DB.monthlyData) renderLineChart(DB.monthlyData);
     });
   }
@@ -567,6 +588,48 @@ function getLineCategoryColor(name, idx) {
   return getCategoryColor(name, idx);
 }
 
+function getLineStrokeStops(name, fallbackColor) {
+  if (DB_CLASS_STROKE_GRADIENTS[name]) return DB_CLASS_STROKE_GRADIENTS[name];
+  return [fallbackColor, fallbackColor];
+}
+
+function formatCompactAxisNum(n) {
+  var num = Number(n) || 0;
+  if (num >= 10000) return Math.round(num / 1000) + 'k';
+  if (num >= 1000) {
+    var k = num / 1000;
+    return (k % 1 === 0 ? k.toFixed(0) : k.toFixed(1)) + 'k';
+  }
+  return num.toLocaleString();
+}
+
+/**
+ * Zero-preserving gentle curve smoothing for dense multi-point swings.
+ * Keeps zeros and isolated single-bin spikes exact while calming chaotic sawtooth runs;
+ * raw counts are always preserved separately for tooltips and totals.
+ */
+function smoothSeriesForDisplay(vals, enabled) {
+  if (!enabled || !vals || vals.length < 3) return vals.slice();
+  var out = vals.slice();
+  var n = vals.length;
+  for (var i = 0; i < n; i++) {
+    var curr = vals[i] || 0;
+    if (curr <= 0) continue;
+    var prev = i > 0 ? (vals[i - 1] || 0) : 0;
+    var next = i < n - 1 ? (vals[i + 1] || 0) : 0;
+    // Preserve isolated single-day spikes and 2-point bursts at exact height
+    if (prev <= 0 && next <= 0) continue;
+    if (prev > 0 && next > 0) {
+      out[i] = 0.20 * prev + 0.60 * curr + 0.20 * next;
+    } else if (prev > 0) {
+      out[i] = 0.22 * prev + 0.78 * curr;
+    } else if (next > 0) {
+      out[i] = 0.78 * curr + 0.22 * next;
+    }
+  }
+  return out;
+}
+
 function formatHourShort(hour) {
   var h = Number(hour) || 0;
   if (h === 0) return '12 AM';
@@ -701,10 +764,10 @@ function renderLineChart(data) {
   // Exact responsive container geometry (1:1 SVG scaling avoids oval dot distortion)
   var rect = el.getBoundingClientRect();
   var W = Math.max(280, Math.floor(rect.width || 680));
-  var H = Math.max(220, Math.floor(rect.height || (W < 480 ? 245 : 300)));
-  var padL = W < 360 ? 34 : 46;
+  var H = Math.max(240, Math.floor(rect.height || (W < 480 ? 260 : 325)));
+  var padL = W < 360 ? 36 : 48;
   var padR = W < 360 ? 20 : 28;
-  var padT = 26;
+  var padT = 28;
   var padB = 38;
   var plotW = W - padL - padR;
   var plotH = H - padT - padB;
@@ -725,15 +788,35 @@ function renderLineChart(data) {
     totalNonZeroPts > 18 ||
     (visibleBaseSeries.length >= 3 && maxSeriesNonZero > 6)
   );
-  var splineTension = isDense ? 0.64 : 0.80;
+  var splineTension = isDense ? 0.68 : 0.82;
+  var useSmooth = !!DB.lineSmooth;
+
+  // Prepare display-smoothed arrays while preserving exact raw values for tooltips & totals
+  var displayTotals = smoothSeriesForDisplay(visibleTotals, useSmooth);
+  var displaySeriesList = visibleBaseSeries.map(function (s) {
+    return smoothSeriesForDisplay(s.values, useSmooth);
+  });
 
   // Max value & crisp integer Y ticks
   var maxVal = 0;
   if (mode === 'total' || mode === 'stacked') {
-    visibleTotals.forEach(function (v) { if (v > maxVal) maxVal = v; });
+    for (var mv = 0; mv < binCount; mv++) {
+      if (visibleTotals[mv] > maxVal) maxVal = visibleTotals[mv];
+      if (mode === 'total' && displayTotals[mv] > maxVal) maxVal = displayTotals[mv];
+    }
+    if (mode === 'stacked') {
+      for (var smv = 0; smv < binCount; smv++) {
+        var dispStackSum = 0;
+        for (var siM = 0; siM < displaySeriesList.length; siM++) {
+          dispStackSum += (displaySeriesList[siM][smv] || 0);
+        }
+        if (dispStackSum > maxVal) maxVal = dispStackSum;
+      }
+    }
   } else {
-    visibleBaseSeries.forEach(function (s) {
+    visibleBaseSeries.forEach(function (s, idx) {
       s.values.forEach(function (v) { if (v > maxVal) maxVal = v; });
+      displaySeriesList[idx].forEach(function (v) { if (v > maxVal) maxVal = v; });
     });
   }
   var yAxis = computeNiceYAxis(maxVal);
@@ -743,14 +826,19 @@ function renderLineChart(data) {
   var baseY = padT + plotH;
   var pxPerUnit = plotH / (maxY || 1);
 
+  // Determine visual rank order (top 2 categories get full prominence in dense 4-5 series views)
+  var sortedTotals = visibleBaseSeries.map(function (s) { return s.total; }).sort(function (a, b) { return b - a; });
+  var leadingTotal = sortedTotals.length > 0 ? sortedTotals[0] : 0;
+  var secondaryThreshold = sortedTotals.length >= 4 ? sortedTotals[2] : -1;
+
   // Compute clean, non-tangled coordinates for every visible series
   var renderedSeries = [];
   if (mode === 'total') {
     var totalPts = [];
     for (var ti = 0; ti < binCount; ti++) {
-      totalPts.push([padL + ti * step, yFor(visibleTotals[ti])]);
+      totalPts.push([padL + ti * step, yFor(displayTotals[ti])]);
     }
-    var totalParts = buildMonotoneCubicSplineParts(totalPts, visibleTotals, baseY, padT + 2, 0.78);
+    var totalParts = buildMonotoneCubicSplineParts(totalPts, visibleTotals, baseY, padT + 2, 0.80);
     var totalAreaD = totalParts.fullPath +
       ' L ' + totalPts[totalPts.length - 1][0].toFixed(1) + ' ' + baseY.toFixed(1) +
       ' L ' + totalPts[0][0].toFixed(1) + ' ' + baseY.toFixed(1) + ' Z';
@@ -759,6 +847,8 @@ function renderLineChart(data) {
       color: '#2563eb',
       values: visibleTotals,
       total: visibleTotalRecords,
+      isLeader: true,
+      isSecondary: false,
       pts: totalPts,
       lowerPts: null,
       path: totalParts.fullPath,
@@ -770,26 +860,30 @@ function renderLineChart(data) {
     });
   } else if (mode === 'stacked') {
     // Largest categories sit at the bottom for rock-solid visual stability & zero crossings
-    var stackOrder = visibleBaseSeries.slice().sort(function (a, b) {
-      if (b.total !== a.total) return b.total - a.total;
-      return a.name.localeCompare(b.name);
+    var stackIndices = visibleBaseSeries.map(function (s, idx) {
+      return { series: s, disp: displaySeriesList[idx] };
+    }).sort(function (a, b) {
+      if (b.series.total !== a.series.total) return b.series.total - a.series.total;
+      return a.series.name.localeCompare(b.series.name);
     });
     var cumulative = new Array(binCount).fill(0);
     var prevPts = [];
     for (var si0 = 0; si0 < binCount; si0++) {
       prevPts.push([padL + si0 * step, baseY]);
     }
-    var prevParts = buildMonotoneCubicSplineParts(prevPts, null, baseY, padT + 2, 0.72);
+    var prevParts = buildMonotoneCubicSplineParts(prevPts, null, baseY, padT + 2, 0.74);
 
-    renderedSeries = stackOrder.map(function (s) {
+    renderedSeries = stackIndices.map(function (item) {
+      var s = item.series;
+      var dispVals = item.disp;
       var lowerPts = prevPts.slice();
       var lowerRev = prevParts.reverseSegs;
       var upperPts = [];
       for (var bi = 0; bi < binCount; bi++) {
-        cumulative[bi] += (s.values[bi] || 0);
+        cumulative[bi] += (dispVals[bi] || 0);
         upperPts.push([padL + bi * step, yFor(cumulative[bi])]);
       }
-      var upperParts = buildMonotoneCubicSplineParts(upperPts, s.values, baseY, padT + 2, 0.72);
+      var upperParts = buildMonotoneCubicSplineParts(upperPts, s.values, baseY, padT + 2, 0.74);
       var lastLower = lowerPts[lowerPts.length - 1];
       var ribbonPath = upperParts.fullPath +
         ' L ' + lastLower[0].toFixed(1) + ' ' + lastLower[1].toFixed(1) +
@@ -803,6 +897,8 @@ function renderLineChart(data) {
         color: s.color,
         values: s.values,
         total: s.total,
+        isLeader: false,
+        isSecondary: false,
         pts: upperPts,
         lowerPts: lowerPts,
         path: upperParts.fullPath,
@@ -816,25 +912,27 @@ function renderLineChart(data) {
     });
   } else {
     // Keep X strictly aligned to bin columns so spline slopes never distort or whip backward
-    var ptsMatrix = visibleBaseSeries.map(function (s) {
+    var ptsMatrix = visibleBaseSeries.map(function (s, idx) {
+      var dispVals = displaySeriesList[idx];
       var arr = [];
       for (var i = 0; i < binCount; i++) {
-        arr.push([padL + i * step, yFor(s.values[i])]);
+        arr.push([padL + i * step, yFor(dispVals[i])]);
       }
       return arr;
     });
     var tiesMatrix = visibleBaseSeries.map(function () { return new Array(binCount).fill(false); });
     var dashOverlapSeries = visibleBaseSeries.map(function () { return false; });
 
-    // Apply subtle vertical-only micro-lane separation (dy) whenever >=2 series tie at the same positive value
+    // Apply subtle vertical-only micro-lane separation (dy) whenever >=2 series collide at the same positive display height
     if (visibleBaseSeries.length > 1) {
       for (var bi = 0; bi < binCount; bi++) {
         var groupsByVal = {};
         for (var sIdx = 0; sIdx < visibleBaseSeries.length; sIdx++) {
-          var val = visibleBaseSeries[sIdx].values[bi];
-          if (val > 0) {
-            if (!groupsByVal[val]) groupsByVal[val] = [];
-            groupsByVal[val].push(sIdx);
+          var rawVal = visibleBaseSeries[sIdx].values[bi];
+          if (rawVal > 0) {
+            var dispKey = Math.round(displaySeriesList[sIdx][bi] * 10) / 10;
+            if (!groupsByVal[dispKey]) groupsByVal[dispKey] = [];
+            groupsByVal[dispKey].push(sIdx);
           }
         }
 
@@ -846,10 +944,10 @@ function renderLineChart(data) {
           var baseBinX = padL + bi * step;
           var rawY = yFor(Number(valKey));
 
-          // Vertical-only separation stays gentle (<=22% of 1 unit, max 6px half-spread)
-          var maxHalfY = Math.min(6.0, Math.max(0.8, pxPerUnit * 0.22));
-          var dyStep = Math.min(3.0, (maxHalfY * 2) / (k - 1));
-          var crampedVertically = dyStep < 1.9;
+          // Vertical-only separation stays gentle (<=22% of 1 unit, max 5.5px half-spread)
+          var maxHalfY = Math.min(5.5, Math.max(0.8, pxPerUnit * 0.22));
+          var dyStep = Math.min(2.8, (maxHalfY * 2) / (k - 1));
+          var crampedVertically = dyStep < 1.8;
 
           grp.forEach(function (sIndex, pos) {
             var centerOff = pos - (k - 1) / 2;
@@ -865,17 +963,23 @@ function renderLineChart(data) {
       }
     }
 
+    var leaderClaimed = false;
     renderedSeries = visibleBaseSeries.map(function (s, idx) {
       var pts = ptsMatrix[idx];
       var parts = buildMonotoneCubicSplineParts(pts, s.values, baseY, padT + 2, splineTension);
       var areaD = parts.fullPath +
         ' L ' + pts[pts.length - 1][0].toFixed(1) + ' ' + baseY.toFixed(1) +
         ' L ' + pts[0][0].toFixed(1) + ' ' + baseY.toFixed(1) + ' Z';
+      var isLeader = !leaderClaimed && s.total === leadingTotal && leadingTotal > 0;
+      if (isLeader) leaderClaimed = true;
+      var isSecondary = isDense && visibleBaseSeries.length >= 4 && s.total < secondaryThreshold;
       return {
         name: s.name,
         color: s.color,
         values: s.values,
         total: s.total,
+        isLeader: isLeader,
+        isSecondary: isSecondary,
         pts: pts,
         lowerPts: null,
         path: parts.fullPath,
@@ -886,6 +990,12 @@ function renderLineChart(data) {
         dashOffset: idx * 5,
         ties: tiesMatrix[idx]
       };
+    });
+
+    // Paint secondary lines behind primary lines so dominant trends always read cleanly on top
+    renderedSeries.sort(function (a, b) {
+      if (a.isSecondary !== b.isSecondary) return a.isSecondary ? -1 : 1;
+      return a.total - b.total;
     });
   }
 
@@ -924,33 +1034,39 @@ function renderLineChart(data) {
   var todayMarkerSvg = '';
   if (currentMarkerBin >= 0 && currentMarkerBin < binCount) {
     var tx = padL + currentMarkerBin * step;
-    var pillWNow = currentMarkerLabel === 'TODAY' ? 38 : 32;
+    var pillWNow = currentMarkerLabel === 'TODAY' ? 40 : 34;
     todayMarkerSvg =
       '<line class="db-line-today-line" x1="' + tx.toFixed(1) + '" y1="' + (padT - 4) + '" x2="' + tx.toFixed(1) + '" y2="' + baseY + '"/>' +
-      '<rect class="db-line-today-pill" x="' + (tx - pillWNow / 2).toFixed(1) + '" y="4" width="' + pillWNow + '" height="14" rx="7"/>' +
-      '<text class="db-line-today-txt" x="' + tx.toFixed(1) + '" y="13.5" text-anchor="middle">' + currentMarkerLabel + '</text>';
+      '<rect class="db-line-today-pill" x="' + (tx - pillWNow / 2).toFixed(1) + '" y="4" width="' + pillWNow + '" height="15" rx="7.5"/>' +
+      '<text class="db-line-today-txt" x="' + tx.toFixed(1) + '" y="14" text-anchor="middle">' + currentMarkerLabel + '</text>';
   }
 
-  // SVG Linear Gradients (Crisp fills for Total/Stacked/Spotlight without muddy 5-layer overlap)
+  // SVG Linear Gradients: Luminous horizontal stroke gradients + crisp vertical area fills
   var defs = '<defs>' +
     '<linearGradient id="db-band-grad" x1="0" y1="0" x2="0" y2="1">' +
-      '<stop offset="0%" stop-color="#2563eb" stop-opacity="0.08"/>' +
+      '<stop offset="0%" stop-color="#2563eb" stop-opacity="0.09"/>' +
       '<stop offset="100%" stop-color="#2563eb" stop-opacity="0.01"/>' +
     '</linearGradient>' +
     renderedSeries.map(function (s, idx) {
       var gradId = 'db-line-grad-' + idx;
-      var topOp = mode === 'stacked' ? '0.42' : (mode === 'total' ? '0.24' : '0.16');
-      var midOp = mode === 'stacked' ? '0.28' : (mode === 'total' ? '0.07' : '0.05');
-      var endOp = mode === 'stacked' ? '0.16' : '0.0';
-      return '<linearGradient id="' + gradId + '" x1="0" y1="0" x2="0" y2="1">' +
-        '<stop offset="0%" stop-color="' + s.color + '" stop-opacity="' + topOp + '"/>' +
-        '<stop offset="65%" stop-color="' + s.color + '" stop-opacity="' + midOp + '"/>' +
-        '<stop offset="100%" stop-color="' + s.color + '" stop-opacity="' + endOp + '"/>' +
-      '</linearGradient>';
+      var strokeGradId = 'db-stroke-grad-' + idx;
+      var stops = getLineStrokeStops(s.name, s.color);
+      var topOp = mode === 'stacked' ? '0.44' : (mode === 'total' ? '0.24' : '0.18');
+      var midOp = mode === 'stacked' ? '0.26' : (mode === 'total' ? '0.07' : '0.05');
+      var endOp = mode === 'stacked' ? '0.14' : '0.0';
+      return '<linearGradient id="' + strokeGradId + '" x1="0" y1="0" x2="1" y2="0">' +
+          '<stop offset="0%" stop-color="' + stops[0] + '"/>' +
+          '<stop offset="100%" stop-color="' + stops[1] + '"/>' +
+        '</linearGradient>' +
+        '<linearGradient id="' + gradId + '" x1="0" y1="0" x2="0" y2="1">' +
+          '<stop offset="0%" stop-color="' + s.color + '" stop-opacity="' + topOp + '"/>' +
+          '<stop offset="62%" stop-color="' + s.color + '" stop-opacity="' + midOp + '"/>' +
+          '<stop offset="100%" stop-color="' + s.color + '" stop-opacity="' + endOp + '"/>' +
+        '</linearGradient>';
     }).join('') +
   '</defs>';
 
-  // Subtle horizontal Y-gridlines + Left Vertical Y-Axis Spine + Short Cross-Ticks
+  // Subtle horizontal Y-gridlines + Crisp 0-baseline + Left Vertical Y-Axis Spine
   var hGridSvg = yTicks.map(function (yv) {
     var y = yFor(yv);
     var cls = yv === 0 ? 'db-line-xbase' : 'db-line-hgrid';
@@ -961,8 +1077,8 @@ function renderLineChart(data) {
     '<line class="db-line-yaxis" x1="' + padL + '" y1="' + (padT - 6) + '" x2="' + padL + '" y2="' + baseY + '"/>' +
     yTicks.map(function (yv) {
       var y = yFor(yv);
-      return '<line class="db-line-ytick" x1="' + (padL - 5) + '" y1="' + y.toFixed(1) + '" x2="' + (padL + 5) + '" y2="' + y.toFixed(1) + '"/>' +
-        '<text class="db-line-label y" x="' + (padL - 10) + '" y="' + (y + 3.5).toFixed(1) + '" text-anchor="end">' + yv.toLocaleString() + '</text>';
+      return '<line class="db-line-ytick" x1="' + (padL - 4) + '" y1="' + y.toFixed(1) + '" x2="' + (padL + 4) + '" y2="' + y.toFixed(1) + '"/>' +
+        '<text class="db-line-label y" x="' + (padL - 10) + '" y="' + (y + 3.5).toFixed(1) + '" text-anchor="end">' + formatCompactAxisNum(yv) + '</text>';
     }).join('');
 
   // Crisp Vertical Column Dividers + Uppercase X Labels
@@ -980,10 +1096,11 @@ function renderLineChart(data) {
     return '<text class="db-line-label x" x="' + x.toFixed(1) + '" y="' + (H - 12) + '" text-anchor="middle">' + labelTxt + '</text>';
   }).join('');
 
-  // Series Curves, Area Fills & Smart Anti-Clutter Data Nodes
-  var showAreaByDefault = mode === 'total' || mode === 'stacked' || renderedSeries.length <= 2;
+  // Series Curves, Soft Luminous Area Fills & Glowing Terminal Nodes
+  var showFullAreaByDefault = mode === 'total' || mode === 'stacked' || renderedSeries.length <= 2;
   var pathsSvg = renderedSeries.map(function (s, idx) {
     var gradId = 'db-line-grad-' + idx;
+    var strokeGradId = 'db-stroke-grad-' + idx;
     var dashAttr = s.needsDash ? ' stroke-dasharray="6 4" stroke-dashoffset="' + s.dashOffset + '"' : '';
 
     var firstPos = -1;
@@ -1003,34 +1120,45 @@ function renderLineChart(data) {
         var prevV = bIdx > 0 ? (s.values[bIdx - 1] || 0) : 0;
         var nextV = bIdx < binCount - 1 ? (s.values[bIdx + 1] || 0) : 0;
         var isIsolatedSpike = prevV === 0 && nextV === 0;
-        var isEndpoint = (bIdx === firstPos || bIdx === lastPos);
+        var isLastActive = bIdx === lastPos;
+        var isEndpoint = (bIdx === firstPos || isLastActive);
 
-        // In dense multi-series mode, suppress intermediate dots to eliminate bead clutter;
-        // keep isolated single-bin spikes visible (and all dots appear crisply on hover).
-        if (isDense && !isIsolatedSpike) return '';
-        if (mode === 'total' && totalNonZeroPts > 16 && !isIsolatedSpike && !isEndpoint) return '';
+        // In dense multi-series mode, show ONLY glowing terminal markers (on primary lines) + isolated spikes
+        if (isDense && !isIsolatedSpike && !(isLastActive && !s.isSecondary)) return '';
+        if (mode === 'total' && totalNonZeroPts > 14 && !isIsolatedSpike && !isEndpoint) return '';
 
         var isTied = s.ties && s.ties[bIdx];
-        var rSize = isEndpoint ? '3.8' : (isTied ? '3.0' : '3.3');
-        return '<circle class="db-line-dot' + (isTied ? ' is-tied' : '') + (isEndpoint ? ' is-end' : '') + '" ' +
+        var haloHtml = isLastActive
+          ? '<circle class="db-line-dot-halo" cx="' + pt[0].toFixed(1) + '" cy="' + pt[1].toFixed(1) + '" r="7.5" fill="' + s.color + '"/>'
+          : '';
+        var rSize = isLastActive ? '3.8' : (isEndpoint ? '3.6' : (isTied ? '3.0' : '3.2'));
+        return haloHtml +
+          '<circle class="db-line-dot' + (isTied ? ' is-tied' : '') + (isEndpoint ? ' is-end' : '') + '" ' +
           'cx="' + pt[0].toFixed(1) + '" cy="' + pt[1].toFixed(1) + '" r="' + rSize + '" ' +
-          'fill="' + s.color + '" stroke="#ffffff" stroke-width="1.5"/>';
+          'fill="' + s.color + '" stroke="#ffffff" stroke-width="1.6"/>';
       }).join('');
     }
 
+    var showSoftLeaderAura = !showFullAreaByDefault && mode === 'category' && s.isLeader;
     var groupClasses = 'db-line-series' +
-      (showAreaByDefault ? ' show-area' : '') +
+      (showFullAreaByDefault ? ' show-area' : '') +
+      (showSoftLeaderAura ? ' show-soft-area' : '') +
       (isDense ? ' is-dense' : '') +
+      (s.isSecondary ? ' is-secondary' : '') +
       (mode === 'stacked' ? ' is-stacked' : '');
+
+    // Avoid stacking 5 colored zero lines along the bottom X-axis in multi-series mode
+    var showBaseline = s.baselinePath && renderedSeries.length === 1 && mode !== 'stacked';
+    var strokePaint = mode === 'stacked' ? '#ffffff' : 'url(#' + strokeGradId + ')';
 
     return '<g class="' + groupClasses + '" data-series="' + escapeHtml(s.name) + '">' +
       '<path class="db-line-area" d="' + s.areaPath + '" fill="url(#' + gradId + ')"/>' +
-      (s.baselinePath && mode !== 'stacked'
+      (showBaseline
         ? '<path class="db-line-baseline" d="' + s.baselinePath + '" stroke="' + s.color + '"/>'
         : '') +
       (s.activePath
         ? (mode !== 'stacked' ? '<path class="db-line-casing" d="' + s.activePath + '"/>' : '') +
-          '<path class="db-line-path" d="' + s.activePath + '" stroke="' + s.color + '"' + dashAttr + '/>'
+          '<path class="db-line-path" d="' + s.activePath + '" stroke="' + strokePaint + '"' + dashAttr + '/>'
         : '') +
       dotsHtml +
     '</g>';
@@ -1047,24 +1175,26 @@ function renderLineChart(data) {
     });
     if (soloPeakMax > 0 && soloSeries.pts[soloPeakIdx]) {
       var pkPt = soloSeries.pts[soloPeakIdx];
-      var pillW = 64;
+      var peakText = 'Peak: ' + soloPeakMax.toLocaleString();
+      var pillW = Math.max(66, peakText.length * 6.2 + 16);
       var pillX = Math.max(padL + 6, Math.min(W - padR - pillW, pkPt[0] - pillW / 2));
-      var pillY = Math.max(2, pkPt[1] - 24);
+      var pillY = Math.max(2, pkPt[1] - 25);
       peakTagSvg =
         '<g class="db-line-peak-tag">' +
-          '<rect x="' + pillX.toFixed(1) + '" y="' + pillY.toFixed(1) + '" width="' + pillW + '" height="17" rx="8.5" fill="#ffffff" stroke="' + soloSeries.color + '" stroke-width="1.2"/>' +
-          '<text x="' + (pillX + pillW / 2).toFixed(1) + '" y="' + (pillY + 11.5).toFixed(1) + '" text-anchor="middle" fill="' + soloSeries.color + '">Peak: ' + soloPeakMax + '</text>' +
+          '<rect x="' + pillX.toFixed(1) + '" y="' + pillY.toFixed(1) + '" width="' + pillW.toFixed(1) + '" height="18" rx="9" fill="#ffffff" stroke="' + soloSeries.color + '" stroke-width="1.25"/>' +
+          '<text x="' + (pillX + pillW / 2).toFixed(1) + '" y="' + (pillY + 12).toFixed(1) + '" text-anchor="middle" fill="' + soloSeries.color + '">' + peakText + '</text>' +
         '</g>';
     }
   }
 
-  // Interactive Bin Band, Crosshair & Focus Rings
-  var bandW = Math.max(14, Math.min(34, step * 0.85));
+  // Interactive Bin Band, Crosshair & Glowing Focus Halo Rings
+  var bandW = Math.max(16, Math.min(36, step * 0.85));
   var overlaySvg =
-    '<rect class="db-focus-band" id="db-focus-band" x="0" y="' + padT + '" width="' + bandW.toFixed(1) + '" height="' + plotH + '" rx="4" fill="url(#db-band-grad)"/>' +
+    '<rect class="db-focus-band" id="db-focus-band" x="0" y="' + padT + '" width="' + bandW.toFixed(1) + '" height="' + plotH + '" rx="6" fill="url(#db-band-grad)"/>' +
     '<line class="db-crosshair" id="db-crosshair" x1="0" y1="' + padT + '" x2="0" y2="' + baseY + '"/>' +
     renderedSeries.map(function (s, idx) {
-      return '<circle class="db-focus-dot" id="db-focus-' + idx + '" r="5" fill="' + s.color + '"/>';
+      return '<circle class="db-focus-halo" id="db-focus-halo-' + idx + '" r="10" fill="' + s.color + '"/>' +
+        '<circle class="db-focus-dot" id="db-focus-' + idx + '" r="5" fill="' + s.color + '"/>';
     }).join('') +
     '<rect class="db-hit" x="' + Math.max(0, padL - 10) + '" y="' + Math.max(0, padT - 10) + '" width="' + (plotW + 20) + '" height="' + (plotH + 20) + '"/>';
 
@@ -1104,6 +1234,9 @@ function wireLineChartInteraction(container, seriesList, allSeries, geo) {
   var seriesGroups = Array.prototype.slice.call(svgEl.querySelectorAll('.db-line-series'));
   var focusDots = seriesList.map(function (_, idx) {
     return container.querySelector('#db-focus-' + idx);
+  });
+  var focusHalos = seriesList.map(function (_, idx) {
+    return container.querySelector('#db-focus-halo-' + idx);
   });
 
   function applyHoverSpotlight(spotlightSet) {
@@ -1177,18 +1310,24 @@ function wireLineChartInteraction(container, seriesList, allSeries, geo) {
       applyHoverSpotlight(spotlightNames);
     }
 
-    // Move each focus dot to its coordinate (dim non-spotlighted dots when isolating)
+    // Move each focus dot + glowing halo to its coordinate
     seriesList.forEach(function (s, idx) {
       var dot = focusDots[idx];
+      var halo = focusHalos[idx];
       if (!dot || !s.pts[binIndex]) return;
       var pt = s.pts[binIndex];
       var val = s.values[binIndex] || 0;
+      var isActiveDot = spotlightNames.size === 0 || spotlightNames.has(s.name);
       dot.setAttribute('cx', pt[0].toFixed(1));
       dot.setAttribute('cy', pt[1].toFixed(1));
-      var isActiveDot = spotlightNames.size === 0 || spotlightNames.has(s.name);
-      dot.setAttribute('r', val > 0 ? (isActiveDot ? '5.5' : '3.5') : '2.5');
+      dot.setAttribute('r', val > 0 ? (isActiveDot ? '5.2' : '3.2') : '2.4');
       dot.classList.toggle('is-zero', val <= 0 || !isActiveDot);
       dot.classList.add('on');
+      if (halo) {
+        halo.setAttribute('cx', pt[0].toFixed(1));
+        halo.setAttribute('cy', pt[1].toFixed(1));
+        halo.classList.toggle('on', val > 0 && isActiveDot);
+      }
     });
 
     // Tooltip header labels for Daily vs By Hour mode
@@ -1247,12 +1386,18 @@ function wireLineChartInteraction(container, seriesList, allSeries, geo) {
           var isTied = v > 0 && (valFreq[v] || 0) > 1;
           var isFocused = spotlightNames.has(item.series.name);
           var pct = totalBinVisible > 0 && v > 0 ? Math.round((v / totalBinVisible) * 100) : 0;
-          return '<div class="db-tip-row' + (v === 0 ? ' is-zero' : '') + (isFocused ? ' is-active' : '') + '">' +
-            '<span class="db-tip-swatch" style="background:' + item.series.color + '"></span>' +
-            '<span class="db-tip-name">' + escapeHtml(item.series.name) + '</span>' +
-            (isTied ? '<span class="db-tip-tie" title="Same count across categories">Tie</span>' : '') +
-            (v > 0 ? '<span class="db-tip-pct">' + pct + '%</span>' : '') +
-            '<span class="db-tip-val">' + v.toLocaleString() + '</span>' +
+          var barHtml = v > 0
+            ? '<div class="db-tip-bar"><span style="width:' + Math.max(4, pct) + '%;background:' + item.series.color + '"></span></div>'
+            : '';
+          return '<div class="db-tip-item' + (v === 0 ? ' is-zero' : '') + (isFocused ? ' is-active' : '') + '">' +
+            '<div class="db-tip-row' + (v === 0 ? ' is-zero' : '') + (isFocused ? ' is-active' : '') + '">' +
+              '<span class="db-tip-swatch" style="background:' + item.series.color + '"></span>' +
+              '<span class="db-tip-name">' + escapeHtml(item.series.name) + '</span>' +
+              (isTied ? '<span class="db-tip-tie" title="Same count across categories">Tie</span>' : '') +
+              (v > 0 ? '<span class="db-tip-pct">' + pct + '%</span>' : '') +
+              '<span class="db-tip-val">' + v.toLocaleString() + '</span>' +
+            '</div>' +
+            barHtml +
           '</div>';
         }).join('');
       }
@@ -1275,8 +1420,8 @@ function wireLineChartInteraction(container, seriesList, allSeries, geo) {
 
     // Measure & clamp tooltip cleanly inside chart container
     tooltip.classList.add('on');
-    var tipW = tooltip.offsetWidth || 195;
-    var tipH = tooltip.offsetHeight || 110;
+    var tipW = tooltip.offsetWidth || 215;
+    var tipH = tooltip.offsetHeight || 120;
     var binCenterPx = svgRect.left - contRect.left + (binX / geo.W) * svgRect.width;
     var pointerY = clientY - contRect.top;
 
@@ -1294,6 +1439,7 @@ function wireLineChartInteraction(container, seriesList, allSeries, geo) {
     crosshair.classList.remove('on');
     if (focusBand) focusBand.classList.remove('on');
     focusDots.forEach(function (dot) { if (dot) dot.classList.remove('on'); });
+    focusHalos.forEach(function (halo) { if (halo) halo.classList.remove('on'); });
     applyHoverSpotlight(null);
     tooltip.classList.remove('on');
   }
@@ -1326,14 +1472,16 @@ function renderLineLegend(classes, allSeries, chartContainer, isFiltered) {
     return;
   }
 
+  var totalAll = allSeries.reduce(function (acc, s) { return acc + (s.total || 0); }, 0);
   var pillsHtml = classes.map(function (k, idx) {
     var color = getLineCategoryColor(k, idx);
     var isOff = DB.activeClassFilters[k] === false;
     var count = totalByClass[k] || 0;
-    return '<button type="button" class="db-legend-btn' + (isOff ? ' is-off' : '') + '" data-class="' + escapeHtml(k) + '" title="Hover to spotlight \u00b7 Click to filter">' +
+    var pct = totalAll > 0 ? Math.round((count / totalAll) * 100) : 0;
+    return '<button type="button" class="db-legend-btn' + (isOff ? ' is-off' : '') + '" data-class="' + escapeHtml(k) + '" style="--lg-color:' + color + '" title="Hover to spotlight \u00b7 Click to filter">' +
       '<span class="db-legend-swatch" style="background:' + color + '"></span>' +
       '<span>' + escapeHtml(k) + '</span>' +
-      '<span class="db-legend-count">' + count.toLocaleString() + '</span>' +
+      '<span class="db-legend-count">' + count.toLocaleString() + (pct > 0 ? ' \u00b7 ' + pct + '%' : '') + '</span>' +
     '</button>';
   }).join('');
 
