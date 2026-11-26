@@ -1237,13 +1237,24 @@
   stroke-width: 1.15;
 }
 
+.db-line-xbase {
+  stroke: #e2e8f0;
+  stroke-width: 1.1;
+}
+
+.db-line-hgrid {
+  stroke: #f1f5f9;
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+}
+
 .db-line-ytick {
   stroke: #cbd5e1;
   stroke-width: 1.1;
 }
 
 .db-line-xmark {
-  stroke: #e2e8f0;
+  stroke: #f1f5f9;
   stroke-width: 1;
 }
 
@@ -1315,52 +1326,68 @@
 .db-line-casing {
   fill: none;
   stroke: var(--db-surface);
-  stroke-width: 3.8;
+  stroke-width: 3.4;
   stroke-linecap: round;
   stroke-linejoin: round;
-  opacity: 0.94;
+  opacity: 0.92;
   pointer-events: none;
-  transition: opacity 0.2s ease;
+  transition: opacity 0.18s ease;
 }
 
 /* Primary active spline curves */
 .db-line-path {
   fill: none;
-  stroke-width: 2.35;
+  stroke-width: 2.25;
   stroke-linecap: round;
   stroke-linejoin: round;
   pointer-events: none;
-  filter: drop-shadow(0 2px 5px rgba(15, 23, 42, 0.1));
-  transition: opacity 0.2s ease, stroke-width 0.2s ease;
+  filter: drop-shadow(0 1.5px 3px rgba(15, 23, 42, 0.08));
+  transition: opacity 0.18s ease, stroke-width 0.18s ease;
+}
+
+/* Dense multi-series mode: sleeker, shadow-free strokes keep crowded crossings crystal clear */
+.db-line-series.is-dense .db-line-casing {
+  stroke-width: 3;
+}
+
+.db-line-series.is-dense .db-line-path {
+  stroke-width: 1.95;
+  filter: none;
+}
+
+/* Stacked area mode: crisp thin top edge on smooth non-crossing bands */
+.db-line-series.is-stacked .db-line-path {
+  stroke-width: 1.65;
+  filter: none;
 }
 
 .db-line-series.is-spotlight .db-line-path {
-  stroke-width: 3.1;
-  filter: drop-shadow(0 4px 10px rgba(15, 23, 42, 0.18));
+  stroke-width: 3;
+  filter: drop-shadow(0 3px 8px rgba(15, 23, 42, 0.16));
 }
 
 .db-line-dot {
   pointer-events: none;
-  filter: drop-shadow(0 1px 3px rgba(15, 23, 42, 0.16));
-  transition: opacity 0.2s ease, r 0.16s var(--db-ease);
+  filter: drop-shadow(0 1px 2px rgba(15, 23, 42, 0.14));
+  transition: opacity 0.18s ease, r 0.16s var(--db-ease);
 }
 
 .db-line-dot.is-end {
-  filter: drop-shadow(0 2px 5px rgba(15, 23, 42, 0.22));
+  filter: drop-shadow(0 1.5px 4px rgba(15, 23, 42, 0.18));
 }
 
 .db-line-series.is-spotlight .db-line-dot {
   r: 4.5;
 }
 
-/* Series dimming on legend hover spotlight */
+/* Series dimming on legend or direct-canvas hover spotlight */
 .db-line-series.is-dim .db-line-path,
 .db-line-series.is-dim .db-line-dot {
-  opacity: 0.12;
+  opacity: 0.14;
 }
 
 .db-line-series.is-dim .db-line-casing {
-  opacity: 0.15;
+  opacity: 0.12;
 }
 
 .db-line-series.is-dim .db-line-baseline {
@@ -1368,7 +1395,24 @@
 }
 
 .db-line-series.is-dim .db-line-area {
-  opacity: 0 !important;
+  opacity: 0.06 !important;
+}
+
+.db-line-series.is-stacked.is-dim .db-line-area {
+  opacity: 0.18 !important;
+}
+
+.db-tip-row.is-active {
+  background: rgba(37, 99, 235, 0.08);
+  border-radius: 6px;
+  padding: 2px 5px;
+  margin: -2px -5px;
+}
+
+.db-tip-row.is-active .db-tip-name,
+.db-tip-row.is-active .db-tip-val {
+  color: var(--db-ink);
+  font-weight: 700;
 }
 
 .db-line-peak-tag {

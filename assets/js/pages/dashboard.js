@@ -395,15 +395,17 @@ function showMonthlyStatDefaults() {
  * Computes Fritsch-Carlson Monotone Cubic Spline segments, splitting flat
  * zero-baseline runs from active positive curves while keeping C1 continuity.
  */
-function buildMonotoneCubicSplineParts(pts, values, clampBaseY, clampTopY) {
+function buildMonotoneCubicSplineParts(pts, values, clampBaseY, clampTopY, tension) {
   var n = pts.length;
-  if (n === 0) return { fullPath: '', activePath: '', baselinePath: '' };
+  var damp = (typeof tension === 'number' && tension > 0 && tension <= 1) ? tension : 0.82;
+  if (n === 0) return { fullPath: '', activePath: '', baselinePath: '', reverseSegs: '' };
   if (n === 1) {
     var single = 'M ' + pts[0][0].toFixed(1) + ' ' + pts[0][1].toFixed(1);
     return {
       fullPath: single,
       activePath: (values && values[0] > 0) ? single : '',
-      baselinePath: (values && values[0] > 0) ? '' : single
+      baselinePath: (values && values[0] > 0) ? '' : single,
+      reverseSegs: ''
     };
   }
 
@@ -428,7 +430,7 @@ function buildMonotoneCubicSplineParts(pts, values, clampBaseY, clampTopY) {
   }
   m.push(deltas[n - 2]);
 
-  // 3. Fritsch-Carlson strict monotonicity clamping
+  // 3. Fritsch-Carlson strict monotonicity clamping + tension damping
   for (var i = 0; i < n - 1; i++) {
     var d = deltas[i];
     if (d === 0) {
@@ -445,13 +447,17 @@ function buildMonotoneCubicSplineParts(pts, values, clampBaseY, clampTopY) {
       }
     }
   }
+  for (var mi = 0; mi < n; mi++) {
+    m[mi] *= damp;
+  }
 
-  // 4. Generate continuous full path + separate active & baseline paths
+  // 4. Generate continuous full path, separate active/baseline paths, and reverse segments for stacked ribbons
   var fullPath = 'M ' + pts[0][0].toFixed(1) + ' ' + pts[0][1].toFixed(1);
   var activePath = '';
   var baselinePath = '';
   var activeOpen = false;
   var baseOpen = false;
+  var segCoords = [];
 
   for (var i = 0; i < n - 1; i++) {
     var p0 = pts[i];
@@ -471,6 +477,8 @@ function buildMonotoneCubicSplineParts(pts, values, clampBaseY, clampTopY) {
       if (cp1y < clampTopY) cp1y = clampTopY;
       if (cp2y < clampTopY) cp2y = clampTopY;
     }
+
+    segCoords.push([p0[0], p0[1], cp1x, cp1y, cp2x, cp2y, p1[0], p1[1]]);
 
     var segCmd = ' C ' + cp1x.toFixed(1) + ' ' + cp1y.toFixed(1) +
                  ', ' + cp2x.toFixed(1) + ' ' + cp2y.toFixed(1) +
@@ -495,10 +503,19 @@ function buildMonotoneCubicSplineParts(pts, values, clampBaseY, clampTopY) {
     }
   }
 
+  var reverseSegs = '';
+  for (var ri = segCoords.length - 1; ri >= 0; ri--) {
+    var sc = segCoords[ri];
+    reverseSegs += ' C ' + sc[4].toFixed(1) + ' ' + sc[5].toFixed(1) +
+                   ', ' + sc[2].toFixed(1) + ' ' + sc[3].toFixed(1) +
+                   ', ' + sc[0].toFixed(1) + ' ' + sc[1].toFixed(1);
+  }
+
   return {
     fullPath: fullPath,
     activePath: activePath,
-    baselinePath: baselinePath
+    baselinePath: baselinePath,
+    reverseSegs: reverseSegs
   };
 }
 
@@ -626,7 +643,8 @@ function renderLineChart(data) {
 
   var totalRecordsAll = allSeries.reduce(function (acc, s) { return acc + s.total; }, 0);
 
-  // Respect interactive legend filters in By Category mode
+  // Respect interactive legend filters in By Category & Stacked modes
+  var mode = DB.lineChartMode || 'category';
   var activeClasses = classes.filter(function (k) {
     return DB.activeClassFilters[k] !== false;
   });
@@ -634,8 +652,8 @@ function renderLineChart(data) {
     DB.activeClassFilters = {};
     activeClasses = classes.slice();
   }
-  var isFiltered = DB.lineChartMode === 'category' && activeClasses.length < classes.length;
-  var visibleBaseSeries = DB.lineChartMode === 'total'
+  var isFiltered = mode !== 'total' && activeClasses.length < classes.length;
+  var visibleBaseSeries = mode === 'total'
     ? allSeries
     : allSeries.filter(function (s) { return DB.activeClassFilters[s.name] !== false; });
 
@@ -660,7 +678,7 @@ function renderLineChart(data) {
 
   var badgeEl = $id('db-line-badge');
   if (badgeEl) {
-    var shownCount = DB.lineChartMode === 'total' ? totalRecordsAll : visibleTotalRecords;
+    var shownCount = mode === 'total' ? totalRecordsAll : visibleTotalRecords;
     var peakBadgeTxt = isHourly
       ? formatHourShort(peakBinIdx)
       : (monthAbbr + ' ' + (peakBinIdx + 1));
@@ -692,9 +710,26 @@ function renderLineChart(data) {
   var plotH = H - padT - padB;
   var step = plotW / (binCount - 1 || 1);
 
+  // Detect dense multi-series datasets to apply anti-clutter styling automatically
+  var totalNonZeroPts = 0;
+  var maxSeriesNonZero = 0;
+  visibleBaseSeries.forEach(function (s) {
+    var nonZeroCount = 0;
+    for (var ci = 0; ci < binCount; ci++) {
+      if (s.values[ci] > 0) nonZeroCount++;
+    }
+    totalNonZeroPts += nonZeroCount;
+    if (nonZeroCount > maxSeriesNonZero) maxSeriesNonZero = nonZeroCount;
+  });
+  var isDense = mode === 'category' && (
+    totalNonZeroPts > 18 ||
+    (visibleBaseSeries.length >= 3 && maxSeriesNonZero > 6)
+  );
+  var splineTension = isDense ? 0.64 : 0.80;
+
   // Max value & crisp integer Y ticks
   var maxVal = 0;
-  if (DB.lineChartMode === 'total') {
+  if (mode === 'total' || mode === 'stacked') {
     visibleTotals.forEach(function (v) { if (v > maxVal) maxVal = v; });
   } else {
     visibleBaseSeries.forEach(function (s) {
@@ -708,14 +743,14 @@ function renderLineChart(data) {
   var baseY = padT + plotH;
   var pxPerUnit = plotH / (maxY || 1);
 
-  // Compute collision-free coordinates for every visible series
+  // Compute clean, non-tangled coordinates for every visible series
   var renderedSeries = [];
-  if (DB.lineChartMode === 'total') {
+  if (mode === 'total') {
     var totalPts = [];
     for (var ti = 0; ti < binCount; ti++) {
       totalPts.push([padL + ti * step, yFor(visibleTotals[ti])]);
     }
-    var totalParts = buildMonotoneCubicSplineParts(totalPts, visibleTotals, baseY, padT + 2);
+    var totalParts = buildMonotoneCubicSplineParts(totalPts, visibleTotals, baseY, padT + 2, 0.78);
     var totalAreaD = totalParts.fullPath +
       ' L ' + totalPts[totalPts.length - 1][0].toFixed(1) + ' ' + baseY.toFixed(1) +
       ' L ' + totalPts[0][0].toFixed(1) + ' ' + baseY.toFixed(1) + ' Z';
@@ -725,6 +760,7 @@ function renderLineChart(data) {
       values: visibleTotals,
       total: visibleTotalRecords,
       pts: totalPts,
+      lowerPts: null,
       path: totalParts.fullPath,
       activePath: totalParts.activePath,
       baselinePath: totalParts.baselinePath,
@@ -732,7 +768,54 @@ function renderLineChart(data) {
       needsDash: false,
       ties: []
     });
+  } else if (mode === 'stacked') {
+    // Largest categories sit at the bottom for rock-solid visual stability & zero crossings
+    var stackOrder = visibleBaseSeries.slice().sort(function (a, b) {
+      if (b.total !== a.total) return b.total - a.total;
+      return a.name.localeCompare(b.name);
+    });
+    var cumulative = new Array(binCount).fill(0);
+    var prevPts = [];
+    for (var si0 = 0; si0 < binCount; si0++) {
+      prevPts.push([padL + si0 * step, baseY]);
+    }
+    var prevParts = buildMonotoneCubicSplineParts(prevPts, null, baseY, padT + 2, 0.72);
+
+    renderedSeries = stackOrder.map(function (s) {
+      var lowerPts = prevPts.slice();
+      var lowerRev = prevParts.reverseSegs;
+      var upperPts = [];
+      for (var bi = 0; bi < binCount; bi++) {
+        cumulative[bi] += (s.values[bi] || 0);
+        upperPts.push([padL + bi * step, yFor(cumulative[bi])]);
+      }
+      var upperParts = buildMonotoneCubicSplineParts(upperPts, s.values, baseY, padT + 2, 0.72);
+      var lastLower = lowerPts[lowerPts.length - 1];
+      var ribbonPath = upperParts.fullPath +
+        ' L ' + lastLower[0].toFixed(1) + ' ' + lastLower[1].toFixed(1) +
+        lowerRev + ' Z';
+
+      prevPts = upperPts;
+      prevParts = upperParts;
+
+      return {
+        name: s.name,
+        color: s.color,
+        values: s.values,
+        total: s.total,
+        pts: upperPts,
+        lowerPts: lowerPts,
+        path: upperParts.fullPath,
+        activePath: upperParts.fullPath,
+        baselinePath: '',
+        areaPath: ribbonPath,
+        needsDash: false,
+        dashOffset: 0,
+        ties: []
+      };
+    });
   } else {
+    // Keep X strictly aligned to bin columns so spline slopes never distort or whip backward
     var ptsMatrix = visibleBaseSeries.map(function (s) {
       var arr = [];
       for (var i = 0; i < binCount; i++) {
@@ -743,7 +826,7 @@ function renderLineChart(data) {
     var tiesMatrix = visibleBaseSeries.map(function () { return new Array(binCount).fill(false); });
     var dashOverlapSeries = visibleBaseSeries.map(function () { return false; });
 
-    // Apply deterministic tie-aware micro-lane separation (dx, dy) whenever >=2 series share the same value > 0
+    // Apply subtle vertical-only micro-lane separation (dy) whenever >=2 series tie at the same positive value
     if (visibleBaseSeries.length > 1) {
       for (var bi = 0; bi < binCount; bi++) {
         var groupsByVal = {};
@@ -763,32 +846,16 @@ function renderLineChart(data) {
           var baseBinX = padL + bi * step;
           var rawY = yFor(Number(valKey));
 
-          // Horizontal bead fan stays cleanly inside bin slot & plot bounds
-          var maxHalfX = Math.min(7.2, step * 0.25);
-          var dxStep = Math.min(5.2, (maxHalfX * 2) / (k - 1));
-
-          // Vertical lane spread stays within <=28% of 1 unit so numerical level remains clear
-          var maxHalfY = Math.min(8.0, Math.max(0.8, pxPerUnit * 0.28));
-          var dyStep = Math.min(4.1, (maxHalfY * 2) / (k - 1));
-          var crampedVertically = dyStep < 2.5;
+          // Vertical-only separation stays gentle (<=22% of 1 unit, max 6px half-spread)
+          var maxHalfY = Math.min(6.0, Math.max(0.8, pxPerUnit * 0.22));
+          var dyStep = Math.min(3.0, (maxHalfY * 2) / (k - 1));
+          var crampedVertically = dyStep < 1.9;
 
           grp.forEach(function (sIndex, pos) {
             var centerOff = pos - (k - 1) / 2;
-            var dx = centerOff * dxStep;
-            var dy = centerOff * dyStep;
+            var finalY = Math.max(padT + 4, Math.min(baseY - 4, rawY + centerOff * dyStep));
 
-            if (bi === 0) {
-              var edgeStep = Math.min(dxStep, (step * 0.45) / Math.max(1, k - 1));
-              dx = pos * edgeStep;
-            } else if (bi === binCount - 1) {
-              var edgeStepLast = Math.min(dxStep, (step * 0.45) / Math.max(1, k - 1));
-              dx = -((k - 1 - pos) * edgeStepLast);
-            }
-
-            var finalX = Math.max(padL, Math.min(padL + plotW, baseBinX + dx));
-            var finalY = Math.max(padT + 4, Math.min(baseY - 4, rawY + dy));
-
-            ptsMatrix[sIndex][bi] = [finalX, finalY];
+            ptsMatrix[sIndex][bi] = [baseBinX, finalY];
             tiesMatrix[sIndex][bi] = true;
             if (crampedVertically && pos > 0) {
               dashOverlapSeries[sIndex] = true;
@@ -800,7 +867,7 @@ function renderLineChart(data) {
 
     renderedSeries = visibleBaseSeries.map(function (s, idx) {
       var pts = ptsMatrix[idx];
-      var parts = buildMonotoneCubicSplineParts(pts, s.values, baseY, padT + 2);
+      var parts = buildMonotoneCubicSplineParts(pts, s.values, baseY, padT + 2, splineTension);
       var areaD = parts.fullPath +
         ' L ' + pts[pts.length - 1][0].toFixed(1) + ' ' + baseY.toFixed(1) +
         ' L ' + pts[0][0].toFixed(1) + ' ' + baseY.toFixed(1) + ' Z';
@@ -810,6 +877,7 @@ function renderLineChart(data) {
         values: s.values,
         total: s.total,
         pts: pts,
+        lowerPts: null,
         path: parts.fullPath,
         activePath: parts.activePath,
         baselinePath: parts.baselinePath,
@@ -863,7 +931,7 @@ function renderLineChart(data) {
       '<text class="db-line-today-txt" x="' + tx.toFixed(1) + '" y="13.5" text-anchor="middle">' + currentMarkerLabel + '</text>';
   }
 
-  // SVG Linear Gradients (Soft luminous aura under waves + subtle blue hover band)
+  // SVG Linear Gradients (Crisp fills for Total/Stacked/Spotlight without muddy 5-layer overlap)
   var defs = '<defs>' +
     '<linearGradient id="db-band-grad" x1="0" y1="0" x2="0" y2="1">' +
       '<stop offset="0%" stop-color="#2563eb" stop-opacity="0.08"/>' +
@@ -871,17 +939,24 @@ function renderLineChart(data) {
     '</linearGradient>' +
     renderedSeries.map(function (s, idx) {
       var gradId = 'db-line-grad-' + idx;
-      var topOp = DB.lineChartMode === 'total' ? '0.24' : '0.15';
-      var midOp = DB.lineChartMode === 'total' ? '0.07' : '0.04';
+      var topOp = mode === 'stacked' ? '0.42' : (mode === 'total' ? '0.24' : '0.16');
+      var midOp = mode === 'stacked' ? '0.28' : (mode === 'total' ? '0.07' : '0.05');
+      var endOp = mode === 'stacked' ? '0.16' : '0.0';
       return '<linearGradient id="' + gradId + '" x1="0" y1="0" x2="0" y2="1">' +
         '<stop offset="0%" stop-color="' + s.color + '" stop-opacity="' + topOp + '"/>' +
         '<stop offset="65%" stop-color="' + s.color + '" stop-opacity="' + midOp + '"/>' +
-        '<stop offset="100%" stop-color="' + s.color + '" stop-opacity="0.0"/>' +
+        '<stop offset="100%" stop-color="' + s.color + '" stop-opacity="' + endOp + '"/>' +
       '</linearGradient>';
     }).join('') +
   '</defs>';
 
-  // Left Vertical Y-Axis Spine + Short Horizontal Cross-Ticks (no cluttered horizontal lines)
+  // Subtle horizontal Y-gridlines + Left Vertical Y-Axis Spine + Short Cross-Ticks
+  var hGridSvg = yTicks.map(function (yv) {
+    var y = yFor(yv);
+    var cls = yv === 0 ? 'db-line-xbase' : 'db-line-hgrid';
+    return '<line class="' + cls + '" x1="' + padL + '" y1="' + y.toFixed(1) + '" x2="' + (padL + plotW) + '" y2="' + y.toFixed(1) + '"/>';
+  }).join('');
+
   var yAxisSvg =
     '<line class="db-line-yaxis" x1="' + padL + '" y1="' + (padT - 6) + '" x2="' + padL + '" y2="' + baseY + '"/>' +
     yTicks.map(function (yv) {
@@ -890,7 +965,7 @@ function renderLineChart(data) {
         '<text class="db-line-label y" x="' + (padL - 10) + '" y="' + (y + 3.5).toFixed(1) + '" text-anchor="end">' + yv.toLocaleString() + '</text>';
     }).join('');
 
-  // Crisp Vertical Column Dividers + Uppercase X Labels (Image 1 column aesthetic)
+  // Crisp Vertical Column Dividers + Uppercase X Labels
   var xMarkersSvg = xLabelBins.map(function (b) {
     if (b === 0) return '';
     var x = padL + b * step;
@@ -905,10 +980,11 @@ function renderLineChart(data) {
     return '<text class="db-line-label x" x="' + x.toFixed(1) + '" y="' + (H - 12) + '" text-anchor="middle">' + labelTxt + '</text>';
   }).join('');
 
-  // Series Curves, Luminous Area Fills & Glowing Data Nodes
+  // Series Curves, Area Fills & Smart Anti-Clutter Data Nodes
+  var showAreaByDefault = mode === 'total' || mode === 'stacked' || renderedSeries.length <= 2;
   var pathsSvg = renderedSeries.map(function (s, idx) {
     var gradId = 'db-line-grad-' + idx;
-    var dashAttr = s.needsDash ? ' stroke-dasharray="7 4" stroke-dashoffset="' + s.dashOffset + '"' : '';
+    var dashAttr = s.needsDash ? ' stroke-dasharray="6 4" stroke-dashoffset="' + s.dashOffset + '"' : '';
 
     var firstPos = -1;
     var lastPos = -1;
@@ -919,24 +995,41 @@ function renderLineChart(data) {
       }
     }
 
-    var dotsHtml = s.pts.map(function (pt, bIdx) {
-      var v = s.values[bIdx];
-      if (!v || v <= 0) return '';
-      var isTied = s.ties && s.ties[bIdx];
-      var isEndpoint = (bIdx === firstPos || bIdx === lastPos);
-      var rSize = isEndpoint ? '4.2' : (isTied ? '3.3' : '3.6');
-      return '<circle class="db-line-dot' + (isTied ? ' is-tied' : '') + (isEndpoint ? ' is-end' : '') + '" ' +
-        'cx="' + pt[0].toFixed(1) + '" cy="' + pt[1].toFixed(1) + '" r="' + rSize + '" ' +
-        'fill="' + s.color + '" stroke="#ffffff" stroke-width="1.6"/>';
-    }).join('');
+    var dotsHtml = '';
+    if (mode !== 'stacked') {
+      dotsHtml = s.pts.map(function (pt, bIdx) {
+        var v = s.values[bIdx];
+        if (!v || v <= 0) return '';
+        var prevV = bIdx > 0 ? (s.values[bIdx - 1] || 0) : 0;
+        var nextV = bIdx < binCount - 1 ? (s.values[bIdx + 1] || 0) : 0;
+        var isIsolatedSpike = prevV === 0 && nextV === 0;
+        var isEndpoint = (bIdx === firstPos || bIdx === lastPos);
 
-    return '<g class="db-line-series show-area" data-series="' + escapeHtml(s.name) + '">' +
+        // In dense multi-series mode, suppress intermediate dots to eliminate bead clutter;
+        // keep isolated single-bin spikes visible (and all dots appear crisply on hover).
+        if (isDense && !isIsolatedSpike) return '';
+        if (mode === 'total' && totalNonZeroPts > 16 && !isIsolatedSpike && !isEndpoint) return '';
+
+        var isTied = s.ties && s.ties[bIdx];
+        var rSize = isEndpoint ? '3.8' : (isTied ? '3.0' : '3.3');
+        return '<circle class="db-line-dot' + (isTied ? ' is-tied' : '') + (isEndpoint ? ' is-end' : '') + '" ' +
+          'cx="' + pt[0].toFixed(1) + '" cy="' + pt[1].toFixed(1) + '" r="' + rSize + '" ' +
+          'fill="' + s.color + '" stroke="#ffffff" stroke-width="1.5"/>';
+      }).join('');
+    }
+
+    var groupClasses = 'db-line-series' +
+      (showAreaByDefault ? ' show-area' : '') +
+      (isDense ? ' is-dense' : '') +
+      (mode === 'stacked' ? ' is-stacked' : '');
+
+    return '<g class="' + groupClasses + '" data-series="' + escapeHtml(s.name) + '">' +
       '<path class="db-line-area" d="' + s.areaPath + '" fill="url(#' + gradId + ')"/>' +
-      (s.baselinePath
+      (s.baselinePath && mode !== 'stacked'
         ? '<path class="db-line-baseline" d="' + s.baselinePath + '" stroke="' + s.color + '"/>'
         : '') +
       (s.activePath
-        ? '<path class="db-line-casing" d="' + s.activePath + '"/>' +
+        ? (mode !== 'stacked' ? '<path class="db-line-casing" d="' + s.activePath + '"/>' : '') +
           '<path class="db-line-path" d="' + s.activePath + '" stroke="' + s.color + '"' + dashAttr + '/>'
         : '') +
       dotsHtml +
@@ -945,7 +1038,7 @@ function renderLineChart(data) {
 
   // Peak Pill Annotation (shown in Total Volume or isolated single category)
   var peakTagSvg = '';
-  if ((DB.lineChartMode === 'total' || renderedSeries.length === 1) && peakVal > 0) {
+  if ((mode === 'total' || renderedSeries.length === 1) && peakVal > 0) {
     var soloSeries = renderedSeries[0];
     var soloPeakIdx = 0;
     var soloPeakMax = 0;
@@ -965,19 +1058,19 @@ function renderLineChart(data) {
     }
   }
 
-  // Interactive Bin Band, Crosshair & De-collided Focus Rings
+  // Interactive Bin Band, Crosshair & Focus Rings
   var bandW = Math.max(14, Math.min(34, step * 0.85));
   var overlaySvg =
     '<rect class="db-focus-band" id="db-focus-band" x="0" y="' + padT + '" width="' + bandW.toFixed(1) + '" height="' + plotH + '" rx="4" fill="url(#db-band-grad)"/>' +
     '<line class="db-crosshair" id="db-crosshair" x1="0" y1="' + padT + '" x2="0" y2="' + baseY + '"/>' +
     renderedSeries.map(function (s, idx) {
-      return '<circle class="db-focus-dot" id="db-focus-' + idx + '" r="5.5" fill="' + s.color + '"/>';
+      return '<circle class="db-focus-dot" id="db-focus-' + idx + '" r="5" fill="' + s.color + '"/>';
     }).join('') +
     '<rect class="db-hit" x="' + Math.max(0, padL - 10) + '" y="' + Math.max(0, padT - 10) + '" width="' + (plotW + 20) + '" height="' + (plotH + 20) + '"/>';
 
   el.innerHTML =
     '<svg viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Classification trend chart">' +
-      defs + xMarkersSvg + yAxisSvg + todayMarkerSvg + xLabelsSvg + pathsSvg + peakTagSvg + overlaySvg +
+      defs + hGridSvg + xMarkersSvg + yAxisSvg + todayMarkerSvg + xLabelsSvg + pathsSvg + peakTagSvg + overlaySvg +
     '</svg>';
 
   wireLineChartInteraction(el, renderedSeries, allSeries, {
@@ -989,6 +1082,7 @@ function renderLineChart(data) {
     bandW: bandW,
     binCount: binCount,
     isHourly: isHourly,
+    mode: mode,
     year: year,
     month: month,
     isCurrentMonth: isCurrentMonth,
@@ -1007,9 +1101,22 @@ function wireLineChartInteraction(container, seriesList, allSeries, geo) {
   var chartShell = container.closest('.db-chart-container') || container;
   if (!svgEl || !hitRect || !crosshair || !tooltip) return;
 
+  var seriesGroups = Array.prototype.slice.call(svgEl.querySelectorAll('.db-line-series'));
   var focusDots = seriesList.map(function (_, idx) {
     return container.querySelector('#db-focus-' + idx);
   });
+
+  function applyHoverSpotlight(spotlightSet) {
+    seriesGroups.forEach(function (g) {
+      var name = g.getAttribute('data-series');
+      if (!spotlightSet || spotlightSet.size === 0) {
+        g.classList.remove('is-dim', 'is-spotlight');
+      } else {
+        g.classList.toggle('is-spotlight', spotlightSet.has(name));
+        g.classList.toggle('is-dim', !spotlightSet.has(name));
+      }
+    });
+  }
 
   function handleMove(clientX, clientY) {
     var svgRect = svgEl.getBoundingClientRect();
@@ -1017,6 +1124,7 @@ function wireLineChartInteraction(container, seriesList, allSeries, geo) {
     if (!svgRect.width) return;
 
     var xInSvg = ((clientX - svgRect.left) / svgRect.width) * geo.W;
+    var yInSvg = ((clientY - svgRect.top) / svgRect.height) * geo.H;
     var binIndex = Math.round((xInSvg - geo.padL) / geo.step);
     if (binIndex < 0) binIndex = 0;
     if (binIndex >= geo.binCount) binIndex = geo.binCount - 1;
@@ -1033,7 +1141,43 @@ function wireLineChartInteraction(container, seriesList, allSeries, geo) {
       focusBand.classList.add('on');
     }
 
-    // Move each focus dot to its collision-separated coordinate
+    // Detect closest hovered series directly on canvas so dense crossings can be isolated effortlessly
+    var spotlightNames = new Set();
+    if (geo.mode !== 'total' && seriesList.length > 1) {
+      if (geo.mode === 'stacked') {
+        for (var si = 0; si < seriesList.length; si++) {
+          var st = seriesList[si];
+          if ((st.values[binIndex] || 0) <= 0 || !st.pts[binIndex] || !st.lowerPts || !st.lowerPts[binIndex]) continue;
+          var topY = st.pts[binIndex][1];
+          var botY = st.lowerPts[binIndex][1];
+          if (yInSvg >= topY - 4 && yInSvg <= botY + 4) {
+            spotlightNames.add(st.name);
+            break;
+          }
+        }
+      } else {
+        var bestDist = 24;
+        var candidates = [];
+        seriesList.forEach(function (s) {
+          var val = s.values[binIndex] || 0;
+          if (val <= 0 || !s.pts[binIndex]) return;
+          var d = Math.abs(yInSvg - s.pts[binIndex][1]);
+          if (d <= bestDist) {
+            candidates.push({ name: s.name, dist: d });
+          }
+        });
+        if (candidates.length > 0) {
+          candidates.sort(function (a, b) { return a.dist - b.dist; });
+          var minD = candidates[0].dist;
+          candidates.forEach(function (c) {
+            if (c.dist - minD <= 5) spotlightNames.add(c.name);
+          });
+        }
+      }
+      applyHoverSpotlight(spotlightNames);
+    }
+
+    // Move each focus dot to its coordinate (dim non-spotlighted dots when isolating)
     seriesList.forEach(function (s, idx) {
       var dot = focusDots[idx];
       if (!dot || !s.pts[binIndex]) return;
@@ -1041,8 +1185,9 @@ function wireLineChartInteraction(container, seriesList, allSeries, geo) {
       var val = s.values[binIndex] || 0;
       dot.setAttribute('cx', pt[0].toFixed(1));
       dot.setAttribute('cy', pt[1].toFixed(1));
-      dot.setAttribute('r', val > 0 ? '6' : '3');
-      dot.classList.toggle('is-zero', val <= 0);
+      var isActiveDot = spotlightNames.size === 0 || spotlightNames.has(s.name);
+      dot.setAttribute('r', val > 0 ? (isActiveDot ? '5.5' : '3.5') : '2.5');
+      dot.classList.toggle('is-zero', val <= 0 || !isActiveDot);
       dot.classList.add('on');
     });
 
@@ -1069,7 +1214,7 @@ function wireLineChartInteraction(container, seriesList, allSeries, geo) {
       totalBinAll += (s.values[binIndex] || 0);
     });
 
-    if (DB.lineChartMode === 'total') {
+    if (geo.mode === 'total') {
       var val = seriesList[0].values[binIndex] || 0;
       totalBinVisible = val;
       rowsHtml = '<div class="db-tip-row">' +
@@ -1100,8 +1245,9 @@ function wireLineChartInteraction(container, seriesList, allSeries, geo) {
         rowsHtml = ordered.map(function (item) {
           var v = item.val;
           var isTied = v > 0 && (valFreq[v] || 0) > 1;
+          var isFocused = spotlightNames.has(item.series.name);
           var pct = totalBinVisible > 0 && v > 0 ? Math.round((v / totalBinVisible) * 100) : 0;
-          return '<div class="db-tip-row' + (v === 0 ? ' is-zero' : '') + '">' +
+          return '<div class="db-tip-row' + (v === 0 ? ' is-zero' : '') + (isFocused ? ' is-active' : '') + '">' +
             '<span class="db-tip-swatch" style="background:' + item.series.color + '"></span>' +
             '<span class="db-tip-name">' + escapeHtml(item.series.name) + '</span>' +
             (isTied ? '<span class="db-tip-tie" title="Same count across categories">Tie</span>' : '') +
@@ -1112,7 +1258,7 @@ function wireLineChartInteraction(container, seriesList, allSeries, geo) {
       }
     }
 
-    var totalLabel = (DB.lineChartMode === 'category' && totalBinVisible !== totalBinAll)
+    var totalLabel = (geo.mode !== 'total' && totalBinVisible !== totalBinAll)
       ? '<span>Shown Total <small style="opacity:0.7;font-weight:600">(All: ' + totalBinAll + ')</small></span>'
       : '<span>' + (geo.isHourly ? 'Hour Total' : 'Day Total') + '</span>';
 
@@ -1148,6 +1294,7 @@ function wireLineChartInteraction(container, seriesList, allSeries, geo) {
     crosshair.classList.remove('on');
     if (focusBand) focusBand.classList.remove('on');
     focusDots.forEach(function (dot) { if (dot) dot.classList.remove('on'); });
+    applyHoverSpotlight(null);
     tooltip.classList.remove('on');
   }
 

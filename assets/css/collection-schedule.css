@@ -1387,7 +1387,7 @@
 
 .stop-row-item {
   display: grid;
-  grid-template-columns: 24px 1.2fr 1.2fr 130px 28px;
+  grid-template-columns: 24px 1.2fr 1.2fr 138px 28px;
   gap: 8px;
   align-items: center;
   background: #FFFFFF;
@@ -1404,9 +1404,10 @@
 
 .stop-time-select {
   font-size: 11.5px !important;
-  padding: 6px 20px 6px 8px !important;
+  padding: 6px 8px !important;
   font-weight: 600;
   color: var(--sc-text);
+  font-variant-numeric: tabular-nums;
 }
 
 .stop-badge-pill {

@@ -28,52 +28,39 @@ async function ensureCollectorsLoaded() {
 }
 
 /**
- * Helper to generate 15-minute time options.
- * Disables any time <= minTime (from previous stops) AND any time already used by another stop in the same route.
+ * Shift an "HH:MM" time string by deltaMins, clamped strictly within 00:00 - 23:59 (24/7).
  */
-function buildTimeOptions(selectedTime, minTime, otherUsedTimes) {
-  var opts = [];
-  for (let h = 5; h <= 21; h++) {
-    for (let m = 0; m < 60; m += 15) {
-      const val = pad(h) + ':' + pad(m);
-      const isBeforeOrEqualPrev = minTime ? (val <= minTime) : false;
-      const isUsedByOtherStop = otherUsedTimes ? otherUsedTimes.has(val) : false;
-      const isDisabled = isBeforeOrEqualPrev || isUsedByOtherStop;
-      const isSelected = !isDisabled && (selectedTime === val);
-
-      opts.push(
-        '<option value="' + val + '"' +
-        (isSelected ? ' selected' : '') +
-        (isDisabled ? ' disabled="disabled" style="color:#94a3b8;background:#f1f5f9;"' : '') +
-        '>' +
-        formatTime12(val) + (isDisabled ? ' (Unavailable)' : '') +
-        '</option>'
-      );
-    }
-  }
-  return opts.join('');
+function addMinutesToTime(baseTime, deltaMins) {
+  var parts = (baseTime || '06:00').split(':');
+  var h = parseInt(parts[0], 10);
+  var m = parseInt(parts[1] || '0', 10);
+  if (isNaN(h)) h = 6;
+  if (isNaN(m)) m = 0;
+  var total = h * 60 + m + deltaMins;
+  if (total < 0) total = 0;
+  if (total > 23 * 60 + 59) total = 23 * 60 + 59;
+  return pad(Math.floor(total / 60)) + ':' + pad(total % 60);
 }
 
+/**
+ * Computes the next available 24/7 time (12:00 AM - 11:59 PM) after baseTime.
+ * Uses a 30-minute progression by default, stepping down near 11:59 PM so stops stay valid.
+ */
 function getNextAvailableTime(baseTime) {
   if (!baseTime) return '06:00';
   var parts = baseTime.split(':');
   var h = parseInt(parts[0], 10);
   var m = parseInt(parts[1] || '0', 10);
-  m += 30; // Standard 30-minute progression between consecutive collection stops
-  if (m >= 60) {
-    h += Math.floor(m / 60);
-    m = m % 60;
+  if (isNaN(h)) h = 6;
+  if (isNaN(m)) m = 0;
+  var currentTotal = h * 60 + m;
+  if (currentTotal >= 23 * 60 + 59) return '23:59';
+
+  var nextTotal = currentTotal + 30;
+  if (nextTotal > 23 * 60 + 59) {
+    nextTotal = Math.min(23 * 60 + 59, currentTotal + 1);
   }
-  m = Math.ceil(m / 15) * 15;
-  if (m >= 60) {
-    h += 1;
-    m = 0;
-  }
-  if (h > 21) {
-    h = 21;
-    m = 45;
-  }
-  return pad(h) + ':' + pad(m);
+  return pad(Math.floor(nextTotal / 60)) + ':' + pad(nextTotal % 60);
 }
 
 /**
@@ -282,21 +269,15 @@ function renderRouteEntries() {
         streetOpts += '<option value="' + escapeHtml(st.street) + '" selected>' + escapeHtml(st.street) + '</option>';
       }
 
-      // Minimum allowed time for this stop is the previous stop's collection time
+      // Minimum allowed time for this stop is 1 minute after the previous stop's collection time (24/7: 12:00 AM - 11:59 PM)
       var minTime = null;
+      var minInputAttr = ' min="00:00" max="23:59"';
       if (sIdx > 0 && entry.stops[sIdx - 1] && entry.stops[sIdx - 1].time) {
         minTime = entry.stops[sIdx - 1].time;
+        minInputAttr = ' min="' + addMinutesToTime(minTime, 1) + '" max="23:59"';
       }
 
-      // Also collect times used by any other stop in this same route
-      var otherUsedTimes = new Set();
-      entry.stops.forEach(function(otherStop, oStopIdx) {
-        if (oStopIdx !== sIdx && otherStop.time) {
-          otherUsedTimes.add(otherStop.time);
-        }
-      });
-
-      var timeOptionsHtml = buildTimeOptions(st.time || '06:00', minTime, otherUsedTimes);
+      var currentTimeVal = (st.time || '06:00').substring(0, 5);
 
       stopsHtml += '<div class="stop-row-item" data-entry-idx="' + i + '" data-stop-idx="' + sIdx + '">' +
         '<div class="stop-badge-pill">' + (sIdx + 1) + '</div>' +
@@ -309,9 +290,7 @@ function renderRouteEntries() {
         '<select class="re-select stop-street-select" data-entry-idx="' + i + '" data-stop-idx="' + sIdx + '" onchange="onStopStreetChange(' + i + ', this)">' +
           streetOpts +
         '</select>' +
-        '<select class="re-select stop-time-select" data-entry-idx="' + i + '" data-stop-idx="' + sIdx + '" onchange="onStopTimeChange(' + i + ', this)" title="' + (minTime ? 'Must be after ' + formatTime12(minTime) : 'Stop Collection Time') + '">' +
-          timeOptionsHtml +
-        '</select>' +
+        '<input type="time" class="re-input stop-time-select" data-entry-idx="' + i + '" data-stop-idx="' + sIdx + '" value="' + escapeHtml(currentTimeVal) + '"' + minInputAttr + ' step="60" onchange="onStopTimeChange(' + i + ', this)" title="' + (minTime ? '24/7 time (12:00 AM – 11:59 PM), must be after ' + formatTime12(minTime) : 'Stop Collection Time (24/7: 12:00 AM – 11:59 PM)') + '">' +
         (entry.stops.length > 1 ? '<button type="button" class="stop-remove-btn" onclick="removeStopFromEntry(' + i + ', ' + sIdx + ')" title="Remove Stop"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>' : '<div></div>') +
       '</div>';
     });
@@ -458,7 +437,11 @@ function onStopTimeChange(entryIdx, selectEl) {
   var stopIdx = parseInt(selectEl.dataset.stopIdx);
   if (isNaN(stopIdx) || !state.routeEntries[entryIdx] || !state.routeEntries[entryIdx].stops[stopIdx]) return;
   
-  var newTime = selectEl.value;
+  var newTime = (selectEl.value || '').substring(0, 5);
+  if (!newTime) {
+    selectEl.value = state.routeEntries[entryIdx].stops[stopIdx].time || '06:00';
+    return;
+  }
   syncAllEntries();
   var stops = state.routeEntries[entryIdx].stops;
 
@@ -485,6 +468,10 @@ function addStopToEntry(entryIdx) {
   syncAllEntries();
   var stops = state.routeEntries[entryIdx].stops;
   var prevStop = stops[stops.length - 1];
+  if (prevStop && prevStop.time >= '23:59') {
+    showToast('Last stop is already at 11:59 PM. Adjust an earlier stop time before adding another stop.', 'info');
+    return;
+  }
   var defaultBgy = prevStop ? prevStop.barangay : '';
   var nextTime = prevStop && prevStop.time ? getNextAvailableTime(prevStop.time) : '06:30';
 
