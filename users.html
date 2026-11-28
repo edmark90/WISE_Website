@@ -76,7 +76,6 @@
     <main class="main" id="main-content">
       <div class="page-header">
         <div class="page-header-info">
-          <div class="page-eyebrow">Directory</div>
           <h2>User Management</h2>
           <p>Manage citizen, collector, and administrator accounts.</p>
         </div>
@@ -92,67 +91,23 @@
         </div>
       </div>
 
-      <!-- Stats Cards -->
-      <div class="stats-grid">
-        <div class="stat-card blue">
-          <div class="stat-icon blue">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-              stroke-linejoin="round">
-              <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-              <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
-              <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
-            </svg>
-          </div>
-          <div class="stat-info">
-            <p class="stat-label">Total Accounts</p>
-            <p class="stat-number" id="stat-total">—</p>
-          </div>
+      <!-- Unified Account KPI Strip -->
+      <div class="stats-grid kpi-strip">
+        <div class="kpi-cell">
+          <p class="kpi-label">Total Accounts</p>
+          <p class="kpi-value" id="stat-total">—</p>
         </div>
-
-        <div class="stat-card green">
-          <div class="stat-icon green">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-              stroke-linejoin="round">
-              <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
-              <circle cx="9" cy="7" r="4"></circle>
-              <polyline points="16 11 18 13 22 9"></polyline>
-            </svg>
-          </div>
-          <div class="stat-info">
-            <p class="stat-label">Citizens</p>
-            <p class="stat-number" id="stat-citizens">—</p>
-          </div>
+        <div class="kpi-cell">
+          <p class="kpi-label">Citizens</p>
+          <p class="kpi-value" id="stat-citizens">—</p>
         </div>
-
-        <div class="stat-card purple">
-          <div class="stat-icon purple">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-              stroke-linejoin="round">
-              <rect x="1" y="3" width="15" height="13"></rect>
-              <polygon points="16 8 20 8 23 11 23 16 16 16 16 8"></polygon>
-              <circle cx="5.5" cy="18.5" r="2.5"></circle>
-              <circle cx="18.5" cy="18.5" r="2.5"></circle>
-            </svg>
-          </div>
-          <div class="stat-info">
-            <p class="stat-label">Collectors</p>
-            <p class="stat-number" id="stat-collectors">—</p>
-          </div>
+        <div class="kpi-cell">
+          <p class="kpi-label">Collectors</p>
+          <p class="kpi-value" id="stat-collectors">—</p>
         </div>
-
-        <div class="stat-card orange">
-          <div class="stat-icon orange">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
-              stroke-linejoin="round">
-              <rect x="3" y="11" width="18" height="11" rx="2"></rect>
-              <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-            </svg>
-          </div>
-          <div class="stat-info">
-            <p class="stat-label">Administrators</p>
-            <p class="stat-number" id="stat-admins">—</p>
-          </div>
+        <div class="kpi-cell">
+          <p class="kpi-label">Administrators</p>
+          <p class="kpi-value" id="stat-admins">—</p>
         </div>
       </div>
 

@@ -3,96 +3,13 @@
    Clean, modern civic-tech directory interface aligned with global.css
    ======================================================================= */
 
-/* --- Stats Cards --- */
+/* --- Unified KPI Strip (inherits .kpi-strip from global.css) --- */
 .stats-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 16px;
-  margin-bottom: 22px;
+  margin-bottom: 16px;
 }
 
-.stat-card {
-  position: relative;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-lg);
-  padding: 20px 22px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  box-shadow: var(--shadow-sm);
-  overflow: hidden;
-  transition: transform 0.2s var(--ease-out), box-shadow 0.2s var(--ease-out), border-color 0.2s var(--ease-out);
-}
-
-.stat-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: var(--blue);
-}
-
-.stat-card.blue::before   { background: linear-gradient(90deg, #2563EB, #60A5FA); }
-.stat-card.green::before  { background: linear-gradient(90deg, #16A34A, #34D399); }
-.stat-card.orange::before { background: linear-gradient(90deg, #F59E0B, #FBBF24); }
-.stat-card.purple::before { background: linear-gradient(90deg, #7C3AED, #A78BFA); }
-
-.stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--shadow-md);
-  border-color: var(--border-strong);
-}
-
-.stat-icon {
-  width: 48px;
-  height: 48px;
-  border-radius: 12px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-}
-
-.stat-icon svg {
-  width: 22px;
-  height: 22px;
-}
-
-.stat-icon.blue   { background: var(--blue-soft);  color: var(--blue); }
-.stat-icon.green  { background: var(--green-soft); color: var(--green); }
-.stat-icon.orange { background: var(--amber-soft); color: var(--amber-dark); }
-.stat-icon.purple { background: var(--purple-soft); color: var(--purple); }
-
-.stat-info {
-  flex: 1;
-  min-width: 0;
-}
-
-.stat-info .stat-label {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin: 0 0 4px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.stat-info .stat-number {
-  font-family: var(--font-display);
-  font-size: 28px;
-  font-weight: 800;
-  color: var(--text-main);
-  margin: 0 0 2px;
-  line-height: 1.1;
-  font-variant-numeric: tabular-nums;
-}
-
-.stat-info .stat-foot {
-  font-size: 12px;
-  color: var(--text-subtle);
+.stats-grid .kpi-label,
+.stats-grid .kpi-value {
   margin: 0;
 }
 
@@ -101,13 +18,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 12px;
+  gap: 10px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  padding: 14px 16px;
-  margin-bottom: 18px;
-  box-shadow: var(--shadow-xs);
+  padding: 12px 14px;
+  margin-bottom: 16px;
   flex-wrap: wrap;
 }
 
@@ -193,7 +109,6 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-sm);
   overflow: hidden;
 }
 
@@ -202,15 +117,15 @@
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  padding: 16px 20px;
+  padding: 14px 18px;
   border-bottom: 1px solid var(--border-soft);
 }
 
 .table-head-titles h3 {
-  margin: 0 0 2px;
+  margin: 0;
   font-family: var(--font-display);
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 600;
   color: var(--text-main);
 }
 
@@ -222,12 +137,8 @@
 
 .table-count {
   font-size: 12px;
-  font-weight: 700;
-  color: var(--blue-dark);
-  background: var(--blue-soft);
-  border: 1px solid var(--blue-border);
-  padding: 4px 12px;
-  border-radius: 999px;
+  font-weight: 600;
+  color: var(--text-muted);
   font-variant-numeric: tabular-nums;
 }
 
@@ -305,30 +216,29 @@
 .user-avatar-sm {
   position: relative;
   overflow: hidden;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 34px;
+  height: 34px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 13px;
-  font-weight: 700;
-  color: #fff;
+  font-size: 12px;
+  font-weight: 600;
   flex-shrink: 0;
-  box-shadow: var(--shadow-xs);
+  border: 1px solid transparent;
 }
 
-.user-avatar-sm.admin     { background: linear-gradient(135deg, #2563EB, #1D4ED8); }
-.user-avatar-sm.citizen   { background: linear-gradient(135deg, #10B981, #047857); }
-.user-avatar-sm.collector { background: linear-gradient(135deg, #7C3AED, #6D28D9); }
-.user-avatar-sm.default   { background: linear-gradient(135deg, #64748B, #475569); }
+.user-avatar-sm.admin     { background: var(--blue-soft); color: var(--blue-dark); border-color: var(--blue-border); }
+.user-avatar-sm.citizen   { background: var(--green-soft); color: var(--green-dark); border-color: var(--green-border); }
+.user-avatar-sm.collector { background: var(--purple-soft); color: var(--purple-dark); border-color: var(--purple-border); }
+.user-avatar-sm.default   { background: var(--surface-muted); color: var(--text-secondary); border-color: var(--border); }
 
 .user-avatar-img {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
-  border-radius: 10px;
+  border-radius: 8px;
   object-fit: cover;
 }
 
@@ -345,26 +255,24 @@
 .role-badge {
   display: inline-flex;
   align-items: center;
-  padding: 4px 10px;
-  border-radius: 999px;
+  padding: 3px 8px;
+  border-radius: var(--radius-xs);
   font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.2px;
+  font-weight: 600;
 }
 
 .role-badge.admin     { background: var(--blue-soft);  color: var(--blue-dark); border: 1px solid var(--blue-border); }
 .role-badge.citizen   { background: var(--green-soft); color: var(--green-dark); border: 1px solid var(--green-border); }
-.role-badge.collector { background: #F3E8FF; color: #6D28D9; border: 1px solid #DDD6FE; }
+.role-badge.collector { background: var(--purple-soft); color: var(--purple-dark); border: 1px solid var(--purple-border); }
 
 .user-status-badge {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 4px 10px;
-  border-radius: 999px;
+  padding: 3px 8px;
+  border-radius: var(--radius-xs);
   font-size: 11.5px;
-  font-weight: 700;
-  letter-spacing: 0.2px;
+  font-weight: 600;
 }
 
 .user-status-badge .status-dot {

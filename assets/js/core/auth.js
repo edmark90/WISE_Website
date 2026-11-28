@@ -27,11 +27,11 @@ function logout() {
   window.location.href = 'index.html';
 }
 
-/** Ensure the sidebar brand title has the two-tone WISE / SYSTEM styling and footer has the Admin identity card. */
+/** Ensure the sidebar brand title has the WISE / Admin styling and footer has the Admin identity row. */
 function ensureSidebarUserCard() {
   const brandTitle = document.querySelector('.sidebar-brand h1');
   if (brandTitle && !brandTitle.querySelector('.brand-sub')) {
-    brandTitle.innerHTML = 'WISE<br><span class="brand-sub">SYSTEM</span>';
+    brandTitle.innerHTML = 'WISE<span class="brand-sub">Admin Portal</span>';
   }
 
   const footer = document.querySelector('.sidebar-footer');
@@ -39,29 +39,29 @@ function ensureSidebarUserCard() {
   const card = document.createElement('div');
   card.className = 'sidebar-user';
   card.innerHTML =
-    '<div class="sidebar-user-avatar" id="user-avatar-initials">' +
-      '<svg viewBox="0 0 24 24" fill="none">' +
-        '<circle cx="12" cy="8.5" r="4" fill="#ffffff"/>' +
-        '<path d="M5 20.5c0-3.6 3.1-6 7-6s7 2.4 7 6" fill="#93c5fd"/>' +
-      '</svg>' +
-    '</div>' +
+    '<div class="sidebar-user-avatar" id="user-avatar-initials">A</div>' +
     '<div class="sidebar-user-info">' +
       '<div class="sidebar-user-name" id="user-name">Admin</div>' +
       '<div class="sidebar-user-role" id="user-role">Administrator</div>' +
-    '</div>' +
-    '<span class="sidebar-user-dot" title="Online"></span>';
+    '</div>';
   footer.insertBefore(card, footer.firstChild);
 }
 
-/** Sync the mobile topbar user avatar initials & tooltip. */
+/** Sync the mobile topbar and sidebar user avatar initials & tooltip. */
 function syncMobileUserAvatar(fullName, roleText) {
-  const mobileAvatar = document.getElementById('mobile-user-avatar');
-  if (!mobileAvatar) return;
   const name = fullName || localStorage.getItem('user_name') || 'Admin';
   const role = roleText || localStorage.getItem('user_role') || 'Administrator';
   const initials = typeof getInitials === 'function'
     ? getInitials(name)
     : name.split(' ').filter(Boolean).map(function (w) { return w[0].toUpperCase(); }).slice(0, 2).join('') || 'A';
+
+  const sidebarAvatar = document.getElementById('user-avatar-initials');
+  if (sidebarAvatar) {
+    sidebarAvatar.textContent = initials;
+  }
+
+  const mobileAvatar = document.getElementById('mobile-user-avatar');
+  if (!mobileAvatar) return;
   mobileAvatar.textContent = initials;
   mobileAvatar.title = name + ' (' + role + ')';
   mobileAvatar.setAttribute('aria-label', name + ', ' + role);
