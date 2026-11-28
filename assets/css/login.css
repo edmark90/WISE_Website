@@ -1,6 +1,6 @@
 :root {
-  --primary-blue: #1D6BF3;
-  --primary-blue-hover: #1557D0;
+  --primary-blue: #2563EB;
+  --primary-blue-hover: #1D4ED8;
   --text-dark: #0B2247;
   --text-muted: #64748B;
   --text-label: #0F2547;
@@ -135,26 +135,55 @@ body::after {
   max-width: 360px;
 }
 
+.mobile-brand-badge {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.mobile-brand-badge img {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  border-radius: 6px;
+}
+
+.mobile-brand-badge span {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  color: var(--primary-blue);
+}
+
 .login-header {
-  margin-bottom: 28px;
+  margin-bottom: 24px;
 }
 
 .welcome-heading {
   font-family: var(--font-display);
-  font-size: 31px;
+  font-size: 30px;
   font-weight: 800;
   color: var(--text-dark);
   letter-spacing: -0.02em;
   line-height: 1.15;
 }
 
+.login-subtitle {
+  margin-top: 4px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
 .heading-underline {
   display: block;
-  width: 62px;
+  width: 56px;
   height: 4px;
   border-radius: 99px;
-  background: linear-gradient(90deg, #1D6BF3 0%, #3B82F6 100%);
-  margin-top: 9px;
+  background: linear-gradient(90deg, var(--primary-blue) 0%, #3B82F6 100%);
+  margin-top: 10px;
 }
 
 /* ── Form Inputs ── */
@@ -202,6 +231,9 @@ body::after {
 
 .input-container input#password {
   padding-right: 46px;
+}
+
+.input-container input#password[type="password"] {
   letter-spacing: 0.08em;
 }
 
@@ -238,7 +270,28 @@ body::after {
 
 .eye-toggle-btn:hover {
   color: var(--primary-blue);
-  background: rgba(29, 107, 243, 0.08);
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.eye-toggle-btn:focus-visible,
+.remember-row input[type="checkbox"]:focus-visible,
+.login-btn:focus-visible {
+  outline: 2px solid var(--primary-blue);
+  outline-offset: 2px;
+}
+
+.login-spinner {
+  width: 17px;
+  height: 17px;
+  border: 2.5px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #FFFFFF;
+  border-radius: 50%;
+  animation: loginSpin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes loginSpin {
+  to { transform: rotate(360deg); }
 }
 
 .eye-toggle-btn svg {
@@ -346,11 +399,19 @@ body::after {
 
   .left-panel {
     flex: none;
-    height: 250px;
+    height: 220px;
+  }
+
+  .left-hero-img {
+    object-position: center 22%;
+  }
+
+  .mobile-brand-badge {
+    display: inline-flex;
   }
 
   .right-panel {
-    padding: 34px 28px;
+    padding: 30px 26px;
   }
 }
 

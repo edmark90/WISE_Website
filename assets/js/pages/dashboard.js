@@ -163,9 +163,13 @@ function wireControls() {
   if (refreshBtn) {
     refreshBtn.addEventListener('click', function () {
       refreshBtn.classList.add('is-syncing');
-      Promise.all([loadDashboard(), loadMonthly()]).finally(function () {
-        setTimeout(function () { refreshBtn.classList.remove('is-syncing'); }, 600);
-      });
+      Promise.all([loadDashboard(), loadMonthly()])
+        .then(function () {
+          if (typeof showToast === 'function') showToast('Dashboard refreshed.', 'success');
+        })
+        .finally(function () {
+          setTimeout(function () { refreshBtn.classList.remove('is-syncing'); }, 600);
+        });
     });
   }
 
@@ -221,28 +225,30 @@ function openMonthDialog() {
 
   overlay.innerHTML =
     '<div class="db-month-dialog-box" role="dialog" aria-modal="true" aria-label="Choose month">' +
-      '<h4>Select Analytics Period</h4>' +
-      '<p style="font-size:12.5px;color:var(--db-muted);margin:0 0 12px;">Choose any month to load complete classification and collection metrics.</p>' +
+      '<h4>Select Month</h4>' +
       '<input type="month" id="db-month-input" value="' + current + '" min="2024-01" max="' + max + '">' +
       '<div class="db-month-dialog-actions">' +
         '<button type="button" class="db-month-dialog-btn" id="db-month-cancel">Cancel</button>' +
-        '<button type="button" class="db-month-dialog-btn primary" id="db-month-apply">Apply Period</button>' +
+        '<button type="button" class="db-month-dialog-btn primary" id="db-month-apply">Apply</button>' +
       '</div>' +
     '</div>';
 
   document.body.appendChild(overlay);
   DB.monthInput = $id('db-month-input');
 
+  function onKey(e) {
+    if (e.key === 'Escape') close();
+  }
+
   function close() {
+    document.removeEventListener('keydown', onKey);
     if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
     DB.monthInput = null;
   }
 
   $id('db-month-cancel').addEventListener('click', close);
   overlay.addEventListener('click', function (e) { if (e.target === overlay) close(); });
-  document.addEventListener('keydown', function onKey(e) {
-    if (e.key === 'Escape') { close(); document.removeEventListener('keydown', onKey); }
-  });
+  document.addEventListener('keydown', onKey);
   $id('db-month-apply').addEventListener('click', function () {
     var val = DB.monthInput.value;
     if (val && val.length === 7) {
@@ -334,7 +340,7 @@ function renderMonthlyStats(data) {
     .toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
 
   animateNumber('stat-users', data.total_users || 0);
-  $id('stat-users-foot').innerHTML = 'All registered citizens';
+  $id('stat-users-foot').innerHTML = 'All registered accounts';
 
   animateNumber('stat-records', data.total_routes || 0);
   var routesNote = data.total_routes
@@ -1311,7 +1317,7 @@ function renderDonut(data) {
   var legendRows = items.map(function (item, idx) {
     var pct = Math.round((item.value / total) * 1000) / 10;
     return (
-      '<div class="db-donut-legend-row" data-idx="' + idx + '">' +
+      '<div class="db-donut-legend-row" data-idx="' + idx + '" role="button" tabindex="0" aria-label="' + escapeHtml(item.name + ': ' + item.value + ' records, ' + pct + '%') + '">' +
         '<div class="db-donut-legend-top">' +
           '<div class="db-donut-legend-left">' +
             '<span class="db-donut-legend-swatch" style="background:' + item.color + '"></span>' +
@@ -1386,6 +1392,8 @@ function wireDonutHover(container, items, total) {
     var idx = parseInt(row.dataset.idx, 10);
     row.addEventListener('mouseenter', function () { setActive(idx); });
     row.addEventListener('mouseleave', function () { setActive(null); });
+    row.addEventListener('focus', function () { setActive(idx); });
+    row.addEventListener('blur', function () { setActive(null); });
   });
 }
 
@@ -1442,7 +1450,7 @@ function renderMonthStrip(schedules) {
     var segPct = count ? Math.round((doneCount / count) * 100) : 0;
 
     return (
-      '<div class="db-day' + (day.isToday ? ' today' : '') + ' ' + stInfo.status + '" data-iso="' + day.iso + '" title="' + escapeHtml(day.label + ', ' + day.iso + ' — ' + count + (count === 1 ? ' route' : ' routes') + ' — Click to view schedule') + '">' +
+      '<div class="db-day' + (day.isToday ? ' today' : '') + ' ' + stInfo.status + '" data-iso="' + day.iso + '" role="button" tabindex="0" aria-label="' + escapeHtml(day.label + ' ' + day.dayNum + ', ' + stInfo.label + ', ' + count + (count === 1 ? ' route' : ' routes')) + '" title="' + escapeHtml(day.label + ', ' + day.iso + ' — ' + count + (count === 1 ? ' route' : ' routes') + ' — Click to view schedule') + '">' +
         '<div class="db-day-top">' +
           '<div class="db-day-weekday">' +
             '<span class="db-day-label">' + escapeHtml(day.label) + '</span>' +
@@ -1499,13 +1507,20 @@ function renderMonthStrip(schedules) {
       '<span class="db-legend-item"><span class="db-legend-swatch cancelled"></span>Cancelled</span>' +
     '</div>';
 
-  // Wire clickable day tiles → navigate to collection schedule page for that date
+  // Wire clickable & keyboard-accessible day tiles → navigate to collection schedule page for that date
   body.querySelectorAll('.db-day[data-iso]').forEach(function (tile) {
     tile.style.cursor = 'pointer';
-    tile.addEventListener('click', function () {
+    function openDay() {
       var iso = tile.dataset.iso;
       if (iso) {
         window.location.href = 'collection schedule.html?date=' + encodeURIComponent(iso);
+      }
+    }
+    tile.addEventListener('click', openDay);
+    tile.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        openDay();
       }
     });
   });

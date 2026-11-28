@@ -29,8 +29,9 @@ function renderSidebar(date, schedules) {
     clearRouteDiagram();
     dayActions.style.display = 'none';
     const isPast = isDatePast(formatDate(date));
-    const addBtn = isPast ? '' : '<button class="add-assignment-btn mt-16" onclick="openScheduleModalForDate(state.selectedDate || state.today)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Collection Assignment</button>';
-    
+    const addBtn = isPast ? '' : '<button type="button" class="add-assignment-btn mt-16" onclick="openScheduleModalForDate(state.selectedDate || state.today)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Assignment</button>';
+    const subText = isPast ? 'Past dates cannot be scheduled.' : 'Add a collection assignment below.';
+
     sidebarDetails.innerHTML = '<div class="sidebar-card">' +
       '<div class="sidebar-card-header"><h3>Schedule Details</h3></div>' +
       '<div class="sidebar-card-body">' +
@@ -39,7 +40,7 @@ function renderSidebar(date, schedules) {
             '<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>' +
           '</svg>' +
           '<p class="sidebar-empty-text">No assignments for <br><strong>' + dateFormatted + '</strong></p>' +
-          '<p class="sidebar-empty-sub">Click below to add a collection assignment.</p>' +
+          '<p class="sidebar-empty-sub">' + subText + '</p>' +
           addBtn +
         '</div>' +
       '</div></div>';
@@ -52,7 +53,7 @@ function showDayRouteMap(schedules, dateFormatted) {
   dayActions.style.display = 'flex';
 
   const isPast = isDatePast(schedules[0].collection_date);
-  const addBtn = isPast ? '' : '<button class="add-assignment-btn" onclick="openScheduleModalForDate(new Date(state.selectedDate || schedules[0].collection_date))"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> + Add Collection Assignment</button>';
+  const addBtn = isPast ? '' : '<button type="button" class="add-assignment-btn" onclick="openScheduleModalForDate(new Date(state.selectedDate || schedules[0].collection_date))"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> Add Assignment</button>';
 
   let detailsHtml = '<div class="sidebar-card">' +
     '<div class="sidebar-card-header">' +
@@ -121,10 +122,10 @@ function showDayRouteMap(schedules, dateFormatted) {
   '</div>';
 
   detailsHtml += '<div class="day-action-section reschedule-section">' +
-    '<div class="day-action-header"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><span>Move All Routes</span></div>' +
+    '<div class="day-action-header"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><polyline points="12 14 16 14 14 12"/></svg><span>Move All Routes</span></div>' +
     '<div class="day-action-row">' +
-      '<input type="date" class="day-action-input" id="reschedule-date-input" value="" min="' + formatDate(new Date()) + '">' +
-      '<button class="day-action-btn move-btn" onclick="rescheduleAllRoutes()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg> Move All</button>' +
+      '<input type="date" class="day-action-input" id="reschedule-date-input" aria-label="Target reschedule date" value="" min="' + formatDate(new Date()) + '">' +
+      '<button type="button" class="day-action-btn move-btn" onclick="rescheduleAllRoutes()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg> Move All</button>' +
     '</div></div>';
 
   detailsHtml += '</div></div>';
@@ -190,8 +191,8 @@ function renderDetailedStopsList(schedule) {
   if (!stops.length) return '';
   var todayStr = typeof formatDate === 'function' ? formatDate(state.today || new Date()) : '';
   var isFutureDate = todayStr && schedule.collection_date && schedule.collection_date > todayStr;
-  var html = '<div style="margin-top:12px;border-top:1px solid #E2E8F0;padding-top:10px;">' +
-    '<div style="font-size:11.5px;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.4px;margin-bottom:8px;">Collection Stops (' + stops.length + ')</div>';
+  var html = '<div class="stop-detail-section">' +
+    '<div class="stop-detail-heading">Collection Stops (' + stops.length + ')</div>';
   stops.forEach(function(st, idx) {
     var stStatus = st.status || 'Upcoming';
     var sc = (STATUS_COLORS && STATUS_COLORS[stStatus]) ? STATUS_COLORS[stStatus] : { bg: '#EFF6FF', color: '#2563EB' };
@@ -200,21 +201,21 @@ function renderDetailedStopsList(schedule) {
     var completedStr = formatStopTimestamp(st.completed_at);
     var reasonStr = st.delay_reason || st.cancellation_reason || '';
 
-    html += '<div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:9px 10px;margin-bottom:7px;">' +
-      '<div style="display:flex;align-items:center;justify-content:space-between;gap:6px;">' +
-        '<div style="font-size:12.5px;font-weight:600;color:#0F172A;">#' + (st.sequence || (idx + 1)) + ' ' + escapeHtml(st.barangay + (st.street ? ' — ' + st.street : '')) + '</div>' +
-        '<span class="status-badge" style="background:' + sc.bg + ';color:' + sc.color + ';font-size:10px;padding:2px 7px;">' + escapeHtml(stStatus) + '</span>' +
+    html += '<div class="stop-detail-card">' +
+      '<div class="stop-detail-top">' +
+        '<div class="stop-detail-name">#' + (st.sequence || (idx + 1)) + ' ' + escapeHtml(st.barangay + (st.street ? ' — ' + st.street : '')) + '</div>' +
+        '<span class="status-badge" style="background:' + sc.bg + ';color:' + sc.color + ';font-size:10.5px;padding:2px 8px;">' + escapeHtml(stStatus) + '</span>' +
       '</div>' +
-      '<div style="font-size:11px;color:#64748B;margin-top:4px;display:flex;flex-wrap:wrap;gap:8px;">' +
+      '<div class="stop-detail-meta">' +
         (stTime ? '<span>Sched: <strong>' + stTime + '</strong></span>' : '') +
-        (arrivedStr ? '<span style="color:#0284C7;">Arrived: <strong>' + arrivedStr + '</strong></span>' : '') +
-        (completedStr ? '<span style="color:#16A34A;">Completed: <strong>' + completedStr + '</strong></span>' : '') +
+        (arrivedStr ? '<span class="stop-detail-arrived">Arrived: <strong>' + arrivedStr + '</strong></span>' : '') +
+        (completedStr ? '<span class="stop-detail-completed">Completed: <strong>' + completedStr + '</strong></span>' : '') +
       '</div>' +
-      (reasonStr ? '<div style="font-size:11px;color:#DC2626;margin-top:3px;">Reason: ' + escapeHtml(reasonStr) + '</div>' : '') +
-      (st.id ? '<div style="display:flex;gap:5px;margin-top:6px;flex-wrap:wrap;">' +
-        (!isFutureDate && stStatus !== 'Arrived' && stStatus !== 'Completed' && stStatus !== 'Cancelled' ? '<button type="button" class="btn btn-sm" style="font-size:10.5px;padding:2px 7px;background:#E0F2FE;color:#0369A1;border:1px solid #BAE6FD;" onclick="adminUpdateStopStatus(' + st.id + ',' + schedule.id + ',\'Arrived\')">Confirm Arrived</button>' : '') +
-        (stStatus !== 'Completed' && stStatus !== 'Cancelled' && stStatus !== 'Delayed' ? '<button type="button" class="btn btn-sm" style="font-size:10.5px;padding:2px 7px;background:#FEF3C7;color:#B45309;border:1px solid #FDE68A;" onclick="adminUpdateStopStatus(' + st.id + ',' + schedule.id + ',\'Delayed\')">Delay</button>' : '') +
-        (stStatus !== 'Completed' && stStatus !== 'Cancelled' ? '<button type="button" class="btn btn-sm" style="font-size:10.5px;padding:2px 7px;background:#FEE2E2;color:#B91C1C;border:1px solid #FECACA;" onclick="adminUpdateStopStatus(' + st.id + ',' + schedule.id + ',\'Cancelled\')">Cancel</button>' : '') +
+      (reasonStr ? '<div class="stop-detail-reason">Reason: ' + escapeHtml(reasonStr) + '</div>' : '') +
+      (st.id ? '<div class="stop-detail-actions">' +
+        (!isFutureDate && stStatus !== 'Arrived' && stStatus !== 'Completed' && stStatus !== 'Cancelled' ? '<button type="button" class="stop-chip-btn arrive" onclick="adminUpdateStopStatus(' + st.id + ',' + schedule.id + ',\'Arrived\')">Confirm Arrived</button>' : '') +
+        (stStatus !== 'Completed' && stStatus !== 'Cancelled' && stStatus !== 'Delayed' ? '<button type="button" class="stop-chip-btn delay" onclick="adminUpdateStopStatus(' + st.id + ',' + schedule.id + ',\'Delayed\')">Delay</button>' : '') +
+        (stStatus !== 'Completed' && stStatus !== 'Cancelled' ? '<button type="button" class="stop-chip-btn cancel" onclick="adminUpdateStopStatus(' + st.id + ',' + schedule.id + ',\'Cancelled\')">Cancel</button>' : '') +
       '</div>' : '') +
     '</div>';
   });

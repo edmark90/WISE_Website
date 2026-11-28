@@ -25,7 +25,7 @@ function renderTable() {
     var safeEmail = escapeHtml(u.email);
     var avatarHtml = '<div class="user-avatar-sm ' + avatarClass + '">' + initials + '</div>';
     if (u.profile_image) {
-      avatarHtml = '<div class="user-avatar-sm ' + avatarClass + '"><img class="user-avatar-img" src="' + escapeHtml(resolveMediaUrl(u.profile_image)) + '" alt="' + safeName + '" onerror="this.style.display=\'none\'"></div>';
+      avatarHtml = '<div class="user-avatar-sm ' + avatarClass + '"><span>' + initials + '</span><img class="user-avatar-img" src="' + escapeHtml(resolveMediaUrl(u.profile_image)) + '" alt="' + safeName + '" onerror="this.remove()"></div>';
     }
     html += '<tr>';
     html += '<td class="td-id">#' + u.id + '</td>';
@@ -37,10 +37,10 @@ function renderTable() {
     html += '<td class="td-muted">' + created + '</td>';
     html += '<td><div class="actions-cell">';
     if ((u.role || '').toLowerCase() === 'collector') {
-      html += '<button class="btn-icon" onclick="openCollectorAssignmentsModal(' + u.id + ')" title="View collector assignments"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button>';
+      html += '<button type="button" class="btn-icon" onclick="openCollectorAssignmentsModal(' + u.id + ')" title="View collector assignments" aria-label="View collector assignments for ' + safeName + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></button>';
     }
-    html += '<button class="btn-icon" onclick="openEditModal(' + u.id + ')" title="Edit user"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>';
-    html += '<button class="btn-icon danger" onclick="openDeleteModal(' + u.id + ')" title="Delete user"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>';
+    html += '<button type="button" class="btn-icon" onclick="openEditModal(' + u.id + ')" title="Edit user" aria-label="Edit ' + safeName + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button>';
+    html += '<button type="button" class="btn-icon danger" onclick="openDeleteModal(' + u.id + ')" title="Delete user" aria-label="Delete ' + safeName + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>';
     html += '</div></td></tr>';
   }
   tbody.innerHTML = html;
@@ -57,23 +57,23 @@ function renderPagination() {
   updateUserCount();
   if (!total) { paginationControls.innerHTML = ''; return; }
   var html = '';
-  html += '<button class="page-btn" onclick="goToPage(' + (page - 1) + ')" ' + (page <= 1 ? 'disabled' : '') + '><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>';
+  html += '<button type="button" class="page-btn" aria-label="Previous page" onclick="goToPage(' + (page - 1) + ')" ' + (page <= 1 ? 'disabled' : '') + '><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg></button>';
   var maxVisible = 5;
   var startPage = Math.max(1, page - Math.floor(maxVisible / 2));
   var endPage = Math.min(totalPages, startPage + maxVisible - 1);
   if (endPage - startPage + 1 < maxVisible) { startPage = Math.max(1, endPage - maxVisible + 1); }
   if (startPage > 1) {
-    html += '<button class="page-btn" onclick="goToPage(1)">1</button>';
-    if (startPage > 2) html += '<button class="page-btn" disabled>...</button>';
+    html += '<button type="button" class="page-btn" onclick="goToPage(1)">1</button>';
+    if (startPage > 2) html += '<button type="button" class="page-btn" disabled>...</button>';
   }
   for (var i = startPage; i <= endPage; i++) {
-    html += '<button class="page-btn' + (i === page ? ' active' : '') + '" onclick="goToPage(' + i + ')">' + i + '</button>';
+    html += '<button type="button" class="page-btn' + (i === page ? ' active' : '') + '" onclick="goToPage(' + i + ')"' + (i === page ? ' aria-current="page"' : '') + '>' + i + '</button>';
   }
   if (endPage < totalPages) {
-    if (endPage < totalPages - 1) html += '<button class="page-btn" disabled>...</button>';
-    html += '<button class="page-btn" onclick="goToPage(' + totalPages + ')">' + totalPages + '</button>';
+    if (endPage < totalPages - 1) html += '<button type="button" class="page-btn" disabled>...</button>';
+    html += '<button type="button" class="page-btn" onclick="goToPage(' + totalPages + ')">' + totalPages + '</button>';
   }
-  html += '<button class="page-btn" onclick="goToPage(' + (page + 1) + ')" ' + (page >= totalPages ? 'disabled' : '') + '><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>';
+  html += '<button type="button" class="page-btn" aria-label="Next page" onclick="goToPage(' + (page + 1) + ')" ' + (page >= totalPages ? 'disabled' : '') + '><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg></button>';
   paginationControls.innerHTML = html;
 }
 

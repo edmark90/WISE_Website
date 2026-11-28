@@ -12,6 +12,7 @@ let state = {
   selectedDate: null,
   currentSchedule: null,
   schedules: [],
+  barangayFilter: '',
   editingId: null,
   routeEntries: [],
   deletingId: null,
@@ -95,5 +96,20 @@ document.addEventListener('DOMContentLoaded', function() {
   $id('delete-all-routes-btn').addEventListener('click', deleteAllDayRoutes);
   addRouteBtn.addEventListener('click', addRouteEntry);
   modalSaveBtn.addEventListener('click', handleSaveSchedule);
+
+  // Interactive barangay legend filter chips
+  $all('#calendar-legend .legend-item').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var val = btn.dataset.barangay || '';
+      state.barangayFilter = (state.barangayFilter === val && val !== '') ? '' : val;
+      $all('#calendar-legend .legend-item').forEach(function (b) {
+        var active = (b.dataset.barangay || '') === state.barangayFilter;
+        b.classList.toggle('active', active);
+        b.setAttribute('aria-pressed', active ? 'true' : 'false');
+      });
+      drawCalendarGrid({});
+    });
+  });
+
   renderCalendar();
 });

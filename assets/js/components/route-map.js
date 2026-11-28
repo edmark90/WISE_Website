@@ -2170,7 +2170,7 @@ function renderRouteInfoBar(assignments, label, truckList, warnings, infoEl) {
       (warnings.length > 2 ? ' (+' + (warnings.length - 2) + ' more)' : '') + '</div>';
   }
 
-  html += '<div class="rmd-legend-note">Interactive: hover over any stop marker or chip to highlight. <strong>D</strong> Depot &middot; <strong>S</strong> Start &middot; <strong>F</strong> Final stop</div>';
+  html += '<div class="rmd-legend-note"><strong>D</strong> Depot &middot; <strong>S</strong> Start &middot; <strong>F</strong> Final stop</div>';
 
   html += '</div>';
   infoEl.innerHTML = html;

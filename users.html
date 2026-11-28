@@ -7,18 +7,19 @@
   <title>WISE SYSTEM — User Management</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="assets/css/global.css">
   <link rel="stylesheet" href="assets/css/users.css">
   <link rel="icon" type="image/png" href="assets/images/logo wise.png">
 </head>
 
 <body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
   <div class="app">
     <aside class="sidebar">
       <div class="sidebar-brand">
         <div class="badge">
-          <img src="assets/images/logo wise.png" alt="wise logo">
+          <img src="assets/images/logo wise.png" alt="WISE Logo">
         </div>
         <h1>WISE<br><span class="brand-sub">SYSTEM</span></h1>
       </div>
@@ -31,7 +32,7 @@
             <rect x="3" y="14" width="7" height="7"></rect>
             <rect x="14" y="14" width="7" height="7"></rect>
           </svg><span>Dashboard</span></a>
-        <a href="users.html" class="nav-item active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
+        <a href="users.html" class="nav-item active" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"
             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
             <circle cx="9" cy="7" r="4"></circle>
@@ -72,12 +73,12 @@
       </div>
     </aside>
 
-    <main class="main">
+    <main class="main" id="main-content">
       <div class="page-header">
         <div class="page-header-info">
-          <div class="page-eyebrow">Access &amp; Directory</div>
+          <div class="page-eyebrow">Directory</div>
           <h2>User Management</h2>
-          <p>Manage registered citizens and administrator accounts across Muntinlupa City.</p>
+          <p>Manage citizen, collector, and administrator accounts.</p>
         </div>
         <div class="page-header-actions">
           <button class="btn btn-primary" id="add-user-btn" type="button">
@@ -106,7 +107,6 @@
           <div class="stat-info">
             <p class="stat-label">Total Accounts</p>
             <p class="stat-number" id="stat-total">—</p>
-            <p class="stat-foot">All registered accounts in directory</p>
           </div>
         </div>
 
@@ -122,7 +122,6 @@
           <div class="stat-info">
             <p class="stat-label">Citizens</p>
             <p class="stat-number" id="stat-citizens">—</p>
-            <p class="stat-foot">Mobile app &amp; community accounts</p>
           </div>
         </div>
 
@@ -139,7 +138,6 @@
           <div class="stat-info">
             <p class="stat-label">Collectors</p>
             <p class="stat-number" id="stat-collectors">—</p>
-            <p class="stat-foot">Field waste collection personnel</p>
           </div>
         </div>
 
@@ -154,7 +152,6 @@
           <div class="stat-info">
             <p class="stat-label">Administrators</p>
             <p class="stat-number" id="stat-admins">—</p>
-            <p class="stat-foot">System operators &amp; dispatchers</p>
           </div>
         </div>
       </div>
@@ -167,7 +164,10 @@
             <circle cx="11" cy="11" r="8"></circle>
             <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
           </svg>
-          <input type="text" id="search-input" placeholder="Search users by name, email, or phone..." />
+          <input type="text" id="search-input" placeholder="Search name, email, or phone..." aria-label="Search users" />
+          <button type="button" class="search-clear-btn" id="search-clear-btn" aria-label="Clear search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
         </div>
         <div class="filter-group">
           <select class="filter-select" id="role-filter" aria-label="Filter by role">
@@ -191,8 +191,7 @@
       <div class="table-card">
         <div class="table-head">
           <div class="table-head-titles">
-            <h3>Directory Accounts</h3>
-            <p class="table-sub">View, edit, or manage account access status</p>
+            <h3>Accounts</h3>
           </div>
           <span class="table-count" id="user-count">0 users</span>
         </div>
@@ -228,7 +227,7 @@
 
   <!-- Add / Edit User Modal -->
   <div class="modal-overlay" id="user-modal">
-    <div class="modal">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
       <div class="modal-header">
         <h3 id="modal-title">Add New User</h3>
         <button class="modal-close" id="modal-close" type="button" aria-label="Close modal">
@@ -274,11 +273,22 @@
             <div class="form-group">
               <label class="form-label" for="form-password">Password <span class="req-star"
                   id="password-required">*</span></label>
-              <input class="form-input" id="form-password" type="password" placeholder="Enter a password" />
+              <div class="password-input-wrap">
+                <input class="form-input" id="form-password" type="password" placeholder="Min. 8 characters" />
+                <button type="button" class="password-toggle-btn" data-toggle-target="form-password" aria-label="Show password" aria-pressed="false">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
+              <p class="form-hint" id="password-hint">Min. 8 characters</p>
             </div>
             <div class="form-group">
               <label class="form-label" for="form-confirm">Confirm Password</label>
-              <input class="form-input" id="form-confirm" type="password" placeholder="Re-enter password" />
+              <div class="password-input-wrap">
+                <input class="form-input" id="form-confirm" type="password" placeholder="Re-enter password" />
+                <button type="button" class="password-toggle-btn" data-toggle-target="form-confirm" aria-label="Show confirm password" aria-pressed="false">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+              </div>
             </div>
           </div>
 
@@ -290,7 +300,7 @@
                 <span class="status-toggle-track"></span>
                 <span class="status-toggle-label" id="status-toggle-label">Active</span>
               </label>
-              <p class="form-hint">Uncheck to disable this account. The user will not be able to log in.</p>
+              <p class="form-hint">Disabled accounts cannot sign in.</p>
             </div>
           </div>
         </form>
@@ -312,7 +322,7 @@
 
   <!-- Delete Confirmation Modal -->
   <div class="modal-overlay" id="delete-modal">
-    <div class="modal modal-confirm">
+    <div class="modal modal-confirm" role="dialog" aria-modal="true" aria-labelledby="delete-modal-title">
       <div class="modal-body modal-confirm-body">
         <div class="confirm-icon danger">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
@@ -323,8 +333,8 @@
           </svg>
         </div>
         <div class="confirm-text">
-          <h3>Delete User?</h3>
-          <p>You are about to delete <strong id="delete-user-name">this user</strong>. This action cannot be undone.</p>
+          <h3 id="delete-modal-title">Delete User?</h3>
+          <p>Delete <strong id="delete-user-name">this user</strong>? This cannot be undone.</p>
         </div>
       </div>
       <div class="modal-footer modal-confirm-footer">
@@ -343,7 +353,7 @@
 
   <!-- Collector Assignments Modal -->
   <div class="modal-overlay" id="collector-assignments-modal">
-    <div class="modal" style="max-width: 640px;">
+    <div class="modal modal-wide" role="dialog" aria-modal="true" aria-labelledby="collector-modal-title">
       <div class="modal-header">
         <h3 id="collector-modal-title">Collector Assignments</h3>
         <button class="modal-close" id="collector-modal-close" type="button" aria-label="Close modal">
@@ -353,7 +363,7 @@
           </svg>
         </button>
       </div>
-      <div class="modal-body" id="collector-assignments-body" style="max-height: 65vh; overflow-y: auto;">
+      <div class="modal-body modal-body-scroll" id="collector-assignments-body">
         <!-- Populated by JS -->
       </div>
       <div class="modal-footer">

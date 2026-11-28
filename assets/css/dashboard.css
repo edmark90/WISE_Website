@@ -129,7 +129,7 @@
   align-items: center;
   gap: 8px;
   font-size: 11px;
-  font-weight: 750;
+  font-weight: 700;
   letter-spacing: 0.8px;
   text-transform: uppercase;
   color: #0369a1;
@@ -733,12 +733,12 @@
 .db-day-today-tag {
   display: inline-flex;
   align-items: center;
-  padding: 1.5px 5.5px;
+  padding: 2px 6px;
   border-radius: 5px;
   background: #eff6ff;
   border: 1px solid #bfdbfe;
   color: #1d4ed8;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.2px;
   line-height: 1.2;
@@ -1021,7 +1021,7 @@
 .db-stat-tag {
   display: inline-block;
   font-size: 10px;
-  font-weight: 750;
+  font-weight: 700;
   letter-spacing: 0.8px;
   text-transform: uppercase;
   color: var(--db-muted);
@@ -1288,7 +1288,7 @@
 
 .db-line-today-txt {
   font-size: 9px;
-  font-weight: 750;
+  font-weight: 700;
   letter-spacing: 0.6px;
   fill: #ffffff;
 }
@@ -1304,14 +1304,14 @@
 
 .db-line-label.x {
   font-size: 9.5px;
-  font-weight: 650;
+  font-weight: 600;
   fill: #64748b;
   letter-spacing: 0.35px;
 }
 
 .db-line-label.y {
   font-size: 11px;
-  font-weight: 650;
+  font-weight: 600;
   fill: #64748b;
 }
 
@@ -1490,7 +1490,7 @@
   justify-content: space-between;
   gap: 10px;
   font-size: 11.5px;
-  font-weight: 750;
+  font-weight: 700;
   color: var(--db-ink);
   letter-spacing: 0.2px;
   padding-bottom: 7px;
@@ -1506,7 +1506,7 @@
   background: var(--db-blue-soft);
   color: var(--db-blue-deep);
   font-size: 9.5px;
-  font-weight: 750;
+  font-weight: 700;
 }
 
 .db-tip-rows {
@@ -1546,7 +1546,7 @@
   border: 1px solid #bfdbfe;
   color: #1d4ed8;
   font-size: 9px;
-  font-weight: 750;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
@@ -1561,7 +1561,7 @@
 .db-tip-val {
   min-width: 18px;
   text-align: right;
-  font-weight: 750;
+  font-weight: 700;
   color: var(--db-ink);
   font-variant-numeric: tabular-nums;
 }
@@ -1582,7 +1582,7 @@
   padding-top: 7px;
   border-top: 1px dashed var(--db-line);
   font-size: 11.5px;
-  font-weight: 750;
+  font-weight: 700;
   color: var(--db-ink);
 }
 
@@ -1830,7 +1830,7 @@
 
 .db-donut-legend-pct {
   font-size: 12.5px;
-  font-weight: 750;
+  font-weight: 700;
   color: var(--db-ink);
   font-variant-numeric: tabular-nums;
   min-width: 40px;
@@ -2242,7 +2242,7 @@
 .db-month-dialog {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: 1200;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -2266,7 +2266,7 @@
   margin: 0 0 6px;
   font-family: 'Outfit', 'Inter', sans-serif;
   font-size: 17px;
-  font-weight: 750;
+  font-weight: 700;
   color: var(--db-ink);
 }
 
@@ -2324,152 +2324,8 @@
   box-shadow: 0 4px 14px rgba(37, 99, 235, 0.4);
 }
 
-/* -----------------------------------------------------------------------
-   Responsive Breakpoints
-   ----------------------------------------------------------------------- */
-
-@media (max-width: 1200px) {
-  .db-stats  { grid-template-columns: repeat(2, 1fr); gap: 16px; }
-  .db-charts { grid-template-columns: 1fr; gap: 20px; }
-  .db-grid   { grid-template-columns: 1fr; gap: 20px; }
-}
-
-@media (max-width: 1024px) {
-  .db-head { flex-direction: column; align-items: flex-start; gap: 14px; }
-  .db-head-right { width: 100%; justify-content: flex-start; }
-  .db-title { font-size: 24px; }
-  .db-weather-divider { display: none; }
-  .db-weather { gap: 14px; padding: 16px 18px; }
-  .db-weather-stats { width: 100%; justify-content: space-between; gap: 12px; }
-  .db-weather-status { width: 100%; justify-content: center; }
-}
-
-@media (max-width: 900px) {
-  .db-period { flex-direction: column; align-items: stretch; gap: 12px; }
-  .db-period-left { width: 100%; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
-  .db-month-stepper { flex: 1; min-width: 180px; justify-content: center; }
-  .db-period-jump-btn { flex-shrink: 0; min-height: 38px; }
-  .db-period-right { width: 100%; justify-content: center; }
-
-  /* 7-day timeline scrollable carousel */
-  .db-week {
-    display: flex;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    -webkit-overflow-scrolling: touch;
-    padding-bottom: 8px;
-    gap: 8px;
-    scrollbar-width: thin;
-  }
-  .db-day {
-    flex: 0 0 130px;
-    scroll-snap-align: start;
-    min-height: 104px;
-  }
-  .db-skel-week {
-    display: flex;
-    overflow-x: auto;
-    gap: 8px;
-  }
-  .db-skel-day { flex: 0 0 130px; }
-}
-
-@media (max-width: 640px) {
-  .db-stats { grid-template-columns: 1fr; gap: 12px; }
-  .db-card, .db-rail-card { padding: 16px 14px; border-radius: 14px; }
-  .db-stat-value { font-size: 26px; }
-
-  /* Weather strip compact */
-  .db-weather { padding: 14px; }
-  .db-weather-primary { width: 100%; }
-  .db-weather-stats {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    justify-content: space-between;
-  }
-  .db-weather-stat {
-    flex: 1 1 85px;
-    min-width: 75px;
-    flex-direction: column;
-    align-items: center;
-    text-align: center;
-    gap: 5px;
-  }
-  .db-weather-stat-icon {
-    width: 32px;
-    height: 32px;
-  }
-  .db-weather-stat strong {
-    font-size: 13.5px;
-  }
-  .db-weather-stat-label {
-    font-size: 9px;
-  }
-
-  /* Rail meta wrap */
-  .db-rail-meta-row {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-  }
-  .db-rail-summary-chips {
-    width: 100%;
-    gap: 6px;
-  }
-  .db-rail-progress-wrap {
-    width: 100%;
-    justify-content: space-between;
-  }
-  .db-rail-progress-bar {
-    flex: 1;
-    max-width: none;
-  }
-
-  .db-chart-head { flex-direction: column; align-items: stretch; gap: 10px; }
-  .db-chart-controls { width: 100%; justify-content: space-between; }
-  .db-view-switch { flex: 1; display: flex; min-width: 145px; }
-  .db-view-btn { flex: 1; text-align: center; padding: 6px 10px; }
-  .db-chart-container.db-line-surface { padding: 12px 10px 22px 6px; }
-  .db-chart { height: 245px; }
-  .db-chart-tip-hint { display: none; }
-  .db-donut { width: 170px; height: 170px; }
-  .db-donut-center strong { font-size: 24px; }
-  
-  .db-card-header-row { flex-direction: column; align-items: stretch; gap: 12px; }
-  .db-activity-filter { width: 100%; justify-content: stretch; }
-  .db-activity-filter .db-filter-pill { flex: 1; text-align: center; padding: 7px 10px; }
-}
-
-@media (max-width: 420px) {
-  .db-head-info .db-title { font-size: 21px; }
-  .db-weather-temp { font-size: 28px; }
-  .db-weather-icon-box { width: 50px; height: 50px; }
-  .db-weather-art { width: 36px; height: 36px; }
-  .db-day { flex: 0 0 115px; min-height: 96px; padding: 10px 8px; }
-  .db-day-date { font-size: 16px; }
-  .db-day-status-txt { font-size: 9.5px; }
-  .db-donut { width: 150px; height: 150px; }
-  .db-donut-center strong { font-size: 20px; }
-}
-
-/* -----------------------------------------------------------------------
-   Accessibility: Prefers-reduced-motion
-   ----------------------------------------------------------------------- */
-
-@media (prefers-reduced-motion: reduce) {
-  .db-page *,
-  .db-page *::before,
-  .db-page *::after {
-    animation-duration: 0.001ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.001ms !important;
-  }
-}
-
-
 /* =======================================================================
-   Weather & Operational Telemetry Strip (Vibrant Atmospheric Sky Edition)
+   Weather & Operational Telemetry Strip (Defined BEFORE Media Queries)
    ======================================================================= */
 .db-weather {
   position: relative;
@@ -2480,7 +2336,7 @@
   padding: 18px 26px;
   border-radius: 22px;
   background-color: #0b2a59;
-  background-image: 
+  background-image:
     radial-gradient(circle at 12% 18%, rgba(56, 189, 248, 0.35) 0%, transparent 42%),
     radial-gradient(circle at 92% 82%, rgba(14, 165, 233, 0.25) 0%, transparent 40%),
     radial-gradient(circle at 50% 50%, rgba(3, 105, 161, 0.2) 0%, transparent 60%),
@@ -2498,10 +2354,9 @@
   box-shadow: 0 20px 42px -6px rgba(10, 37, 88, 0.42), 0 6px 18px rgba(2, 132, 199, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
-/* Atmospheric Condition Themes */
 .db-weather.is-sunny {
   background-color: #0b2a59;
-  background-image: 
+  background-image:
     radial-gradient(circle at 12% 18%, rgba(56, 189, 248, 0.38) 0%, transparent 42%),
     radial-gradient(circle at 92% 82%, rgba(14, 165, 233, 0.28) 0%, transparent 40%),
     radial-gradient(circle at 50% 50%, rgba(3, 105, 161, 0.22) 0%, transparent 60%),
@@ -2592,7 +2447,7 @@
 .db-weather-temp {
   font-family: 'Outfit', 'Inter', sans-serif;
   font-size: 38px;
-  font-weight: 850;
+  font-weight: 800;
   color: #ffffff;
   line-height: 1;
   font-variant-numeric: tabular-nums;
@@ -2717,7 +2572,7 @@
 
 .db-weather-stat-label {
   font-size: 10px;
-  font-weight: 750;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.7px;
   color: rgba(255, 255, 255, 0.78);
@@ -2761,10 +2616,153 @@
 
 .db-weather-updated {
   font-size: 12px;
-  font-weight: 650;
+  font-weight: 600;
   color: #ffffff;
   letter-spacing: 0.2px;
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+/* -----------------------------------------------------------------------
+   Responsive Breakpoints
+   ----------------------------------------------------------------------- */
+
+@media (max-width: 1200px) {
+  .db-stats  { grid-template-columns: repeat(2, 1fr); gap: 16px; }
+  .db-charts { grid-template-columns: 1fr; gap: 20px; }
+  .db-grid   { grid-template-columns: 1fr; gap: 20px; }
+}
+
+@media (max-width: 1024px) {
+  .db-head { flex-direction: column; align-items: flex-start; gap: 14px; }
+  .db-head-right { width: 100%; justify-content: flex-start; }
+  .db-title { font-size: 24px; }
+  .db-weather-divider { display: none; }
+  .db-weather { gap: 14px; padding: 16px 18px; }
+  .db-weather-stats { width: 100%; justify-content: space-between; gap: 12px; }
+  .db-weather-status { width: 100%; justify-content: center; }
+}
+
+@media (max-width: 900px) {
+  .db-period { flex-direction: column; align-items: stretch; gap: 12px; }
+  .db-period-left { width: 100%; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .db-month-stepper { flex: 1; min-width: 180px; justify-content: center; }
+  .db-period-jump-btn { flex-shrink: 0; min-height: 38px; }
+  .db-period-right { width: 100%; justify-content: center; }
+
+  /* 7-day timeline scrollable carousel */
+  .db-week {
+    display: flex;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 8px;
+    gap: 8px;
+    scrollbar-width: thin;
+  }
+  .db-day {
+    flex: 0 0 130px;
+    scroll-snap-align: start;
+    min-height: 104px;
+  }
+  .db-skel-week {
+    display: flex;
+    overflow-x: auto;
+    gap: 8px;
+  }
+  .db-skel-day { flex: 0 0 130px; }
+}
+
+@media (max-width: 640px) {
+  .db-stats { grid-template-columns: 1fr; gap: 12px; }
+  .db-card, .db-rail-card { padding: 16px 14px; border-radius: 14px; }
+  .db-stat-value { font-size: 26px; }
+
+  /* Weather strip compact */
+  .db-weather { padding: 14px; }
+  .db-weather-primary { width: 100%; }
+  .db-weather-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    justify-content: space-between;
+  }
+  .db-weather-stat {
+    flex: 1 1 85px;
+    min-width: 75px;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 5px;
+  }
+  .db-weather-stat-icon {
+    width: 32px;
+    height: 32px;
+  }
+  .db-weather-stat strong {
+    font-size: 13.5px;
+  }
+  .db-weather-stat-label {
+    font-size: 10px;
+  }
+
+  /* Rail meta wrap */
+  .db-rail-meta-row {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  .db-rail-summary-chips {
+    width: 100%;
+    gap: 6px;
+  }
+  .db-rail-progress-wrap {
+    width: 100%;
+    justify-content: space-between;
+  }
+  .db-rail-progress-bar {
+    flex: 1;
+    max-width: none;
+  }
+
+  .db-chart-head { flex-direction: column; align-items: stretch; gap: 10px; }
+  .db-chart-controls { width: 100%; justify-content: space-between; }
+  .db-view-switch { flex: 1; display: flex; min-width: 145px; }
+  .db-view-btn { flex: 1; text-align: center; padding: 6px 10px; }
+  .db-chart-container.db-line-surface { padding: 12px 10px 22px 6px; }
+  .db-chart { height: 245px; }
+  .db-chart-tip-hint { display: none; }
+  .db-donut { width: 170px; height: 170px; }
+  .db-donut-center strong { font-size: 24px; }
+
+  .db-card-header-row { flex-direction: column; align-items: stretch; gap: 12px; }
+  .db-activity-filter { width: 100%; justify-content: stretch; }
+  .db-activity-filter .db-filter-pill { flex: 1; text-align: center; padding: 7px 10px; }
+}
+
+@media (max-width: 420px) {
+  .db-head-info .db-title { font-size: 21px; }
+  .db-weather-temp { font-size: 28px; }
+  .db-weather-icon-box { width: 50px; height: 50px; }
+  .db-weather-art { width: 36px; height: 36px; }
+  .db-day { flex: 0 0 115px; min-height: 96px; padding: 10px 8px; }
+  .db-day-date { font-size: 16px; }
+  .db-day-status-txt { font-size: 10px; }
+  .db-donut { width: 150px; height: 150px; }
+  .db-donut-center strong { font-size: 20px; }
+}
+
+/* -----------------------------------------------------------------------
+   Accessibility: Prefers-reduced-motion
+   ----------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .db-page *,
+  .db-page *::before,
+  .db-page *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
 }

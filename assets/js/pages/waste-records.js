@@ -20,8 +20,7 @@ const nextBtn = $id('wc-next');
 const searchInput = $id('wc-search-input');
 const typeFilter = $id('wc-type-filter');
 const flagFilter = $id('wc-flag-filter');
-const dateBtn = $id('wc-date-btn');
-const dateLabel = $id('wc-date-label');
+const dateFilter = $id('wc-date-filter');
 const resetBtn = $id('wc-reset-btn');
 const modal = $id('wc-modal');
 const modalClose = $id('wc-modal-close');
@@ -47,17 +46,11 @@ function renderStats(s) {
 
   var tag = $id('stat-type-tag');
   var cls = s.most_common_type || '';
-  if (cls === 'Recyclable') {
-    tag.className = 'wc-pill rec';
-    tag.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Recyclable';
-  } else if (cls === 'Biodegradable') {
-    tag.className = 'wc-pill bio';
-    tag.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Biodegradable';
-  } else if (cls) {
-    tag.className = 'wc-pill res';
-    tag.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>Non-Recyclable';
+  if (cls) {
+    tag.className = 'wc-pill ' + wcBadgeClass(cls);
+    tag.textContent = cls;
   } else {
-    tag.className = 'wc-pill res';
+    tag.className = 'wc-pill slate';
     tag.textContent = 'No data';
   }
 
@@ -70,7 +63,7 @@ function renderStats(s) {
     var thresh = s.low_confidence_threshold != null ? Number(s.low_confidence_threshold).toFixed(0) : '60';
     var lowCnt = s.low_confidence_flagged != null ? s.low_confidence_flagged.toLocaleString() : '0';
     var manCnt = s.manual_flagged != null ? s.manual_flagged.toLocaleString() : '0';
-    $id('wc-rpt-breakdown').textContent = 'Auto-flagged (<' + thresh + '% confidence): ' + lowCnt + ' · Manual admin flags: ' + manCnt;
+    $id('wc-rpt-breakdown').textContent = 'Auto (<' + thresh + '%): ' + lowCnt + ' · Manual: ' + manCnt;
   }
 }
 
@@ -160,7 +153,13 @@ async function toggleWasteFlag(recordId, current) {
 }
 
 async function deleteWasteRecord(recordId) {
-  if (!confirm('Delete this classification record? This cannot be undone.')) return;
+  const confirmed = await wiseConfirmDialog({
+    title: 'Delete Record?',
+    message: 'Delete classification record #' + recordId + '? This cannot be undone.',
+    confirmText: 'Delete',
+    variant: 'danger'
+  });
+  if (!confirmed) return;
   try {
     const res = await apiRequest('/api/waste-records/' + recordId, {
       method: 'DELETE'
@@ -190,13 +189,17 @@ function viewWasteRecord(recordId) {
     ? '<div class="wc-detail-image-wrap"><img src="' + escapeHtml(resolveMediaUrl(r.image_url)) + '" alt="Classification Photo" class="wc-detail-img" onerror="this.parentElement.style.display=\'none\'"></div>'
     : '';
 
+  var flagBadgeHtml = r.is_flagged
+    ? '<span class="wc-flag-badge is-warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>Flagged for Review</span>'
+    : '<span class="wc-flag-badge is-ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>Verified</span>';
+
   var rows = [
     ['Record ID', '#' + r.id],
-    ['Citizen Scanner', escapeHtml(r.fullname || 'Anonymous Citizen')],
-    ['Location / Barangay', escapeHtml((r.barangay || '—') + (r.zone ? ' · Zone ' + r.zone : ''))],
-    ['Waste Classification', '<span class="wc-badge ' + wcBadgeClass(r.classification || r.waste_type) + '">' + escapeHtml(r.classification || r.waste_type || '—') + '</span>'],
+    ['Citizen', escapeHtml(r.fullname || 'Anonymous Citizen')],
+    ['Barangay', escapeHtml((r.barangay || '—') + (r.zone ? ' · Zone ' + r.zone : ''))],
+    ['Classification', '<span class="wc-badge ' + wcBadgeClass(r.classification || r.waste_type) + '">' + escapeHtml(r.classification || r.waste_type || '—') + '</span>'],
     ['AI Confidence', '<div class="wc-conf wc-conf-inline ' + confLevel + '"><span class="wc-conf-pct">' + conf + '</span><span class="wc-conf-bar"><span class="wc-conf-fill" style="width:' + barW + '%"></span></span></div>'],
-    ['Flagged Status', r.is_flagged ? '<span class="wc-flag-warn">⚠️ Flagged for Review</span>' : '<span class="wc-flag-ok">✓ Normal</span>'],
+    ['Review Status', flagBadgeHtml],
     ['Timestamp', wcFormatTime(r.created_at) + ' · ' + wcFormatDate(r.created_at)],
   ];
 
@@ -242,33 +245,80 @@ if (flagFilter) {
   });
 }
 
-dateBtn.addEventListener('click', function () {
-  if (state.startDate) {
-    state.startDate = ''; state.endDate = '';
-    dateLabel.textContent = 'All time';
-  } else {
-    var today = formatDate(new Date());
-    state.startDate = today;
-    state.endDate = today;
-    dateLabel.textContent = 'Today';
-  }
-  state.page = 1;
-  fetchRecords();
-});
+if (dateFilter) {
+  dateFilter.addEventListener('change', function () {
+    var mode = dateFilter.value;
+    var now = new Date();
+    var todayStr = formatDate(now);
+    if (mode === 'today') {
+      state.startDate = todayStr;
+      state.endDate = todayStr;
+    } else if (mode === '7d') {
+      var past = new Date(now);
+      past.setDate(past.getDate() - 6);
+      state.startDate = formatDate(past);
+      state.endDate = todayStr;
+    } else if (mode === 'month') {
+      var first = new Date(now.getFullYear(), now.getMonth(), 1);
+      state.startDate = formatDate(first);
+      state.endDate = todayStr;
+    } else {
+      state.startDate = '';
+      state.endDate = '';
+    }
+    state.page = 1;
+    fetchRecords();
+  });
+}
 
 if (resetBtn) {
   resetBtn.addEventListener('click', function () {
     if (searchInput) searchInput.value = '';
+    if ($id('wc-search-clear-btn')) $id('wc-search-clear-btn').classList.remove('visible');
     state.search = '';
     typeFilter.value = '';
     state.wasteType = '';
     if (flagFilter) flagFilter.value = '';
     state.isFlagged = '';
+    if (dateFilter) dateFilter.value = '';
     state.startDate = '';
     state.endDate = '';
-    dateLabel.textContent = 'All time';
     state.page = 1;
     fetchRecords();
+  });
+}
+
+wireSearchClear(searchInput, $id('wc-search-clear-btn'), function () {
+  state.search = '';
+  state.page = 1;
+  fetchRecords();
+});
+
+// Top-level view tabs (Classification Records | Barangay Leaderboard)
+$all('.wc-tab-btn').forEach(function (tabBtn) {
+  tabBtn.addEventListener('click', function () {
+    var target = tabBtn.dataset.tab;
+    $all('.wc-tab-btn').forEach(function (b) {
+      var active = b === tabBtn;
+      b.classList.toggle('active', active);
+      b.setAttribute('aria-selected', active ? 'true' : 'false');
+    });
+    $all('.wc-tab-panel').forEach(function (p) {
+      p.classList.toggle('active', p.id === 'wc-panel-' + target);
+    });
+  });
+});
+
+// Header refresh button
+var headerRefreshBtn = $id('wc-header-refresh');
+if (headerRefreshBtn) {
+  headerRefreshBtn.addEventListener('click', function () {
+    headerRefreshBtn.classList.add('spinning');
+    Promise.all([fetchStats(), fetchRecords(), fetchBarangayLeaderboard()])
+      .then(function () { showToast('Waste records refreshed.', 'success'); })
+      .finally(function () {
+        setTimeout(function () { headerRefreshBtn.classList.remove('spinning'); }, 450);
+      });
   });
 }
 
@@ -387,39 +437,44 @@ function renderBarangayLeaderboard(data) {
         badge_title: 'No Submissions',
       }));
 
-  // Render Podium (Top 3)
+  // Render Podium (Top 3 — only award places to barangays with actual scans)
   if (podium) {
-    const top3 = list.slice(0, 3);
-    const tiers = ['gold', 'silver', 'bronze'];
-    const rankLabels = ['🥇 1st Place', '🥈 2nd Place', '🥉 3rd Place'];
-    let podiumHtml = '';
+    const activeRanked = list.filter(function (b) { return (b.total_scans || 0) > 0; });
+    if (activeRanked.length === 0) {
+      podium.innerHTML = '<div class="wc-podium-empty">No scans recorded for this period yet.</div>';
+    } else {
+      const top3 = activeRanked.slice(0, 3);
+      const tiers = ['gold', 'silver', 'bronze'];
+      const rankLabels = ['1st Place', '2nd Place', '3rd Place'];
+      const medalSvg = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/></svg>';
+      let podiumHtml = '';
 
-    top3.forEach((item, idx) => {
-      const tier = tiers[idx] || 'bronze';
-      const label = rankLabels[idx] || ('Rank ' + item.rank);
-      const hasScans = item.total_scans > 0;
-      const fillClass = item.proper_sorting_rate >= 80 ? 'high' : (item.proper_sorting_rate >= 50 ? 'med' : 'low');
+      top3.forEach((item, idx) => {
+        const tier = tiers[idx] || 'bronze';
+        const label = rankLabels[idx] || ('Rank ' + item.rank);
+        const fillClass = item.proper_sorting_rate >= 80 ? 'high' : (item.proper_sorting_rate >= 50 ? 'med' : 'low');
 
-      podiumHtml +=
-        '<div class="wc-podium-card ' + tier + '">' +
-          '<div class="wc-podium-badge-row">' +
-            '<span class="wc-podium-rank-pill">' + label + '</span>' +
-          '</div>' +
-          '<h4 class="wc-podium-name">' + escapeHtml(item.barangay) + '</h4>' +
-          '<div class="wc-podium-rate-row">' +
-            '<span class="wc-podium-rate-num">' + (hasScans ? item.proper_sorting_rate + '%' : '0.0%') + '</span>' +
-            '<span class="wc-podium-rate-label">Proper Sorting</span>' +
-          '</div>' +
-          '<div class="wc-podium-progress">' +
-            '<div class="wc-podium-progress-fill ' + fillClass + '" style="width:' + (hasScans ? Math.min(item.proper_sorting_rate, 100) : 0) + '%;"></div>' +
-          '</div>' +
-          '<div class="wc-podium-stats-row">' +
-            '<span>AI Classifications: <strong>' + item.total_scans + '</strong></span>' +
-            '<span>AI Confidence: <strong>' + (item.avg_confidence > 0 ? item.avg_confidence + '%' : '—') + '</strong></span>' +
-          '</div>' +
-        '</div>';
-    });
-    podium.innerHTML = podiumHtml;
+        podiumHtml +=
+          '<div class="wc-podium-card ' + tier + '">' +
+            '<div class="wc-podium-badge-row">' +
+              '<span class="wc-podium-rank-pill">' + medalSvg + label + '</span>' +
+            '</div>' +
+            '<h4 class="wc-podium-name">' + escapeHtml(item.barangay) + '</h4>' +
+            '<div class="wc-podium-rate-row">' +
+              '<span class="wc-podium-rate-num">' + item.proper_sorting_rate + '%</span>' +
+              '<span class="wc-podium-rate-label">Proper Sorting</span>' +
+            '</div>' +
+            '<div class="wc-podium-progress">' +
+              '<div class="wc-podium-progress-fill ' + fillClass + '" style="width:' + Math.min(item.proper_sorting_rate, 100) + '%;"></div>' +
+            '</div>' +
+            '<div class="wc-podium-stats-row">' +
+              '<span>Scans: <strong>' + item.total_scans + '</strong></span>' +
+              '<span>Confidence: <strong>' + (item.avg_confidence > 0 ? item.avg_confidence + '%' : '—') + '</strong></span>' +
+            '</div>' +
+          '</div>';
+      });
+      podium.innerHTML = podiumHtml;
+    }
   }
 
   // Render Full Table (All 9 Barangays)
@@ -460,7 +515,6 @@ function renderBarangayLeaderboard(data) {
               '</div>' +
               '<div>' +
                 '<div class="wc-brgy-cell-name">' + escapeHtml(b.barangay) + '</div>' +
-                '<div class="wc-brgy-cell-sub">Muntinlupa City</div>' +
               '</div>' +
             '</div>' +
           '</td>' +

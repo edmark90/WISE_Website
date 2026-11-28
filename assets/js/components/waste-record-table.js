@@ -52,9 +52,9 @@ function renderWasteRows(records) {
     var sourceSub = (r.barangay ? escapeHtml(r.barangay) : '') + (r.zone ? ' · Zone ' + escapeHtml(r.zone) : '');
     var thumb;
     if (WC_SHOW_IMAGES && r.image_url) {
-      thumb = '<span class="wc-thumb" onclick="viewWasteRecord(' + r.id + ')" title="View photo preview"><img src="' + escapeHtml(resolveMediaUrl(r.image_url)) + '" alt="Waste scan" onerror="this.parentElement.innerHTML=\'' + WC_PLACEHOLDER.replace(/"/g, '&quot;') + '\'"></span>';
+      thumb = '<button type="button" class="wc-thumb" onclick="viewWasteRecord(' + r.id + ')" title="View photo preview" aria-label="View scan photo for ' + safeName + '"><img src="' + escapeHtml(resolveMediaUrl(r.image_url)) + '" alt="Waste scan" onerror="this.parentElement.innerHTML=\'' + WC_PLACEHOLDER.replace(/"/g, '&quot;') + '\'"></button>';
     } else {
-      thumb = '<span class="wc-thumb" onclick="viewWasteRecord(' + r.id + ')" title="View record details" aria-label="No image available">' + WC_PLACEHOLDER + '</span>';
+      thumb = '<button type="button" class="wc-thumb" onclick="viewWasteRecord(' + r.id + ')" title="View record details" aria-label="View details for ' + safeName + '">' + WC_PLACEHOLDER + '</button>';
     }
     var conf = r.confidence;
     var confLevel = wcConfLevel(conf);
@@ -69,9 +69,9 @@ function renderWasteRows(records) {
     html += '<td><div class="wc-conf ' + confLevel + '"><span class="wc-conf-pct">' + confPct + '</span><span class="wc-conf-bar"><span class="wc-conf-fill" style="width:' + barW + '%"></span></span></div></td>';
     html += '<td><p class="wc-time-primary">' + wcFormatTime(r.created_at) + '</p><p class="wc-time-sub">' + wcFormatDate(r.created_at) + '</p></td>';
     html += '<td><div class="wc-actions">';
-    html += '<button class="wc-icon-btn" type="button" onclick="viewWasteRecord(' + r.id + ')" title="View record details"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>';
-    html += '<button class="wc-icon-btn' + flagCls + '" type="button" onclick="toggleWasteFlag(' + r.id + ', ' + (r.is_flagged ? 'true' : 'false') + ')" title="' + flagTitle + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg></button>';
-    html += '<button class="wc-icon-btn danger" type="button" onclick="deleteWasteRecord(' + r.id + ')" title="Delete record"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>';
+    html += '<button class="wc-icon-btn" type="button" onclick="viewWasteRecord(' + r.id + ')" title="View record details" aria-label="View record #' + r.id + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle></svg></button>';
+    html += '<button class="wc-icon-btn' + flagCls + '" type="button" onclick="toggleWasteFlag(' + r.id + ', ' + (r.is_flagged ? 'true' : 'false') + ')" title="' + flagTitle + '" aria-label="' + flagTitle + ' #' + r.id + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg></button>';
+    html += '<button class="wc-icon-btn danger" type="button" onclick="deleteWasteRecord(' + r.id + ')" title="Delete record" aria-label="Delete record #' + r.id + '"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg></button>';
     html += '</div></td></tr>';
   }
   return html;
@@ -87,7 +87,10 @@ function renderWasteState(kind, msg) {
   var icon = kind === 'error'
     ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
     : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>';
-  container.innerHTML = '<div class="wc-state">' + icon + '<h4>' + (kind === 'error' ? 'Something went wrong' : 'No records found') + '</h4><p>' + msg + '</p></div>';
+  var retryHtml = kind === 'error'
+    ? '<button type="button" class="btn btn-secondary btn-sm" style="margin-top:12px;" onclick="fetchRecords()">Retry</button>'
+    : '';
+  container.innerHTML = '<div class="wc-state">' + icon + '<h4>' + (kind === 'error' ? 'Could not load records' : 'No records found') + '</h4><p>' + msg + '</p>' + retryHtml + '</div>';
 }
 
 function renderWastePagination() {
@@ -98,6 +101,22 @@ function renderWastePagination() {
   $id('wc-count').innerHTML = 'Showing <strong>' + start + '-' + end + '</strong> of <strong>' + total.toLocaleString() + '</strong> records';
   var pageInfo = $id('wc-page-info');
   if (pageInfo) pageInfo.textContent = 'Page ' + page + ' of ' + totalPages;
+  var pageNums = $id('wc-page-nums');
+  if (pageNums) {
+    if (total === 0) {
+      pageNums.innerHTML = '';
+    } else {
+      var numsHtml = '';
+      var maxV = 5;
+      var sP = Math.max(1, page - Math.floor(maxV / 2));
+      var eP = Math.min(totalPages, sP + maxV - 1);
+      if (eP - sP + 1 < maxV) sP = Math.max(1, eP - maxV + 1);
+      for (var p = sP; p <= eP; p++) {
+        numsHtml += '<button type="button" class="wc-page-btn' + (p === page ? ' active' : '') + '" onclick="goToPage(' + p + ')"' + (p === page ? ' aria-current="page"' : '') + '>' + p + '</button>';
+      }
+      pageNums.innerHTML = numsHtml;
+    }
+  }
   var prev = $id('wc-prev'), next = $id('wc-next');
   prev.disabled = page <= 1;
   next.disabled = end >= total;

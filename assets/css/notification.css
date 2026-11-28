@@ -243,7 +243,8 @@
 
 .nt-search input {
   width: 100%;
-  padding: 10px 14px 10px 36px;
+  height: 38px;
+  padding: 0 34px 0 36px;
   border: 1px solid var(--nt-border);
   border-radius: var(--nt-radius-sm);
   font-size: 13.5px;
@@ -263,11 +264,17 @@
 
 .nt-filter {
   width: auto;
-  min-width: 140px;
+  height: 38px;
+  min-width: 132px;
   flex: 0 0 auto;
 }
 
-.nt-date-filter { width: 150px; }
+.nt-date-filter { width: 148px; }
+
+.nt-toolbar .nt-btn-ghost {
+  height: 38px;
+  padding: 0 14px;
+}
 
 .nt-input,
 .nt-select {
@@ -308,8 +315,8 @@
 
 .nt-container {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 440px;
-  gap: 22px;
+  grid-template-columns: minmax(0, 1fr) 390px;
+  gap: 20px;
   align-items: start;
 }
 
@@ -362,7 +369,61 @@
 .nt-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 720px;
+  min-width: 640px;
+}
+
+.nt-col-actions {
+  width: 56px;
+  text-align: center !important;
+}
+
+.nt-loading-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--nt-text-secondary);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.nt-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid var(--nt-border);
+  border-top-color: var(--nt-primary);
+  border-radius: 50%;
+  animation: nt-spin 0.75s linear infinite;
+}
+
+.nt-row-delete-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--nt-border);
+  border-radius: 8px;
+  background: var(--nt-surface);
+  color: var(--nt-text-secondary);
+  cursor: pointer;
+  transition: var(--nt-transition);
+}
+
+.nt-row-delete-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.nt-row-delete-btn:hover {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+.nt-page-btn svg {
+  width: 14px;
+  height: 14px;
 }
 
 .nt-table thead th {
@@ -946,22 +1007,7 @@
   margin: 0;
 }
 
-.modal-close-btn {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  border: none;
-  border-radius: 8px;
-  background: #f1f5f9;
-  color: var(--nt-text-secondary);
-  cursor: pointer;
-  transition: var(--nt-transition);
-}
-
-.modal-close-btn svg { width: 16px; height: 16px; }
-.modal-close-btn:hover { background: #e2e8f0; color: var(--nt-text); }
+/* Uses shared .modal-close-btn from global.css */
 
 .nt-modal-body { padding: 20px 22px; }
 
@@ -980,13 +1026,16 @@
    ======================================================================= */
 
 @media (max-width: 1280px) {
-  .nt-container { grid-template-columns: minmax(0, 1fr) 380px; }
+  .nt-container { grid-template-columns: minmax(0, 1fr) 350px; }
   .nt-summary-grid { grid-template-columns: repeat(2, 1fr); }
 }
 
-@media (max-width: 1024px) {
+@media (max-width: 1120px) {
   .nt-container { grid-template-columns: 1fr; }
   .nt-detail-col { order: 2; position: static; }
+}
+
+@media (max-width: 1024px) {
   .nt-field-row,
   .nt-field-row-2 { grid-template-columns: 1fr; }
 }

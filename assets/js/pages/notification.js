@@ -111,12 +111,14 @@ document.addEventListener('DOMContentLoaded', function () {
   }
 
   async function loadHistory() {
-    historyBody.innerHTML = '<tr><td colspan="8" class="nt-empty-cell">Loading notifications...</td></tr>';
+    historyBody.innerHTML = '<tr><td colspan="8" class="nt-empty-cell"><div class="nt-loading-wrap"><span class="nt-spinner"></span><span>Loading notifications...</span></div></td></tr>';
     try {
       const res = await apiRequest('/api/notifications/?' + filterQuery());
       if (!res) return;
       if (!res.ok) {
-        historyBody.innerHTML = '<tr><td colspan="8" class="nt-empty-cell">Failed to load notifications.</td></tr>';
+        historyBody.innerHTML = '<tr><td colspan="8" class="nt-empty-cell">Failed to load notifications. <button type="button" class="btn btn-secondary btn-sm" id="nt-retry-btn" style="margin-left:8px;">Retry</button></td></tr>';
+        var r1 = $id('nt-retry-btn');
+        if (r1) r1.addEventListener('click', loadHistory);
         return;
       }
       const data = await res.json();
@@ -124,7 +126,9 @@ document.addEventListener('DOMContentLoaded', function () {
       state.total = data.total || 0;
       renderHistory();
     } catch (e) {
-      historyBody.innerHTML = '<tr><td colspan="8" class="nt-empty-cell">Connection error.</td></tr>';
+      historyBody.innerHTML = '<tr><td colspan="8" class="nt-empty-cell">Connection error. <button type="button" class="btn btn-secondary btn-sm" id="nt-retry-btn" style="margin-left:8px;">Retry</button></td></tr>';
+      var r2 = $id('nt-retry-btn');
+      if (r2) r2.addEventListener('click', loadHistory);
     }
   }
 
@@ -156,20 +160,20 @@ document.addEventListener('DOMContentLoaded', function () {
         '<td>' + statusBadge(n.status) + '</td>' +
         '<td>' + colDate + '</td>' +
         '<td>' + createdBy + '</td>' +
-        '<td><button class="nt-delete-btn" data-delete-id="' + n.id + '" title="Delete notification">' +
+        '<td style="text-align:center;"><button type="button" class="nt-row-delete-btn" data-delete-id="' + n.id + '" title="Delete notification" aria-label="Delete notification">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>' +
-          'Delete</button></td>' +
+          '</button></td>' +
       '</tr>';
     }).join('');
     $all('#history-body tr').forEach(function (tr) {
       tr.addEventListener('click', function (e) {
-        if (e.target.closest('.nt-delete-btn')) return;
+        if (e.target.closest('.nt-row-delete-btn')) return;
         const id = parseInt(this.dataset.id);
         const n = state.notifications.find(function (x) { return x.id === id; });
         if (n) selectNotification(n);
       });
     });
-    $all('#history-body .nt-delete-btn').forEach(function (btn) {
+    $all('#history-body .nt-row-delete-btn').forEach(function (btn) {
       btn.addEventListener('click', function (e) {
         e.stopPropagation();
         const id = parseInt(this.dataset.deleteId);
@@ -182,13 +186,13 @@ document.addEventListener('DOMContentLoaded', function () {
   function renderPagination() {
     const totalPages = Math.max(1, Math.ceil(state.total / state.pageSize));
     let btns = '';
-    btns += '<button class="nt-page-btn" data-page="' + (state.page - 1) + '" ' + (state.page <= 1 ? 'disabled' : '') + '>&#8592;</button>';
+    btns += '<button type="button" class="nt-page-btn" aria-label="Previous page" data-page="' + (state.page - 1) + '" ' + (state.page <= 1 ? 'disabled' : '') + '><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg></button>';
     const start = Math.max(1, state.page - 2);
     const end = Math.min(totalPages, state.page + 2);
     for (let p = start; p <= end; p++) {
-      btns += '<button class="nt-page-btn ' + (p === state.page ? 'active' : '') + '" data-page="' + p + '">' + p + '</button>';
+      btns += '<button type="button" class="nt-page-btn ' + (p === state.page ? 'active' : '') + '" data-page="' + p + '"' + (p === state.page ? ' aria-current="page"' : '') + '>' + p + '</button>';
     }
-    btns += '<button class="nt-page-btn" data-page="' + (state.page + 1) + '" ' + (state.page >= totalPages ? 'disabled' : '') + '>&#8594;</button>';
+    btns += '<button type="button" class="nt-page-btn" aria-label="Next page" data-page="' + (state.page + 1) + '" ' + (state.page >= totalPages ? 'disabled' : '') + '><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg></button>';
     paginationEl.innerHTML =
       '<span class="nt-pagination-info">Page ' + state.page + ' of ' + totalPages + '</span>' +
       '<span class="nt-pagination-btns">' + btns + '</span>';
@@ -254,12 +258,12 @@ document.addEventListener('DOMContentLoaded', function () {
     // 1. Dynamic Info Cards (ONLY include fields that actually exist and are non-empty)
     var infoCards = [];
 
-    // Route Name
+    // Route Name (store raw text; render escapes once)
     if (isValidValue(n.route_name)) {
       infoCards.push({
         icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11"></polygon></svg>',
         label: 'Route Name',
-        value: escapeHtml(n.route_name)
+        value: n.route_name
       });
     }
 
@@ -268,7 +272,7 @@ document.addEventListener('DOMContentLoaded', function () {
       infoCards.push({
         icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="10" r="3"></circle><path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z"></path></svg>',
         label: 'Starting Point',
-        value: escapeHtml(n.starting_point)
+        value: n.starting_point
       });
     }
 
@@ -296,7 +300,7 @@ document.addEventListener('DOMContentLoaded', function () {
       infoCards.push({
         icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>',
         label: 'Collection Date',
-        value: escapeHtml(formatSimpleDate(n.collection_date))
+        value: formatSimpleDate(n.collection_date)
       });
     }
 
@@ -306,7 +310,7 @@ document.addEventListener('DOMContentLoaded', function () {
       infoCards.push({
         icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>',
         label: 'Collection Time',
-        value: escapeHtml(timeStr)
+        value: timeStr
       });
     }
 
@@ -315,7 +319,7 @@ document.addEventListener('DOMContentLoaded', function () {
       infoCards.push({
         icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg>',
         label: 'Assigned Personnel',
-        value: escapeHtml(n.assigned_personnel)
+        value: n.assigned_personnel
       });
     }
 
@@ -324,7 +328,7 @@ document.addEventListener('DOMContentLoaded', function () {
       infoCards.push({
         icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9h16"></path><path d="M4 15h16"></path><path d="M10 3L8 21"></path><path d="M16 3l-2 18"></path></svg>',
         label: 'Category',
-        value: escapeHtml(n.category)
+        value: n.category
       });
     }
 
@@ -344,7 +348,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (recipientsList.length > 0) {
       infoCards.push({
         icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>',
-        label: 'Target Audience',
+        label: 'Audience',
         value: recipientsList.map(function (r) { return '<span class="nt-badge-chip">' + escapeHtml(r) + '</span>'; }).join(' '),
         isHtml: true,
         fullWidth: recipientsList.length > 2
@@ -352,8 +356,8 @@ document.addEventListener('DOMContentLoaded', function () {
     } else if (recipientsRaw === 'All' || !isRouteBased) {
       infoCards.push({
         icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>',
-        label: 'Target Audience',
-        value: 'All Registered Citizens'
+        label: 'Audience',
+        value: 'All Citizens'
       });
     }
 
@@ -362,7 +366,7 @@ document.addEventListener('DOMContentLoaded', function () {
       infoCards.push({
         icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"></circle><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"></path></svg>',
         label: 'Created By',
-        value: escapeHtml(n.created_by_name)
+        value: n.created_by_name
       });
     }
 
@@ -370,8 +374,8 @@ document.addEventListener('DOMContentLoaded', function () {
     if (isValidValue(n.created_at)) {
       infoCards.push({
         icon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>',
-        label: 'Sent / Dispatched At',
-        value: escapeHtml(formatFullDate(n.created_at))
+        label: 'Sent At',
+        value: formatFullDate(n.created_at)
       });
     }
 
@@ -427,9 +431,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // 5. Timeline / Audit Trail
     var timelineStatus = [
-      { label: 'Notification Generated', done: true, sub: formatFullDate(n.created_at) },
-      { label: 'Audience Resolved', done: true, sub: 'Matched against citizen preferences & barangay filters' },
-      { label: 'Dispatch Broadcast', done: n.status === 'Sent', sub: n.status === 'Failed' ? 'Delivery failed' : (n.status === 'Sent' ? 'Delivered to citizen devices' : 'Awaiting scheduled dispatch') }
+      { label: 'Created', done: true, sub: formatFullDate(n.created_at) },
+      { label: 'Audience Matched', done: true, sub: 'Citizen preferences' },
+      { label: 'Broadcast', done: n.status === 'Sent', sub: n.status === 'Failed' ? 'Delivery failed' : (n.status === 'Sent' ? 'Delivered' : 'Scheduled') }
     ].map(function (t) {
       return '<div class="nt-timeline-item ' + (t.done ? 'done' : 'pending') + '">' +
         '<div class="nt-timeline-label">' + t.label + '</div>' +
@@ -460,9 +464,9 @@ document.addEventListener('DOMContentLoaded', function () {
         '<div class="nt-detail-foot-status">' +
           '<span class="nt-detail-foot-label">Dispatch Status:</span>' + statusBadge(n.status) +
         '</div>' +
-        '<button class="nt-delete-btn" id="detail-delete-btn" title="Delete notification">' +
+        '<button type="button" class="nt-delete-btn" id="detail-delete-btn" title="Delete notification">' +
           '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>' +
-          'Delete Notification</button>' +
+          'Delete</button>' +
       '</div>';
 
     var delBtn = $id('detail-delete-btn');
@@ -486,7 +490,13 @@ document.addEventListener('DOMContentLoaded', function () {
   async function deleteNotification(id) {
     const n = state.notifications.find(function (x) { return x.id === id; });
     const label = n && n.title ? n.title : 'this notification';
-    if (!window.confirm('Delete "' + label + '"? This action cannot be undone.')) return;
+    const confirmed = await wiseConfirmDialog({
+      title: 'Delete Notification?',
+      message: 'Delete "' + label + '"? This cannot be undone.',
+      confirmText: 'Delete',
+      variant: 'danger'
+    });
+    if (!confirmed) return;
     try {
       const res = await apiRequest('/api/notifications/' + id, { method: 'DELETE' });
       if (!res) return;
@@ -563,6 +573,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const btn = $id('a-send-btn');
     btn.disabled = true;
     btn.classList.add('loading');
+    btn.innerHTML = '<span class="btn-spinner" aria-hidden="true"></span><span>Sending...</span>';
     try {
       const res = await apiRequest('/api/notifications/', { method: 'POST', body: JSON.stringify(payload) });
       if (!res) return;
@@ -571,7 +582,7 @@ document.addEventListener('DOMContentLoaded', function () {
         showToast(e.detail || 'Failed to send notification.', 'error');
         return;
       }
-      showToast('Notification sent to matched citizens.', 'success');
+      showToast('Announcement sent.', 'success');
       closeAnnouncementModal();
       state.page = 1;
       loadSummary();
@@ -581,6 +592,7 @@ document.addEventListener('DOMContentLoaded', function () {
     } finally {
       btn.disabled = false;
       btn.classList.remove('loading');
+      btn.textContent = 'Send Announcement';
     }
   }
 
@@ -595,10 +607,16 @@ document.addEventListener('DOMContentLoaded', function () {
   filterDate.addEventListener('change', function () { state.page = 1; loadHistory(); });
   $id('filter-reset').addEventListener('click', function () {
     searchInput.value = '';
+    if ($id('nt-search-clear')) $id('nt-search-clear').classList.remove('visible');
     filterType.value = 'All';
     filterBarangay.value = 'All';
     filterRoute.value = 'All';
     filterDate.value = '';
+    state.page = 1;
+    loadHistory();
+  });
+
+  wireSearchClear(searchInput, $id('nt-search-clear'), function () {
     state.page = 1;
     loadHistory();
   });

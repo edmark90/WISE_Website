@@ -51,7 +51,25 @@ function initReports() {
   updateSelectedTypes();
   updateSelectAll();
   updatePeriodBadge();
+  syncActiveQuickPreset();
   loadSummary();
+}
+
+function syncActiveQuickPreset() {
+  var now = rpPhNow();
+  var y = now.getUTCFullYear();
+  var m = now.getUTCMonth() + 1;
+  var prevY = m === 1 ? y - 1 : y;
+  var prevM = m === 1 ? 12 : m - 1;
+  var activePreset = '';
+  if (RP.mode === 'month' && RP.year === y && RP.month === m) activePreset = 'this-month';
+  else if (RP.mode === 'month' && RP.year === prevY && RP.month === prevM) activePreset = 'last-month';
+  else if (RP.mode === 'year' && RP.year === y) activePreset = 'this-year';
+  $all('.rp-quick-btn').forEach(function (btn) {
+    var on = btn.dataset.quick === activePreset;
+    btn.classList.toggle('active', on);
+    btn.setAttribute('aria-pressed', on ? 'true' : 'false');
+  });
 }
 
 function wireReportsControls() {
@@ -64,6 +82,7 @@ function wireReportsControls() {
       $id('rp-month-wrap').style.display = RP.mode === 'month' ? 'flex' : 'none';
       $id('rp-year-wrap').style.display = RP.mode === 'month' ? 'none' : 'flex';
       updatePeriodBadge();
+      syncActiveQuickPreset();
       loadSummary();
     });
   });
@@ -78,6 +97,7 @@ function wireReportsControls() {
       RP.year = parseInt(val.slice(0, 4), 10);
       RP.month = parseInt(val.slice(5, 7), 10);
       updatePeriodBadge();
+      syncActiveQuickPreset();
       loadSummary();
     });
   }
@@ -88,6 +108,7 @@ function wireReportsControls() {
       if (isNaN(val) || val < 2000 || val > 2100) return;
       RP.year = val;
       updatePeriodBadge();
+      syncActiveQuickPreset();
       loadSummary();
     });
   }
@@ -117,6 +138,7 @@ function wireReportsControls() {
       syncPeriodInputs();
       setModeUI();
       updatePeriodBadge();
+      syncActiveQuickPreset();
       loadSummary();
     });
   });
@@ -156,6 +178,10 @@ function wireReportsControls() {
       if (RP.previewData) {
         renderPreviewTable(RP.previewData, RP.searchQuery);
       }
+    });
+    wireSearchClear(previewSearch, $id('rp-preview-search-clear'), function () {
+      RP.searchQuery = '';
+      if (RP.previewData) renderPreviewTable(RP.previewData, '');
     });
   }
 
@@ -243,6 +269,11 @@ function setSummaryLoading(loading) {
   var summaryCard = $id('rp-summary-card');
   if (summaryCard) {
     summaryCard.classList.toggle('loading', loading);
+  }
+  var refreshBtn = $id('rp-summary-refresh');
+  if (refreshBtn) {
+    refreshBtn.classList.toggle('is-syncing', loading);
+    refreshBtn.disabled = loading;
   }
 }
 
@@ -601,8 +632,8 @@ function setDownloading(on, format) {
   } else {
     excelBtn.classList.remove('loading');
     pdfBtn.classList.remove('loading');
-    excelBtn.querySelector('.rp-dl-main').textContent = 'Download Excel (.xlsx)';
-    pdfBtn.querySelector('.rp-dl-main').textContent = 'Download PDF (.pdf)';
+    excelBtn.querySelector('.rp-dl-main').textContent = 'Download Excel Workbook (.xlsx)';
+    pdfBtn.querySelector('.rp-dl-main').textContent = 'Download Official PDF (.pdf)';
   }
 }
 

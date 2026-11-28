@@ -10,24 +10,37 @@ function deleteDayRoute(id) {
   openDeleteModal(id, schedule.barangay);
 }
 
-function deleteAllDayRoutes() {
+async function deleteAllDayRoutes() {
   const scheds = state.selectedDateSchedules;
   if (!scheds || scheds.length === 0) { showToast('No routes to delete.', 'info'); return; }
   const dateStr = new Date(scheds[0].collection_date + 'T00:00:00').toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric' });
-  if (!confirm('Delete all ' + scheds.length + ' route' + (scheds.length > 1 ? 's' : '') + ' for ' + dateStr + '?')) return;
+  const confirmed = await wiseConfirmDialog({
+    title: 'Delete All Routes?',
+    message: 'Delete all ' + scheds.length + ' route' + (scheds.length > 1 ? 's' : '') + ' for ' + dateStr + '? This cannot be undone.',
+    confirmText: 'Delete All',
+    variant: 'danger'
+  });
+  if (!confirmed) return;
   var deleted = 0;
   Promise.all(scheds.map(s => deleteSchedule(s.id).then(r => { if (r) deleted++; })))
     .then(() => { if (deleted > 0) showToast(deleted + ' route' + (deleted > 1 ? 's' : '') + ' deleted!', 'success'); renderCalendar(); });
 }
 
-function rescheduleAllRoutes() {
+async function rescheduleAllRoutes() {
   const scheds = state.selectedDateSchedules;
   if (!scheds || scheds.length === 0) { showToast('No routes to move.', 'info'); return; }
   const dateInput = $id('reschedule-date-input');
   const newDate = dateInput ? dateInput.value : '';
   if (!newDate) { showToast('Please select a target date.', 'info'); return; }
   if (isDatePast(newDate)) { showToast('Cannot move to past dates.', 'info'); return; }
-  if (!confirm('Move all ' + scheds.length + ' route' + (scheds.length > 1 ? 's' : '') + '?')) return;
+  const targetFmt = formatDisplayDate(newDate + 'T00:00:00');
+  const confirmed = await wiseConfirmDialog({
+    title: 'Move All Routes?',
+    message: 'Move all ' + scheds.length + ' route' + (scheds.length > 1 ? 's' : '') + ' to ' + targetFmt + '?',
+    confirmText: 'Move Routes',
+    variant: 'info'
+  });
+  if (!confirmed) return;
   const btn = document.querySelector('.move-btn');
   btn.disabled = true; btn.textContent = 'Moving...';
   var moved = 0;

@@ -25,7 +25,13 @@ function drawCalendarGrid(scheduleMap) {
   const today = state.today;
   if (!scheduleMap || Object.keys(scheduleMap).length === 0) {
     const map = {};
+    const bFilter = (state.barangayFilter || '').toLowerCase();
     (state.schedules || []).forEach(s => {
+      if (bFilter) {
+        const matchMain = (s.barangay || '').toLowerCase() === bFilter;
+        const matchStop = Array.isArray(s.stops) && s.stops.some(st => (st.barangay || '').toLowerCase() === bFilter);
+        if (!matchMain && !matchStop) return;
+      }
       const key = s.collection_date.substring(0, 10);
       if (!map[key]) map[key] = [];
       map[key].push(s);
@@ -50,7 +56,7 @@ function drawCalendarGrid(scheduleMap) {
     if (isToday) classes += ' today';
     if (isSelected) classes += ' selected';
     if (dateObj < today) classes += ' past';
-    html += '<div class="' + classes + '" data-date="' + dateStr + '">';
+    html += '<div class="' + classes + '" data-date="' + dateStr + '" role="button" tabindex="0" aria-label="' + escapeHtml(dateObj.toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) + (daySchedules.length ? ', ' + daySchedules.length + ' schedule' + (daySchedules.length > 1 ? 's' : '') : ', no schedules')) + '">';
     html += '<span class="day-number">' + d + '</span>';
     if (daySchedules.length > 0) {
       html += '<div class="calendar-events">';
@@ -64,7 +70,7 @@ function drawCalendarGrid(scheduleMap) {
         if (timeStr) html += '<span class="event-time">' + timeStr + '</span>';
         html += '<span class="event-dot"></span><span class="event-title">' + escapeHtml(title) + '</span></div>';
       });
-      if (remaining > 0) html += '<div class="calendar-event more">+' + remaining + ' more</div>';
+      if (remaining > 0) html += '<div class="calendar-event more" data-more-date="' + dateStr + '" title="Show all ' + daySchedules.length + ' assignments">+' + remaining + ' more</div>';
       html += '</div>';
     }
     html += '</div>';
@@ -77,27 +83,43 @@ function drawCalendarGrid(scheduleMap) {
 }
 
 function attachCalendarListeners() {
+  function handleDayActivate(dateStr) {
+    if (!dateStr) return;
+    state.selectedDate = new Date(dateStr + 'T00:00:00');
+    drawCalendarGrid({});
+    updateSidebarForDate(state.selectedDate);
+    const hasSchedules = state.schedules.some(s => s.collection_date.substring(0, 10) === dateStr);
+    if (!hasSchedules) {
+      if (isDatePast(dateStr)) { showToast('Cannot create schedules for past dates.', 'info'); return; }
+      openScheduleModalForDate(state.selectedDate);
+    } else if (window.innerWidth <= 1024) {
+      setTimeout(function() {
+        var sidebar = document.getElementById('sidebar-details') || document.getElementById('schedule-sidebar');
+        if (sidebar) sidebar.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 80);
+    }
+  }
+
   $all('.calendar-day:not(.other-month)').forEach(el => {
     el.addEventListener('click', function(e) {
-      if (e.target.closest('.calendar-event')) return;
-      const dateStr = this.dataset.date;
-      if (!dateStr) return;
-      state.selectedDate = new Date(dateStr + 'T00:00:00');
-      renderCalendar();
-      const hasSchedules = state.schedules.some(s => s.collection_date.substring(0, 10) === dateStr);
-      if (!hasSchedules) {
-        if (isDatePast(dateStr)) { showToast('Cannot create schedules for past dates.', 'info'); return; }
-        openScheduleModalForDate(state.selectedDate);
-      } else {
-        if (window.innerWidth <= 1024) {
-          setTimeout(function() {
-            var sidebar = document.getElementById('sidebar-details') || document.getElementById('schedule-sidebar');
-            if (sidebar) sidebar.scrollIntoView({ behavior: 'smooth', block: 'start' });
-          }, 80);
-        }
+      if (e.target.closest('.calendar-event:not(.more)')) return;
+      handleDayActivate(this.dataset.date);
+    });
+    el.addEventListener('keydown', function(e) {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        handleDayActivate(this.dataset.date);
       }
     });
   });
+
+  $all('.calendar-event.more').forEach(el => {
+    el.addEventListener('click', function(e) {
+      e.stopPropagation();
+      handleDayActivate(this.dataset.moreDate);
+    });
+  });
+
   $all('.calendar-event:not(.more)').forEach(el => {
     el.addEventListener('click', function(e) {
       e.stopPropagation();

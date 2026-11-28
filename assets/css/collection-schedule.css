@@ -63,17 +63,17 @@
 
 .schedule-header-left h2 {
   font-family: var(--font-display);
-  font-size: 28px;
-  font-weight: 750;
+  font-size: 26px;
+  font-weight: 800;
   color: var(--sc-text);
-  margin: 0 0 6px;
-  letter-spacing: -0.5px;
+  margin: 0 0 5px;
+  letter-spacing: -0.45px;
   line-height: 1.15;
 }
 
 .schedule-header-left p {
   color: var(--sc-text-secondary);
-  font-size: 13.5px;
+  font-size: 14px;
   margin: 0;
   line-height: 1.5;
 }
@@ -91,7 +91,7 @@
 
 .schedule-container {
   display: grid;
-  grid-template-columns: 1fr 370px;
+  grid-template-columns: 1fr 395px;
   gap: 24px;
   align-items: start;
 }
@@ -174,23 +174,43 @@
   background: var(--sc-primary-light);
 }
 
-/* Calendar Legend - Barangay-based */
+/* Calendar Legend - Interactive Barangay Filters */
 .calendar-legend {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 16px;
-  padding: 14px 22px;
+  gap: 6px 8px;
+  padding: 12px 20px;
   border-bottom: 1px solid var(--sc-border);
 }
 
 .legend-item {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--sc-border);
+  background: var(--sc-surface);
+  font-family: inherit;
   font-size: 11px;
   font-weight: 600;
   color: var(--sc-text-secondary);
   letter-spacing: 0.2px;
+  cursor: pointer;
+  transition: var(--sc-transition);
+}
+
+.legend-item:hover {
+  border-color: #cbd5e1;
+  background: var(--sc-bg);
+  color: var(--sc-text);
+}
+
+.legend-item.active {
+  background: var(--sc-primary-light);
+  border-color: #93c5fd;
+  color: var(--sc-primary-dark);
+  font-weight: 700;
 }
 
 .legend-dot {
@@ -200,15 +220,41 @@
   flex-shrink: 0;
 }
 
-.dot-alabang     { background: #16A34A; }
-.dot-bayanan     { background: #F59E0B; }
-.dot-buli        { background: #8B5CF6; }
-.dot-cupang      { background: #EC4899; }
-.dot-new-alabang { background: #0EA5E9; }
-.dot-poblacion   { background: #3B82F6; }
-.dot-putatan     { background: #6366F1; }
-.dot-sucat       { background: #EF4444; }
-.dot-tunasan     { background: #14B8A6; }
+.dot-alabang {
+  background: #16A34A;
+}
+
+.dot-bayanan {
+  background: #F59E0B;
+}
+
+.dot-buli {
+  background: #8B5CF6;
+}
+
+.dot-cupang {
+  background: #EC4899;
+}
+
+.dot-new-alabang {
+  background: #0EA5E9;
+}
+
+.dot-poblacion {
+  background: #3B82F6;
+}
+
+.dot-putatan {
+  background: #6366F1;
+}
+
+.dot-sucat {
+  background: #EF4444;
+}
+
+.dot-tunasan {
+  background: #14B8A6;
+}
 
 /* Calendar Grid */
 .calendar-grid-wrapper {
@@ -287,7 +333,15 @@
 }
 
 .calendar-day.past {
-  opacity: 0.55;
+  background: #fafafa;
+}
+
+.calendar-day.past .day-number {
+  color: #94a3b8;
+}
+
+.calendar-day.past .calendar-event {
+  opacity: 0.85;
 }
 
 .day-number {
@@ -496,8 +550,15 @@
 }
 
 @keyframes pulse-dot {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.4;
+  }
 }
 
 .details-grid {
@@ -1543,6 +1604,118 @@
   max-width: 560px;
 }
 
+.sc-status-modal .modal-footer {
+  justify-content: flex-end;
+}
+
+/* Detailed Stops List inside Schedule Sidebar */
+.stop-detail-section {
+  margin-top: 12px;
+  border-top: 1px solid var(--sc-border);
+  padding-top: 12px;
+}
+
+.stop-detail-heading {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #475569;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  margin-bottom: 8px;
+}
+
+.stop-detail-card {
+  background: #f8fafc;
+  border: 1px solid var(--sc-border);
+  border-radius: 10px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+
+.stop-detail-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.stop-detail-name {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: #0f172a;
+}
+
+.stop-detail-meta {
+  font-size: 11.5px;
+  color: #64748b;
+  margin-top: 4px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.stop-detail-arrived {
+  color: #0284c7;
+}
+
+.stop-detail-completed {
+  color: #16a34a;
+}
+
+.stop-detail-reason {
+  font-size: 11.5px;
+  color: #dc2626;
+  margin-top: 4px;
+}
+
+.stop-detail-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.stop-chip-btn {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-family: inherit;
+  border: 1px solid transparent;
+  transition: var(--sc-transition);
+}
+
+.stop-chip-btn.arrive {
+  background: #e0f2fe;
+  color: #0369a1;
+  border-color: #bae6fd;
+}
+
+.stop-chip-btn.arrive:hover {
+  background: #bae6fd;
+}
+
+.stop-chip-btn.delay {
+  background: #fef3c7;
+  color: #b45309;
+  border-color: #fde68a;
+}
+
+.stop-chip-btn.delay:hover {
+  background: #fde68a;
+}
+
+.stop-chip-btn.cancel {
+  background: #fee2e2;
+  color: #b91c1c;
+  border-color: #fecaca;
+}
+
+.stop-chip-btn.cancel:hover {
+  background: #fecaca;
+}
+
 .sc-summary {
   display: flex;
   flex-direction: column;
@@ -1943,8 +2116,8 @@
 }
 
 .rmd-overview-badge {
-  font-size: 10.5px;
-  font-weight: 750;
+  font-size: 11px;
+  font-weight: 700;
   color: #15803d;
   background: #dcfce7;
   border: 1px solid #bbf7d0;
@@ -2012,7 +2185,7 @@
 
 .rmd-tc-name {
   font-size: 12.5px;
-  font-weight: 750;
+  font-weight: 700;
   color: #0f172a;
   line-height: 1.25;
 }
@@ -2219,7 +2392,7 @@
 
 .wm-tt-title {
   font-size: 12.5px;
-  font-weight: 750;
+  font-weight: 700;
   color: #0f172a;
 }
 
@@ -2266,7 +2439,9 @@
 }
 
 @keyframes rml-spin {
-  to { transform: rotate(360deg); }
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Truck Marker Spread, Identity & Route Legend */
@@ -2341,34 +2516,6 @@
 
 .wise-stop-pin.cancelled-pin {
   background: #94A3B8 !important;
-}
-
-.rmd-tc-id {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 20px;
-  height: 15px;
-  padding: 0 4px;
-  border-radius: 3px;
-  color: #ffffff;
-  font-size: 9px;
-  font-weight: 800;
-  letter-spacing: 0.2px;
-}
-
-.rmd-tc-route {
-  font-size: 10.5px;
-  font-weight: 600;
-  color: #334155;
-  margin: 1px 0 2px;
-}
-
-.rmd-legend-note {
-  margin-top: 6px;
-  font-size: 9.5px;
-  line-height: 1.4;
-  color: #64748B;
 }
 
 .rmd-tc-badge.status-cancelled,
@@ -2583,7 +2730,7 @@
   }
 
   .stop-row-item .stop-remove-btn,
-  .stop-row-item > div:last-child {
+  .stop-row-item>div:last-child {
     grid-column: 3 / 4;
     grid-row: 1 / 2;
     justify-self: end;
@@ -2640,7 +2787,7 @@
   .day-header-short {
     display: inline;
     font-size: 11px;
-    font-weight: 750;
+    font-weight: 700;
   }
 
   .calendar-day {
@@ -2735,7 +2882,7 @@
   }
 
   .stop-row-item .stop-remove-btn,
-  .stop-row-item > div:last-child {
+  .stop-row-item>div:last-child {
     position: absolute;
     top: 8px;
     right: 8px;

@@ -113,10 +113,16 @@ function renderStatusChangeModal() {
       '</div>'
     : '';
 
+  const headerIcon = isDelay
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;color:#d97706"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>'
+    : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px;color:#dc2626"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>';
+  const confirmBtnCls = isDelay ? 'btn-warning' : 'btn-danger';
+  const confirmLabel = isDelay ? 'Mark Delayed & Notify' : 'Cancel Route & Notify';
+
   $id('status-change-content').innerHTML =
     '<div class="modal-header">' +
-      '<h3><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:18px;height:18px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span id="sc-title">' + title + '</span></h3>' +
-      '<button class="modal-close-btn" onclick="closeStatusChangeModal()">' +
+      '<h3>' + headerIcon + '<span id="sc-title">' + title + '</span></h3>' +
+      '<button type="button" class="modal-close-btn" onclick="closeStatusChangeModal()" aria-label="Close modal">' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
       '</button>' +
     '</div>' +
@@ -139,18 +145,18 @@ function renderStatusChangeModal() {
         '<input class="nt-input" type="text" id="sc-other" placeholder="Type the reason..." autocomplete="off">' +
       '</div>' +
       '<div class="nt-field" style="margin-top:14px">' +
-        '<label class="nt-label" for="sc-additional">Additional Message</label>' +
-        '<textarea class="nt-input nt-textarea" id="sc-additional" rows="3" placeholder="e.g., The truck experienced engine failure. Collection will resume at 2:00 PM."></textarea>' +
+        '<label class="nt-label" for="sc-additional">Additional Note (Optional)</label>' +
+        '<textarea class="nt-input nt-textarea" id="sc-additional" rows="3" placeholder="Optional note for citizens..."></textarea>' +
       '</div>' +
       '<div class="sc-message-preview">' +
-        '<div class="sc-message-label">Auto-generated citizen message</div>' +
+        '<div class="sc-message-label">Citizen Message Preview</div>' +
         '<div class="sc-message" id="sc-message"></div>' +
       '</div>' +
     '</div>' +
     '<div class="modal-footer">' +
       '<div class="modal-footer-actions">' +
-        '<button class="btn btn-secondary" onclick="closeStatusChangeModal()">Cancel</button>' +
-        '<button class="btn btn-primary" id="sc-confirm-btn">Send Notification &amp; ' + title + '</button>' +
+        '<button type="button" class="btn btn-secondary" onclick="closeStatusChangeModal()">Cancel</button>' +
+        '<button type="button" class="btn ' + confirmBtnCls + '" id="sc-confirm-btn">' + confirmLabel + '</button>' +
       '</div>' +
     '</div>';
 
@@ -202,6 +208,7 @@ async function confirmStatusChange() {
   const btn = $id('sc-confirm-btn');
   btn.disabled = true;
   btn.classList.add('loading');
+  btn.innerHTML = '<span class="btn-spinner" aria-hidden="true"></span><span>Sending...</span>';
   var updated = 0;
   await Promise.all(list.map(function (s) {
     return updateScheduleStatus(s.id, STATUS_CHANGE.newStatus, reason, reasonOther, additional)

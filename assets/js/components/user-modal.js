@@ -3,6 +3,17 @@
  * Add/edit user form modal and delete confirmation modal.
  */
 
+function resetPasswordToggles() {
+  [formPassword, formConfirm].forEach(function (inp) {
+    if (inp) inp.type = 'password';
+  });
+  $all('.password-toggle-btn').forEach(function (btn) {
+    btn.setAttribute('aria-pressed', 'false');
+    btn.setAttribute('aria-label', 'Show password');
+    btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>';
+  });
+}
+
 // ---------- Add / Edit Modal ----------
 function openAddModal() {
   state.editingId = null;
@@ -10,10 +21,14 @@ function openAddModal() {
   modalSaveText.textContent = 'Save User';
   userIdInput.value = ''; formFullname.value = ''; formEmail.value = ''; formPhone.value = ''; formRole.value = ''; formPassword.value = ''; formConfirm.value = '';
   formPassword.required = true;
+  formPassword.placeholder = 'Min. 8 characters';
+  var pwHint = $id('password-hint');
+  if (pwHint) pwHint.textContent = 'Min. 8 characters';
   passwordRequired.style.display = 'inline';
   passwordFields.style.display = '';
   accountStatusFields.style.display = 'none';
   formActive.checked = true;
+  resetPasswordToggles();
   updateStatusToggleLabel();
   userModal.classList.add('active');
   setTimeout(function () { formFullname.focus(); }, 100);
@@ -33,11 +48,14 @@ function openEditModal(id) {
   formRole.value = user.role;
   formPassword.value = ''; formConfirm.value = '';
   formPassword.required = false;
-  formPassword.placeholder = 'Leave blank to keep current password';
+  formPassword.placeholder = 'Leave blank to keep current';
+  var pwHint = $id('password-hint');
+  if (pwHint) pwHint.textContent = 'Optional · Min. 8 characters if changed';
   passwordRequired.style.display = 'none';
   passwordFields.style.display = '';
   accountStatusFields.style.display = '';
   formActive.checked = user.is_active !== false;
+  resetPasswordToggles();
   updateStatusToggleLabel();
   userModal.classList.add('active');
   setTimeout(function () { formFullname.focus(); }, 100);
@@ -131,6 +149,15 @@ async function deleteUser() {
   }
 }
 
+function mapAssignmentStatusClass(status) {
+  var s = String(status || 'Upcoming').toLowerCase();
+  if (s === 'completed') return 'completed';
+  if (s === 'arriving' || s === 'arrived' || s === 'in progress') return 'arriving';
+  if (s === 'delayed') return 'delayed';
+  if (s === 'cancelled') return 'cancelled';
+  return 'upcoming';
+}
+
 // ---------- Collector Assignments Modal ----------
 async function openCollectorAssignmentsModal(userId) {
   var modal = $id('collector-assignments-modal');
@@ -138,7 +165,7 @@ async function openCollectorAssignmentsModal(userId) {
   var title = $id('collector-modal-title');
   if (!modal || !body) return;
   title.textContent = 'Collector Assignments';
-  body.innerHTML = '<div class="loading-state" style="padding:28px;text-align:center;"><div class="spinner"></div><p>Loading assigned schedules...</p></div>';
+  body.innerHTML = '<div class="loading-state"><div class="spinner"></div><p>Loading schedules...</p></div>';
   modal.classList.add('active');
   try {
     var res = await apiRequest('/api/users/' + userId + '/assignments');
@@ -148,24 +175,26 @@ async function openCollectorAssignmentsModal(userId) {
     var list = data.assignments || [];
     title.textContent = (col.fullname || 'Collector') + ' — Assigned Schedules';
     if (!list.length) {
-      body.innerHTML = '<div class="empty-state" style="padding:28px;text-align:center;"><h4>No assigned routes yet</h4><p>Assign this collector to a route in the Collection Schedule module.</p></div>';
+      body.innerHTML = '<div class="empty-state"><h4>No assigned routes</h4><p>Assign routes in Collection Schedule.</p></div>';
       return;
     }
-    var html = '<table class="user-table" style="min-width:100%;"><thead><tr><th>Date</th><th>Time</th><th>Route</th><th>Truck</th><th>Status</th></tr></thead><tbody>';
+    var html = '<table class="user-table collector-assignments-table"><thead><tr><th>Date</th><th>Time</th><th>Route</th><th>Truck</th><th>Status</th></tr></thead><tbody>';
     for (var i = 0; i < list.length; i++) {
       var a = list[i];
+      var statusLabel = a.status || 'Upcoming';
+      var statusCls = mapAssignmentStatusClass(statusLabel);
       html += '<tr>';
       html += '<td>' + escapeHtml(a.collection_date || '—') + '</td>';
       html += '<td class="td-muted">' + escapeHtml(a.collection_time || '—') + '</td>';
       html += '<td><strong>' + escapeHtml(a.route_name || a.barangay || '—') + '</strong></td>';
       html += '<td class="td-muted">' + escapeHtml(a.truck_number || '—') + '</td>';
-      html += '<td><span class="role-badge collector">' + escapeHtml(a.status || 'Upcoming') + '</span></td>';
+      html += '<td><span class="status-pill ' + statusCls + '">' + escapeHtml(statusLabel) + '</span></td>';
       html += '</tr>';
     }
     html += '</tbody></table>';
     body.innerHTML = html;
   } catch (e) {
-    body.innerHTML = '<div class="empty-state" style="padding:28px;text-align:center;"><h4>Error loading assignments</h4><p>Could not load schedules for this collector.</p></div>';
+    body.innerHTML = '<div class="empty-state"><h4>Could not load assignments</h4><p>Check your connection and try again.</p></div>';
   }
 }
 

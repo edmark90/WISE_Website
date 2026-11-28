@@ -53,16 +53,31 @@ function ensureSidebarUserCard() {
   footer.insertBefore(card, footer.firstChild);
 }
 
+/** Sync the mobile topbar user avatar initials & tooltip. */
+function syncMobileUserAvatar(fullName, roleText) {
+  const mobileAvatar = document.getElementById('mobile-user-avatar');
+  if (!mobileAvatar) return;
+  const name = fullName || localStorage.getItem('user_name') || 'Admin';
+  const role = roleText || localStorage.getItem('user_role') || 'Administrator';
+  const initials = typeof getInitials === 'function'
+    ? getInitials(name)
+    : name.split(' ').filter(Boolean).map(function (w) { return w[0].toUpperCase(); }).slice(0, 2).join('') || 'A';
+  mobileAvatar.textContent = initials;
+  mobileAvatar.title = name + ' (' + role + ')';
+  mobileAvatar.setAttribute('aria-label', name + ', ' + role);
+}
+
 /** Fill the sidebar user name/role from localStorage. */
 function populateSidebarUserFromStorage() {
   ensureSidebarUserCard();
   const nameEl = document.getElementById('user-name');
   const roleEl = document.getElementById('user-role');
-  if (nameEl) nameEl.textContent = localStorage.getItem('user_name') || 'Admin';
-  if (roleEl) {
-    const storedRole = localStorage.getItem('user_role') || 'Administrator';
-    roleEl.textContent = storedRole.toLowerCase() === 'admin' ? 'Administrator' : storedRole;
-  }
+  const storedName = localStorage.getItem('user_name') || 'Admin';
+  const storedRole = localStorage.getItem('user_role') || 'Administrator';
+  const normalizedRole = storedRole.toLowerCase() === 'admin' ? 'Administrator' : storedRole;
+  if (nameEl) nameEl.textContent = storedName;
+  if (roleEl) roleEl.textContent = normalizedRole;
+  syncMobileUserAvatar(storedName, normalizedRole);
 }
 
 /** Fill the sidebar user name/role from the API (/api/auth/me). */
@@ -80,6 +95,7 @@ async function loadSidebarUserFromApi() {
     localStorage.setItem('user_role', roleText);
     if (nameEl) nameEl.textContent = fullName;
     if (roleEl) roleEl.textContent = roleText;
+    syncMobileUserAvatar(fullName, roleText);
   } catch (e) {
     const nameEl = document.getElementById('user-name');
     const roleEl = document.getElementById('user-role');
@@ -89,25 +105,210 @@ async function loadSidebarUserFromApi() {
 }
 
 /**
+ * Reusable styled confirmation modal (replaces raw window.confirm).
+ * Resolves to true when confirmed, false when cancelled.
+ */
+function wiseConfirmDialog(options) {
+  const opts = options || {};
+  const title = opts.title || 'Confirm Action';
+  const message = opts.message || 'Are you sure you want to continue?';
+  const confirmText = opts.confirmText || 'Confirm';
+  const cancelText = opts.cancelText || 'Cancel';
+  const variant = opts.variant || 'danger'; // 'danger' | 'warning' | 'info'
+
+  const iconSvg = variant === 'danger'
+    ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
+    : (variant === 'warning'
+      ? '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>'
+      : '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>');
+
+  const btnClass = variant === 'danger' ? 'btn-danger' : (variant === 'warning' ? 'btn-warning' : 'btn-primary');
+
+  return new Promise(function (resolve) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay wise-dialog-overlay';
+    overlay.innerHTML =
+      '<div class="modal wise-dialog-modal" role="dialog" aria-modal="true" aria-labelledby="wise-dlg-title">' +
+        '<div class="wise-dialog-body">' +
+          '<div class="confirm-icon ' + variant + '">' + iconSvg + '</div>' +
+          '<div class="confirm-text">' +
+            '<h3 id="wise-dlg-title"></h3>' +
+            '<p id="wise-dlg-msg"></p>' +
+          '</div>' +
+        '</div>' +
+        '<div class="wise-dialog-actions">' +
+          '<button type="button" class="btn btn-secondary" data-action="cancel"></button>' +
+          '<button type="button" class="btn ' + btnClass + '" data-action="confirm"></button>' +
+        '</div>' +
+      '</div>';
+
+    overlay.querySelector('#wise-dlg-title').textContent = title;
+    overlay.querySelector('#wise-dlg-msg').textContent = message;
+    const cancelBtn = overlay.querySelector('[data-action="cancel"]');
+    const confirmBtn = overlay.querySelector('[data-action="confirm"]');
+    cancelBtn.textContent = cancelText;
+    confirmBtn.textContent = confirmText;
+
+    document.body.appendChild(overlay);
+    requestAnimationFrame(function () { overlay.classList.add('active'); });
+
+    let settled = false;
+    function close(result) {
+      if (settled) return;
+      settled = true;
+      document.removeEventListener('keydown', onKey);
+      overlay.classList.remove('active');
+      setTimeout(function () { overlay.remove(); }, 200);
+      resolve(result);
+    }
+
+    function onKey(e) {
+      if (e.key === 'Escape') close(false);
+    }
+
+    cancelBtn.addEventListener('click', function () { close(false); });
+    confirmBtn.addEventListener('click', function () { close(true); });
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) close(false); });
+    document.addEventListener('keydown', onKey);
+    confirmBtn.focus();
+  });
+}
+
+/**
+ * Reusable styled prompt modal (replaces raw window.prompt).
+ * Resolves to trimmed string when confirmed, or null when cancelled.
+ */
+function wisePromptDialog(options) {
+  const opts = options || {};
+  const title = opts.title || 'Enter Details';
+  const message = opts.message || '';
+  const label = opts.label || 'Reason';
+  const defaultValue = opts.defaultValue || '';
+  const placeholder = opts.placeholder || '';
+  const confirmText = opts.confirmText || 'Submit';
+  const cancelText = opts.cancelText || 'Cancel';
+  const variant = opts.variant || 'warning';
+
+  const btnClass = variant === 'danger' ? 'btn-danger' : (variant === 'warning' ? 'btn-warning' : 'btn-primary');
+
+  return new Promise(function (resolve) {
+    const overlay = document.createElement('div');
+    overlay.className = 'modal-overlay wise-dialog-overlay';
+    overlay.innerHTML =
+      '<div class="modal wise-dialog-modal" role="dialog" aria-modal="true" aria-labelledby="wise-pr-title">' +
+        '<div class="modal-header">' +
+          '<h3 id="wise-pr-title"></h3>' +
+          '<button type="button" class="modal-close-btn" data-action="cancel" aria-label="Close dialog">' +
+            '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>' +
+          '</button>' +
+        '</div>' +
+        '<div class="modal-body">' +
+          (message ? '<p id="wise-pr-msg" style="margin:0 0 12px;font-size:13.5px;color:var(--text-muted);"></p>' : '') +
+          '<div class="wise-dialog-field" style="margin-top:0;">' +
+            '<label for="wise-pr-input" id="wise-pr-label"></label>' +
+            '<input type="text" id="wise-pr-input" autocomplete="off">' +
+            '<p class="wise-dialog-error" id="wise-pr-err">Please enter a reason.</p>' +
+          '</div>' +
+        '</div>' +
+        '<div class="wise-dialog-actions">' +
+          '<button type="button" class="btn btn-secondary" data-action="cancel"></button>' +
+          '<button type="button" class="btn ' + btnClass + '" data-action="confirm"></button>' +
+        '</div>' +
+      '</div>';
+
+    overlay.querySelector('#wise-pr-title').textContent = title;
+    if (message) overlay.querySelector('#wise-pr-msg').textContent = message;
+    overlay.querySelector('#wise-pr-label').textContent = label;
+    const input = overlay.querySelector('#wise-pr-input');
+    input.value = defaultValue;
+    input.placeholder = placeholder;
+    const errEl = overlay.querySelector('#wise-pr-err');
+    const confirmBtn = overlay.querySelector('[data-action="confirm"]');
+    const cancelBtns = overlay.querySelectorAll('[data-action="cancel"]');
+    confirmBtn.textContent = confirmText;
+    cancelBtns.forEach(function (b) { if (!b.classList.contains('modal-close-btn')) b.textContent = cancelText; });
+
+    document.body.appendChild(overlay);
+    requestAnimationFrame(function () { overlay.classList.add('active'); });
+
+    let settled = false;
+    function close(val) {
+      if (settled) return;
+      settled = true;
+      document.removeEventListener('keydown', onKey);
+      overlay.classList.remove('active');
+      setTimeout(function () { overlay.remove(); }, 200);
+      resolve(val);
+    }
+
+    function submit() {
+      const v = input.value.trim();
+      if (!v) {
+        errEl.style.display = 'block';
+        input.focus();
+        return;
+      }
+      close(v);
+    }
+
+    function onKey(e) {
+      if (e.key === 'Escape') close(null);
+      if (e.key === 'Enter') { e.preventDefault(); submit(); }
+    }
+
+    input.addEventListener('input', function () { errEl.style.display = 'none'; });
+    cancelBtns.forEach(function (b) { b.addEventListener('click', function () { close(null); }); });
+    confirmBtn.addEventListener('click', submit);
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) close(null); });
+    document.addEventListener('keydown', onKey);
+    input.focus();
+    input.select();
+  });
+}
+
+/** Attach a clean clear (×) button behavior to any search input & button pair. */
+function wireSearchClear(inputEl, clearBtnEl, onClear) {
+  if (!inputEl || !clearBtnEl) return;
+  function sync() {
+    clearBtnEl.classList.toggle('visible', inputEl.value.length > 0);
+  }
+  inputEl.addEventListener('input', sync);
+  clearBtnEl.addEventListener('click', function () {
+    inputEl.value = '';
+    sync();
+    inputEl.focus();
+    if (typeof onClear === 'function') onClear();
+  });
+  sync();
+}
+
+/**
  * Common bootstrap for every admin page:
  *  1) Redirect to login when unauthenticated.
  *  2) Populate the sidebar user card & asynchronously sync with /api/auth/me.
- *  3) Wire the logout button.
+ *  3) Wire the logout button with confirmation.
  *  4) Initialize responsive mobile navigation drawer.
  * Returns true when the user is authenticated.
  */
 function initBasePage() {
   if (!checkAuth()) return false;
+  initMobileNav();
   populateSidebarUserFromStorage();
   loadSidebarUserFromApi();
   const logoutBtn = document.getElementById('logout-btn');
   if (logoutBtn) {
-    logoutBtn.addEventListener('click', function (e) {
+    logoutBtn.addEventListener('click', async function (e) {
       e.preventDefault();
-      logout();
+      const confirmed = await wiseConfirmDialog({
+        title: 'Sign Out?',
+        message: 'You will be signed out of the WISE Admin Portal.',
+        confirmText: 'Sign Out',
+        cancelText: 'Stay',
+        variant: 'danger'
+      });
+      if (confirmed) logout();
     });
   }
-  initMobileNav();
   return true;
 }
 
@@ -120,20 +321,28 @@ function initMobileNav() {
     sidebar.classList.remove('open');
     if (backdrop) backdrop.classList.remove('active');
     document.body.classList.remove('nav-drawer-open');
+    var mb = document.getElementById('mobile-menu-btn');
+    if (mb) mb.setAttribute('aria-expanded', 'false');
   }
 
   function openDrawer() {
     sidebar.classList.add('open');
     if (backdrop) backdrop.classList.add('active');
     document.body.classList.add('nav-drawer-open');
+    var mb = document.getElementById('mobile-menu-btn');
+    if (mb) mb.setAttribute('aria-expanded', 'true');
   }
+
+  // Derive active page title from sidebar nav for mobile orientation
+  var activeNavSpan = sidebar.querySelector('.nav-item.active span');
+  var activePageTitle = activeNavSpan ? activeNavSpan.textContent.trim() : 'WISE SYSTEM';
 
   // Create mobile topbar if not present
   if (!document.querySelector('.mobile-topbar')) {
     var topbar = document.createElement('header');
     topbar.className = 'mobile-topbar';
     topbar.innerHTML =
-      '<button type="button" class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Toggle navigation menu">' +
+      '<button type="button" class="mobile-menu-btn" id="mobile-menu-btn" aria-label="Toggle navigation menu" aria-expanded="false">' +
         '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
           '<line x1="4" y1="12" x2="20" y2="12"></line>' +
           '<line x1="4" y1="6" x2="20" y2="6"></line>' +
@@ -142,13 +351,12 @@ function initMobileNav() {
       '</button>' +
       '<div class="mobile-brand">' +
         '<img src="assets/images/logo wise.png" alt="WISE Logo" class="mobile-logo-img">' +
-        '<span class="mobile-title">WISE SYSTEM</span>' +
+        '<span class="mobile-title"></span>' +
       '</div>' +
       '<div class="mobile-top-right">' +
-        '<span class="mobile-user-avatar" id="mobile-user-avatar" title="Administrator">' +
-          '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"></circle><path d="M4 21c0-4 4-6 8-6s8 2 8 6"></path></svg>' +
-        '</span>' +
+        '<span class="mobile-user-avatar" id="mobile-user-avatar" title="Administrator">A</span>' +
       '</div>';
+    topbar.querySelector('.mobile-title').textContent = activePageTitle;
     app.insertBefore(topbar, app.firstChild);
   }
 

@@ -13,7 +13,16 @@
     emailInput.value = savedEmail;
     rememberCheckbox.checked = true;
   }
+
+  [emailInput, $id('password')].forEach(function (el) {
+    if (el) el.addEventListener('input', clearError);
+  });
 })();
+
+function clearError() {
+  const existingError = document.querySelector('.error-message');
+  if (existingError) existingError.remove();
+}
 
 async function postLoginRequest(email, password) {
   const fetchOpts = {
@@ -54,8 +63,9 @@ $id('login-form').addEventListener('submit', async function(e) {
   const submitBtn = document.querySelector('.login-btn') || document.querySelector('.submit');
 
   // Disable button during request
+  clearError();
   submitBtn.disabled = true;
-  submitBtn.innerHTML = '<span>Signing in...</span>';
+  submitBtn.innerHTML = '<span class="login-spinner" aria-hidden="true"></span><span>Signing in...</span>';
 
   try {
     const response = await postLoginRequest(email, password);
@@ -88,7 +98,7 @@ $id('login-form').addEventListener('submit', async function(e) {
     }
   } catch (error) {
     console.error('Login error:', error);
-    showError('Cannot reach backend at ' + CONFIG.API_BASE_URL + '. Check that port 8000 is running and CORS allows ' + window.location.origin + '.');
+    showError('Unable to reach the WISE server. Check your connection and try again.');
   } finally {
     // Re-enable button
     submitBtn.disabled = false;
@@ -104,35 +114,36 @@ $id('login-form').addEventListener('submit', async function(e) {
 });
 
 function showError(message) {
-  // Remove existing error message if any
-  const existingError = document.querySelector('.error-message');
-  if (existingError) {
-    existingError.remove();
-  }
+  clearError();
 
-  // Create and show error message styled via login.css (.error-message)
   const errorDiv = document.createElement('div');
   errorDiv.className = 'error-message';
+  errorDiv.setAttribute('role', 'alert');
+  errorDiv.setAttribute('aria-live', 'polite');
   errorDiv.textContent = message;
 
   document.querySelector('.form-wrapper').appendChild(errorDiv);
-
-  // Auto-remove after 5 seconds
-  setTimeout(() => {
-    errorDiv.remove();
-  }, 5000);
 }
 
 // Password toggle function
 function togglePassword() {
   const passwordInput = document.getElementById('password');
   const eyeIcon = document.getElementById('eye-icon');
+  const toggleBtn = document.getElementById('toggle-password-btn') || document.querySelector('.eye-toggle-btn');
 
   if (passwordInput.type === 'password') {
     passwordInput.type = 'text';
+    if (toggleBtn) {
+      toggleBtn.setAttribute('aria-pressed', 'true');
+      toggleBtn.setAttribute('aria-label', 'Hide password');
+    }
     eyeIcon.innerHTML = '<path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path><line x1="1" y1="1" x2="23" y2="23"></line>';
   } else {
     passwordInput.type = 'password';
+    if (toggleBtn) {
+      toggleBtn.setAttribute('aria-pressed', 'false');
+      toggleBtn.setAttribute('aria-label', 'Show password');
+    }
     eyeIcon.innerHTML = '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path><circle cx="12" cy="12" r="3"></circle>';
   }
 }

@@ -193,10 +193,19 @@
   transform: translateY(-1px);
 }
 
+.rp-quick-btn.active {
+  background: var(--blue);
+  border-color: var(--blue);
+  color: #ffffff;
+  font-weight: 700;
+  box-shadow: 0 3px 10px rgba(37, 99, 235, 0.24);
+}
+
 /* --- Executive Summary Grid & Chips --- */
 .rp-summary-refresh {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
+  padding: 0;
   border-radius: 8px;
   border: 1px solid var(--border);
   background: #f8fafc;
@@ -212,7 +221,11 @@
   color: var(--blue);
   background: var(--blue-soft);
   border-color: #bfdbfe;
-  transform: rotate(45deg);
+}
+
+.rp-summary-refresh.is-syncing svg {
+  animation: rpSpin 0.8s linear infinite;
+  color: var(--blue);
 }
 
 .rp-summary-refresh svg {
@@ -302,6 +315,8 @@
   color: var(--text-muted);
   margin-top: 3px;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Card Loading State */
@@ -688,13 +703,14 @@
 }
 
 .rp-preview-search-wrap {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
   background: #f8fafc;
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 7px 12px;
+  padding: 7px 34px 7px 12px;
   transition: all 0.18s ease;
 }
 

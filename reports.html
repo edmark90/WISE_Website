@@ -8,7 +8,7 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link
-    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@600;700;800&display=swap"
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap"
     rel="stylesheet">
   <link rel="stylesheet" href="assets/css/global.css">
   <link rel="stylesheet" href="assets/css/reports.css">
@@ -16,11 +16,12 @@
 </head>
 
 <body>
+  <a href="#main-content" class="skip-link">Skip to main content</a>
   <div class="app">
     <aside class="sidebar">
       <div class="sidebar-brand">
         <div class="badge">
-          <img src="assets/images/logo wise.png" alt="WISE logo">
+          <img src="assets/images/logo wise.png" alt="WISE Logo">
         </div>
         <h1>WISE<br><span class="brand-sub">SYSTEM</span></h1>
       </div>
@@ -60,7 +61,7 @@
           </svg>
           <span>Collection Schedule</span>
         </a>
-        <a href="reports.html" class="nav-item active">
+        <a href="reports.html" class="nav-item active" aria-current="page">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
             <line x1="18" y1="20" x2="18" y2="10"></line>
             <line x1="12" y1="20" x2="12" y2="4"></line>
@@ -88,13 +89,13 @@
       </div>
     </aside>
 
-    <main class="main">
+    <main class="main" id="main-content">
       <!-- Page Header -->
       <div class="page-header rp-page-header">
         <div>
-          <span class="page-eyebrow">Analytics &amp; Official Municipal Exports</span>
+          <span class="page-eyebrow">Reports &amp; Exports</span>
           <h2>Reports &amp; Analytics</h2>
-          <p>Generate, review, and export official administrative reports in Excel (.xlsx) and publication-grade PDF.</p>
+          <p>Review and export monthly or yearly reports in Excel and PDF.</p>
         </div>
         <div class="rp-header-badge">
           <span class="rp-status-dot"></span>
@@ -146,13 +147,13 @@
             </svg>
             <span>Period Performance Analytics</span>
           </div>
-          <div class="rp-summary-refresh" id="rp-summary-refresh" title="Refresh metrics">
+          <button type="button" class="rp-summary-refresh" id="rp-summary-refresh" title="Refresh metrics" aria-label="Refresh metrics">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="23 4 23 10 17 10"></polyline>
               <polyline points="1 20 1 14 7 14"></polyline>
               <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path>
             </svg>
-          </div>
+          </button>
         </div>
 
         <div class="rp-summary-grid">
@@ -280,11 +281,11 @@
               <line x1="16" y1="17" x2="8" y2="17"></line>
               <polyline points="10 9 9 9 8 9"></polyline>
             </svg>
-            <span>Select Report Sections to Include in Exports</span>
+            <span>Report Sections</span>
           </div>
           <label class="rp-check-all">
             <input type="checkbox" id="rp-select-all" checked>
-            <span>Select all 5 sections</span>
+            <span>Select all</span>
           </label>
         </div>
 
@@ -300,7 +301,7 @@
               </svg>
             </span>
             <span class="rp-type-name">Barangay Performance</span>
-            <span class="rp-type-sub">Per-barangay route statistics, completion rates & AI records</span>
+            <span class="rp-type-sub">Route stats, completion &amp; AI scans</span>
           </label>
 
           <label class="rp-type">
@@ -313,8 +314,8 @@
                 <line x1="6" y1="20" x2="6" y2="14"></line>
               </svg>
             </span>
-            <span class="rp-type-name">Waste Classification Summary</span>
-            <span class="rp-type-sub">Material types, disposal categories, AI accuracy & flagged items</span>
+            <span class="rp-type-name">Waste Classification</span>
+            <span class="rp-type-sub">Categories, accuracy &amp; flagged items</span>
           </label>
 
           <label class="rp-type">
@@ -327,8 +328,8 @@
                 <line x1="3" y1="10" x2="21" y2="10"></line>
               </svg>
             </span>
-            <span class="rp-type-name">Collection Operations Calendar</span>
-            <span class="rp-type-sub">Daily operational logs of scheduled & completed collection runs</span>
+            <span class="rp-type-name">Collection Calendar</span>
+            <span class="rp-type-sub">Daily scheduled &amp; completed runs</span>
           </label>
 
           <label class="rp-type">
@@ -340,7 +341,7 @@
               </svg>
             </span>
             <span class="rp-type-name">Notification Analytics</span>
-            <span class="rp-type-sub">Broadcast delivery numbers, citizen read rates & engagement</span>
+            <span class="rp-type-sub">Broadcast counts &amp; read rates</span>
           </label>
 
           <label class="rp-type">
@@ -354,9 +355,54 @@
                 <polyline points="10 9 9 9 8 9"></polyline>
               </svg>
             </span>
-            <span class="rp-type-name">Collection Schedule Records</span>
-            <span class="rp-type-sub">Full operational records with routes, zones, times & personnel</span>
+            <span class="rp-type-name">Schedule Records</span>
+            <span class="rp-type-sub">Routes, stops, times &amp; crews</span>
           </label>
+        </div>
+      </div>
+
+      <!-- Export Actions Card (Placed right under section selector for faster workflow) -->
+      <div class="rp-card rp-download-card">
+        <div class="rp-card-header">
+          <div class="rp-card-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span>Export Report</span>
+          </div>
+        </div>
+
+        <div class="rp-download-row">
+          <button type="button" class="rp-dl-btn rp-dl-excel" id="rp-dl-excel">
+            <div class="rp-dl-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+            </div>
+            <div class="rp-dl-text">
+              <span class="rp-dl-main">Download Excel Workbook (.xlsx)</span>
+              <span class="rp-dl-sub">Multi-sheet workbook with KPI summary &amp; tables</span>
+            </div>
+          </button>
+
+          <button type="button" class="rp-dl-btn rp-dl-pdf" id="rp-dl-pdf">
+            <div class="rp-dl-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="9" y1="13" x2="15" y2="13"></line>
+                <line x1="9" y1="17" x2="13" y2="17"></line>
+              </svg>
+            </div>
+            <div class="rp-dl-text">
+              <span class="rp-dl-main">Download Official PDF (.pdf)</span>
+              <span class="rp-dl-sub">Formatted landscape A4 report with tables</span>
+            </div>
+          </button>
         </div>
       </div>
 
@@ -369,9 +415,9 @@
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                 <circle cx="12" cy="12" r="3"></circle>
               </svg>
-              <span>Live Report Data Preview</span>
+              <span>Live Data Preview</span>
             </div>
-            <p class="rp-card-sub" id="rp-preview-subtitle">Review verified records on-screen before generating exports.</p>
+            <p class="rp-card-sub" id="rp-preview-subtitle">Preview records before exporting.</p>
           </div>
           <div class="rp-preview-actions">
             <div class="rp-preview-search-wrap">
@@ -379,7 +425,10 @@
                 <circle cx="11" cy="11" r="8"></circle>
                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
               </svg>
-              <input type="text" id="rp-preview-search" placeholder="Search preview records...">
+              <input type="text" id="rp-preview-search" placeholder="Search preview..." aria-label="Search preview records">
+              <button type="button" class="search-clear-btn" id="rp-preview-search-clear" aria-label="Clear search">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+              </button>
             </div>
             <span class="rp-preview-counter" id="rp-preview-counter">0 records</span>
           </div>
@@ -430,7 +479,7 @@
         <div class="rp-table-wrap" id="rp-table-wrap">
           <div class="rp-table-loading" id="rp-table-loading" style="display: none;">
             <div class="rp-spinner"></div>
-            <span>Loading verified report data...</span>
+            <span>Loading report data...</span>
           </div>
           <table class="rp-data-table" id="rp-preview-table">
             <thead id="rp-table-head"></thead>
@@ -441,61 +490,8 @@
               <circle cx="12" cy="12" r="10"></circle>
               <line x1="8" y1="12" x2="16" y2="12"></line>
             </svg>
-            <p>No records found for the selected period.</p>
+            <p>No records found for this period.</p>
           </div>
-        </div>
-      </div>
-
-      <!-- Export Actions Card -->
-      <div class="rp-card rp-download-card">
-        <div class="rp-card-header">
-          <div class="rp-card-title">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-              <polyline points="7 10 12 15 17 10"></polyline>
-              <line x1="12" y1="15" x2="12" y2="3"></line>
-            </svg>
-            <span>Official Report Export Bundle</span>
-          </div>
-        </div>
-
-        <div class="rp-download-row">
-          <button type="button" class="rp-dl-btn rp-dl-excel" id="rp-dl-excel">
-            <div class="rp-dl-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="7 10 12 15 17 10"></polyline>
-                <line x1="12" y1="15" x2="12" y2="3"></line>
-              </svg>
-            </div>
-            <div class="rp-dl-text">
-              <span class="rp-dl-main">Download Excel Workbook (.xlsx)</span>
-              <span class="rp-dl-sub">Multi-sheet workbook with executive KPI summary, auto-filters &amp; total formulas</span>
-            </div>
-          </button>
-
-          <button type="button" class="rp-dl-btn rp-dl-pdf" id="rp-dl-pdf">
-            <div class="rp-dl-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                <polyline points="14 2 14 8 20 8"></polyline>
-                <line x1="9" y1="13" x2="15" y2="13"></line>
-                <line x1="9" y1="17" x2="13" y2="17"></line>
-              </svg>
-            </div>
-            <div class="rp-dl-text">
-              <span class="rp-dl-main">Download Official PDF (.pdf)</span>
-              <span class="rp-dl-sub">Landscape A4 document with City branding, executive cards &amp; full tables</span>
-            </div>
-          </button>
-        </div>
-        <div class="rp-note">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <circle cx="12" cy="12" r="10"></circle>
-            <line x1="12" y1="16" x2="12" y2="12"></line>
-            <line x1="12" y1="8" x2="12.01" y2="8"></line>
-          </svg>
-          <span>The exported file automatically includes the Executive Summary plus verified data sections for all checked report types.</span>
         </div>
       </div>
     </main>

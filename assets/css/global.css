@@ -57,9 +57,13 @@
   --shadow-lg: 0 14px 30px -6px rgba(15, 23, 42, 0.11), 0 4px 12px -2px rgba(15, 23, 42, 0.05);
   --shadow-modal: 0 24px 60px -12px rgba(15, 23, 42, 0.25);
 
-  /* Layout Dimensions */
+  /* Layout Dimensions & Stacking Scale */
   --sidebar-w: 256px;
   --mobile-topbar-h: 60px;
+  --z-sidebar: 1050;
+  --z-modal: 1200;
+  --z-dialog: 1300;
+  --z-toast: 2200;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
@@ -84,6 +88,46 @@ body {
 body.nav-drawer-open {
   overflow: hidden !important;
   touch-action: none;
+}
+
+/* ---------- Accessibility: Skip Link & Keyboard Focus ---------- */
+
+.skip-link {
+  position: fixed;
+  top: -100px;
+  left: 16px;
+  z-index: 2500;
+  padding: 10px 16px;
+  background: var(--blue);
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  border-radius: var(--radius-xs);
+  text-decoration: none;
+  box-shadow: var(--shadow-md);
+  transition: top 0.16s ease;
+}
+
+.skip-link:focus {
+  top: 12px;
+  outline: 2px solid #ffffff;
+  outline-offset: 2px;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[role="button"]:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 2px;
+}
+
+.sidebar a:focus-visible,
+.sidebar button:focus-visible {
+  outline-color: #93c5fd;
 }
 
 /* ---------- App Layout Shell ---------- */
@@ -181,12 +225,16 @@ body.nav-drawer-open {
   height: 36px;
   border-radius: 50%;
   background: var(--blue-soft);
-  color: var(--blue);
+  color: var(--blue-dark);
   display: flex;
   align-items: center;
   justify-content: center;
   border: 1px solid var(--blue-border);
   text-decoration: none;
+  font-family: var(--font-display);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: 0.2px;
 }
 
 .mobile-user-avatar svg {
@@ -660,6 +708,88 @@ body.nav-drawer-open {
   box-shadow: 0 6px 16px rgba(220, 38, 38, 0.32);
 }
 
+.btn-warning {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(217, 119, 6, 0.24);
+}
+
+.btn-warning:hover:not(:disabled) {
+  background: linear-gradient(135deg, #d97706, #b45309);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(217, 119, 6, 0.34);
+}
+
+.btn.loading {
+  position: relative;
+  pointer-events: none;
+}
+
+.btn-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: wiseSpin 0.65s linear infinite;
+  flex-shrink: 0;
+}
+
+/* Shared Search Clear Button */
+.search-clear-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--text-faint);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: var(--transition);
+}
+
+.search-clear-btn.visible {
+  display: inline-flex;
+}
+
+.search-clear-btn:hover {
+  background: var(--surface-muted);
+  color: var(--text-main);
+}
+
+.search-clear-btn svg {
+  width: 13px;
+  height: 13px;
+}
+
+/* Shared Semantic Status Pills */
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  border: 1px solid transparent;
+}
+
+.status-pill.upcoming { background: var(--blue-soft); color: var(--blue-dark); border-color: var(--blue-border); }
+.status-pill.arriving { background: #e0f2fe; color: #0369a1; border-color: #bae6fd; }
+.status-pill.completed { background: var(--green-soft); color: var(--green-dark); border-color: var(--green-border); }
+.status-pill.delayed { background: var(--amber-soft); color: var(--amber-dark); border-color: var(--amber-border); }
+.status-pill.cancelled { background: var(--danger-soft); color: var(--danger-dark); border-color: var(--danger-border); }
+.status-pill.neutral { background: var(--surface-muted); color: var(--text-secondary); border-color: var(--border); }
+
 .btn-sm {
   padding: 7px 12px;
   font-size: 12.5px;
@@ -715,11 +845,82 @@ body.nav-drawer-open {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1100;
+  z-index: var(--z-modal);
   opacity: 0;
   visibility: hidden;
   transition: opacity 0.22s ease, visibility 0.22s ease;
   padding: 16px;
+}
+
+.modal-overlay.wise-dialog-overlay {
+  z-index: var(--z-dialog);
+}
+
+.wise-dialog-modal {
+  max-width: 420px;
+}
+
+.wise-dialog-body {
+  padding: 28px 24px 20px;
+}
+
+.wise-dialog-field {
+  margin-top: 16px;
+  text-align: left;
+}
+
+.wise-dialog-field label {
+  display: block;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.wise-dialog-field input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-family: inherit;
+  font-size: 13.5px;
+  color: var(--text-main);
+  background: var(--surface);
+}
+
+.wise-dialog-field input:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+  outline: none;
+}
+
+.wise-dialog-error {
+  margin: 6px 0 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--danger);
+  display: none;
+}
+
+.wise-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 14px 24px;
+  border-top: 1px solid var(--border);
+  background: #fafafa;
+}
+
+.confirm-icon.warning {
+  background: var(--amber-soft);
+  color: var(--amber-dark);
+  border: 1px solid var(--amber-border);
+}
+
+.confirm-icon.info {
+  background: var(--blue-soft);
+  color: var(--blue);
+  border: 1px solid var(--blue-border);
 }
 
 .modal-overlay.active,
@@ -759,7 +960,7 @@ body.nav-drawer-open {
   margin: 0;
   font-family: 'Outfit', 'Inter', sans-serif;
   font-size: 17px;
-  font-weight: 750;
+  font-weight: 700;
   color: var(--text-main);
   display: flex;
   align-items: center;
@@ -838,7 +1039,7 @@ body.nav-drawer-open {
   margin: 0 0 8px;
   font-family: 'Outfit', 'Inter', sans-serif;
   font-size: 18px;
-  font-weight: 750;
+  font-weight: 700;
   color: var(--text-main);
 }
 
@@ -860,7 +1061,7 @@ body.nav-drawer-open {
   position: fixed;
   top: 24px;
   right: 24px;
-  z-index: 2200;
+  z-index: var(--z-toast);
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -871,8 +1072,8 @@ body.nav-drawer-open {
   pointer-events: auto;
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 13px 18px;
+  gap: 11px;
+  padding: 12px 14px 12px 16px;
   border-radius: var(--radius-md);
   box-shadow: 0 12px 28px -6px rgba(15, 23, 42, 0.16), 0 4px 10px -2px rgba(15, 23, 42, 0.08);
   font-size: 13.5px;
@@ -882,6 +1083,39 @@ body.nav-drawer-open {
   background: var(--surface);
   border: 1px solid var(--border);
   animation: toastSlideIn 0.28s var(--ease-out);
+}
+
+.toast-msg {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.4;
+}
+
+.toast-close {
+  width: 24px;
+  height: 24px;
+  border: none;
+  border-radius: 6px;
+  background: transparent;
+  color: currentColor;
+  opacity: 0.65;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  flex-shrink: 0;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.toast-close:hover {
+  opacity: 1;
+  background: rgba(15, 23, 42, 0.08);
+}
+
+.toast-close svg {
+  width: 14px;
+  height: 14px;
 }
 
 .toast.removing {
@@ -979,7 +1213,7 @@ body.nav-drawer-open {
   margin: 0 0 6px;
   font-family: 'Outfit', 'Inter', sans-serif;
   font-size: 16px;
-  font-weight: 750;
+  font-weight: 700;
   color: var(--text-main);
 }
 
@@ -1114,8 +1348,8 @@ body.nav-drawer-open {
     min-height: 44px;
   }
 
-  /* Prevent iOS zoom on input focus */
-  input,
+  /* Prevent iOS zoom on text-entry focus without distorting compact controls */
+  input:not([type="checkbox"]):not([type="radio"]):not([type="time"]):not([type="date"]),
   select,
   textarea {
     font-size: 16px !important;

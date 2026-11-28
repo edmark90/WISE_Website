@@ -6,7 +6,7 @@
 <title>WISE SYSTEM — Admin Login</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/login.css">
 <link rel="icon" type="image/png" href="assets/images/logo wise.png">
 </head>
@@ -21,8 +21,13 @@
   <!-- Right Panel - Clean Admin Login Form -->
   <div class="right-panel">
     <div class="form-wrapper">
+      <div class="mobile-brand-badge">
+        <img src="assets/images/logo wise.png" alt="WISE Logo">
+        <span>WISE SYSTEM</span>
+      </div>
       <div class="login-header">
         <h1 class="welcome-heading">Admin Login</h1>
+        <p class="login-subtitle">WISE Admin Portal</p>
         <span class="heading-underline"></span>
       </div>
 
@@ -36,7 +41,7 @@
             <span>Email</span>
           </label>
           <div class="input-container">
-            <input id="admin-id" type="email" placeholder="Admin@gmail.com" value="Admin@gmail.com" required autocomplete="email">
+            <input id="admin-id" type="email" placeholder="Enter your admin email" required autocomplete="email">
           </div>
         </div>
 
@@ -49,8 +54,8 @@
             <span>Password</span>
           </label>
           <div class="input-container">
-            <input id="password" type="password" placeholder="•••••••" required autocomplete="current-password">
-            <button type="button" class="eye-toggle-btn" onclick="togglePassword()" aria-label="Toggle password visibility">
+            <input id="password" type="password" placeholder="Enter your password" required autocomplete="current-password">
+            <button type="button" id="toggle-password-btn" class="eye-toggle-btn" onclick="togglePassword()" aria-label="Show password" aria-pressed="false">
               <svg id="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
                 <circle cx="12" cy="12" r="3"></circle>
